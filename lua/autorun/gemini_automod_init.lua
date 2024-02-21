@@ -1,7 +1,7 @@
 include("enum_color.lua")
 
 --[[----------------------------------------------------------------------------
-                              Google Gemini Autmod
+                              Google Gemini Automod
 ----------------------------------------------------------------------------]]--
 
 if Gemini and ( Gemini.Version == nil ) then
@@ -136,9 +136,7 @@ function Gemini:FromConvar(Name, Category)
     -- Extraer las variables de un convar
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:FromConvar() must be a string.]], Name, "string")
-    end
-
-    if ( Name == "" ) then
+    elseif ( Name == "" ) then
         self:Error([[The first argument of Gemini:FromConvar() must not be empty.]], Name, "string")
     end
 
@@ -147,9 +145,7 @@ function Gemini:FromConvar(Name, Category)
     else
         if not isstring(Category) then
             self:Error([[The second argument of Gemini:FromConvar() must be a string.]], Category, "string")
-        end
-
-        if ( Category == "" ) then
+        elseif ( Category == "" ) then
             self:Error([[The second argument of Gemini:FromConvar() must not be empty.]], Category, "string")
         end
     end
@@ -159,9 +155,7 @@ function Gemini:FromConvar(Name, Category)
 
     if not self.__cfg[Category] then
         self:Error([[The category does not exist.]], Category, "string")
-    end
-
-    if not self.__cfg[Category][Name] then
+    elseif not self.__cfg[Category][Name] then
         self:Error([[The config does not exist.]], Name, "string")
     end
 
@@ -173,9 +167,7 @@ function Gemini:FromConvar(Name, Category)
 
     local ValueType = string.sub(Value, -1)
     if SufixToType[ValueType] then
-        if ValueType == "n" then
-            Value = tonumber( string.sub(Value, 1, -2) )
-        elseif ValueType == "f" then
+        if ( ValueType == "n" or ValueType == "f" ) then
             Value = tonumber( string.sub(Value, 1, -2) )
         elseif ValueType == "b" then
             Value = ( string.sub(Value, 1, -2) == "1" )
@@ -275,7 +267,11 @@ function Gemini:AddConfig(Name, Category, Verification, Default, Private)
 end
 
 
-function Gemini:GetConfig(Name, Category)
+function Gemini:GetConfig(Name, Category, SkipVerification)
+    if SkipVerification == true then
+        return self:FromConvar(Name, Category)
+    end
+
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:GetConfig() must be a string.]], Name, "string")
     end
@@ -307,7 +303,7 @@ function Gemini:GetConfig(Name, Category)
         self:Error([[The config does not exist.]], Name, "string")
     end
 
-    return self.__cfg[Category][Name][1]
+    return self:FromConvar(Name, Category)
 end
 
 
@@ -370,17 +366,13 @@ function Gemini:PreInit()
 
     self:AddConfig("DefaultCategory", "General", self.VERIFICATION_TYPE.string, "General")
     self:AddConfig("DefaultAPI", "General", self.VERIFICATION_TYPE.string, "Gemini")
+    self:AddConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
     self:AddConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true)
     self:AddConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
 
-    -- Create a function print to include files inside the folder "gemini",
-    -- files with "sh_" prefix are shared files
-    -- files with "cl_" prefix are client files
-    -- files with "sv_" prefix are server files
     local IncludeFileCfg = {
         prefix = "[AI] Included: ",
         func = function(path)
-            path = path[1]
             if string.StartsWith(path, "sh_") then
                 if SERVER then
                     AddCSLuaFile("gemini/" .. path)
@@ -401,15 +393,22 @@ function Gemini:PreInit()
     }
 
     local IncludeFile = self:GeneratePrint(IncludeFileCfg)
-    for _, LuaFile in ipairs( file.Find("gemini/*.lua", "LUA") ) do
-        IncludeFile("gemini/" .. LuaFile)
-    end
+    IncludeFile("gemini/sh_enum.lua")
+    IncludeFile("gemini/sh_language.lua")
 
     hook.Run("Gemini.PreInit")
 end
 
 
 function Gemini:Init()
+    if self.PoblateHooks then
+        self:PoblateHooks()
+    else
+        timer.Simple(0, function()
+            self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "PoblateHooks", "function")
+        end)
+    end
+
     hook.Run("Gemini.Init")
 end
 
