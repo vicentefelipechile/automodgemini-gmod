@@ -409,6 +409,14 @@ function Gemini:Init()
         end)
     end
 
+    if self.PoblateLanguages then
+        self:PoblateLanguages()
+    else
+        timer.Simple(0, function()
+            self:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "PoblateLanguages", "function")
+        end)
+    end
+
     hook.Run("Gemini.Init")
 end
 
