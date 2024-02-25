@@ -7,10 +7,7 @@ local EmptyFunc = function() return "" end
 Gemini.__LANG = Gemini.__LANG or {}
 
 function Gemini:CreateLanguage(LanguageTarget)
-    if istable(self.__LANG[LanguageTarget]) then
-        self:Error([[The first argument of Gemini:CreateLanguage() already exists]], LanguageTarget, [[string]])
-    end
-    Gemini.__LANG[LanguageTarget] = {}
+    Gemini.__LANG[LanguageTarget] = Gemini.__LANG[LanguageTarget] or {}
 
     return LanguageTarget
 end
@@ -61,6 +58,34 @@ function Gemini:AddPhrase(LanguageTarget, PhraseName, Phrase)
     self.__LANG[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = EmptyFunc}
 end
 
+function Gemini:GetPhrase(LanguageTarget, PhraseName, SkipValidation)
+    if ( SkipValidation == true ) then
+        return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
+    end
+
+    if not isstring(LanguageTarget) then
+        self:Error([[The first argument of Gemini:GetPhrase() is not a string]], LanguageTarget, "string")
+    elseif (LanguageTarget == "") then
+        self:Error([[The first argument of Gemini:GetPhrase() is an empty string]], LanguageTarget, "string")
+    end
+
+    if not isstring(PhraseName) then
+        self:Error([[The second argument of Gemini:GetPhrase() is not a string]], PhraseName, "string")
+    elseif (PhraseName == "") then
+        self:Error([[The second argument of Gemini:GetPhrase() is an empty string]], PhraseName, "string")
+    end
+
+    if not istable(self.__LANG[LanguageTarget]) then
+        self:Error([[The language target does not exist]], LanguageTarget, "string")
+    end
+
+    if not istable(self.__LANG[LanguageTarget][PhraseName]) then
+        self:Error([[The phrase does not exist in the language target]], PhraseName, "string")
+    end
+
+    return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
+end
+
 function Gemini:PoblateLanguages()
     local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
 
@@ -73,6 +98,9 @@ function Gemini:PoblateLanguages()
     for LangName, LangTable in pairs(self.__LANG) do
         for HookName, HookTable in pairs(LangTable) do
             hook.Add(HookName, "GeminiLanguageHook:" .. LangName .. "." .. HookName, function(...)
+                local CurrentLang = self:GetConfig("Language", "General", true)
+                if ( CurrentLang ~= LangName ) then return end
+
                 local Args = HookTable["Func"](...)
                 local Phrase = HookTable["Phrase"]
 

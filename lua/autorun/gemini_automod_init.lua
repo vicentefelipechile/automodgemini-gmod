@@ -24,10 +24,14 @@ Gemini = Gemini or {
 ------------------------]]--
 
 if SERVER then
-    util.AddNetworkString("Gemini.ReplicateConfig")
+    util.AddNetworkString("Gemini:ReplicateConfig")
+    util.AddNetworkString("Gemini:SetConfig")
 end
 
--- Localize functions
+local FCVAR_PRIVATE = bit.bor(FCVAR_ARCHIVE, FCVAR_PROTECTED)
+local FCVAR_PUBLIC = bit.bor(FCVAR_ARCHIVE, FCVAR_REPLICATED)
+
+
 local print = print
 local EmptyFunc = function() end
 
@@ -132,6 +136,10 @@ local SufixToType = {
     ["b"] = "boolean",
 }
 
+local FindAngleConvar = "(.*)P (.*)Y (.*)R"
+local FindColorConvar = "(.*)R (.*)G (.*)B"
+local FindColorAlphaConvar = "(.*)R (.*)G (.*)B (.*)A"
+
 function Gemini:FromConvar(Name, Category)
     -- Extraer las variables de un convar
     if not isstring(Name) then
@@ -159,6 +167,11 @@ function Gemini:FromConvar(Name, Category)
         self:Error([[The config does not exist.]], Name, "string")
     end
 
+    -- if the value is a PROTECTED convar, it will return the default value
+    if ( CLIENT and self.__cfg[Category][Name][1]:GetFlags() == FCVAR_PRIVATE ) then
+        return "PROTECTED_CONVAR"
+    end
+
     local Value = self.__cfg[Category][Name][1]:GetString()
 
     if ( Value == "" ) then
@@ -173,12 +186,15 @@ function Gemini:FromConvar(Name, Category)
             Value = ( string.sub(Value, 1, -2) == "1" )
         end
     else
-        if ( string.find(Value, "P") and string.find(Value, "R") ) then
-            local P, Y, R = string.match(Value, "(.*)P (.*)Y (.*)R")
-            Value = Angle(P, Y, R)
-        else
-            local R, G, B, A = string.match(Value, "(.*)R (.*)G (.*)B (.*)A")
-            Value = Color(R, G, B, A)
+        if string.match(Value, FindColorAlphaConvar) then
+            local R, G, B, A = string.match(Value, FindColorAlphaConvar)
+            Value = Color(tonumber(R), tonumber(G), tonumber(B), tonumber(A))
+        elseif string.match(Value, FindColorConvar) then
+            local R, G, B = string.match(Value, FindColorConvar)
+            Value = Color(tonumber(R), tonumber(G), tonumber(B))
+        elseif string.match(Value, FindAngleConvar) then
+            local P, Y, R = string.match(Value, FindAngleConvar)
+            Value = Angle(tonumber(P), tonumber(Y), tonumber(R))
         end
     end
 
@@ -232,6 +248,8 @@ end
 
 
 function Gemini:AddConfig(Name, Category, Verification, Default, Private)
+    if CLIENT then return end
+
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:AddConfig() must be a string.]], Name, "string")
     end
@@ -257,7 +275,7 @@ function Gemini:AddConfig(Name, Category, Verification, Default, Private)
     end
 
     -- Eliminar todos los espacios y caracteres especiales
-    local Flags = (Private and {FCVAR_ARCHIVE, FCVAR_PROTECTED}) or {FCVAR_ARCHIVE, FCVAR_REPLICATED}
+    local Flags = ( Private == true ) and FCVAR_PRIVATE or FCVAR_PUBLIC
     local Value = self:ToConvar(Name, Default, Category)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
@@ -267,8 +285,8 @@ function Gemini:AddConfig(Name, Category, Verification, Default, Private)
 end
 
 
-function Gemini:GetConfig(Name, Category, SkipVerification)
-    if SkipVerification == true then
+function Gemini:GetConfig(Name, Category, SkipValidation)
+    if ( SkipValidation == true ) then
         return self:FromConvar(Name, Category)
     end
 
@@ -308,6 +326,18 @@ end
 
 
 function Gemini:SetConfig(Name, Value, Category)
+    if not ( CLIENT and LocalPlayer():IsSuperAdmin() ) then return end
+
+    if CLIENT then
+        net.Start("Gemini:SetConfig")
+            net.WriteString(Name)
+            net.WriteType(Value)
+            net.WriteString(Category)
+        net.SendToServer()
+
+        return
+    end
+
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:SetConfig() must be a string.]], Name, "string")
     end
@@ -340,12 +370,12 @@ function Gemini:SetConfig(Name, Value, Category)
         self:Error([[The value does not match the verification function.]], Value, "any")
     end
 
-    self.__cfg[Category][Name][1] = Value
+    self.__cfg[Category][Name][1]:SetString( self:ToConvar(Name, Value, Category) )
 end
 
 
 function Gemini:PreInit()
-    local Print = Gemini:GeneratePrint({prefix = ""})
+    local Print = self:GeneratePrint({prefix = ""})
 
     Print("==[[==================================")
     Print("       Loading Gemini Automod...")
@@ -370,54 +400,31 @@ function Gemini:PreInit()
     self:AddConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true)
     self:AddConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
 
-    local IncludeFileCfg = {
-        prefix = "[AI] Included: ",
-        func = function(path)
-            if string.StartsWith(path, "sh_") then
-                if SERVER then
-                    AddCSLuaFile("gemini/" .. path)
-                end
-                include("gemini/" .. path)
-            elseif string.StartsWith(path, "cl_") then
-                if SERVER then
-                    AddCSLuaFile("gemini/" .. path)
-                else
-                    include("gemini/" .. path)
-                end
-            elseif string.StartsWith(path, "sv_") then
-                if SERVER then
-                    include("gemini/" .. path)
-                end
-            end
-        end
-    }
-
-    local IncludeFile = self:GeneratePrint(IncludeFileCfg)
-    IncludeFile("gemini/sh_enum.lua")
-    IncludeFile("gemini/sh_language.lua")
+    local IncludeFile = self:GeneratePrint({prefix = "[AI] Included: "})
+    IncludeFile("gemini/sh_enum.lua")       include("gemini/sh_enum.lua")
+    IncludeFile("gemini/sh_language.lua")   include("gemini/sh_language.lua")
+    IncludeFile("gemini/sh_sandbox.lua")    include("gemini/sh_sandbox.lua")
 
     hook.Run("Gemini.PreInit")
+    Gemini:Init()
 end
 
 
 function Gemini:Init()
-    if self.PoblateHooks then
+    if Gemini.PoblateHooks then
         self:PoblateHooks()
     else
-        timer.Simple(0, function()
-            self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "PoblateHooks", "function")
-        end)
+        Gemini:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "PoblateHooks", "function")
     end
 
-    if self.PoblateLanguages then
+    if Gemini.PoblateLanguages then
         self:PoblateLanguages()
     else
-        timer.Simple(0, function()
-            self:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "PoblateLanguages", "function")
-        end)
+        Gemini:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "PoblateLanguages", "function")
     end
 
     hook.Run("Gemini.Init")
+    Gemini:PostInit()
 end
 
 
@@ -427,13 +434,11 @@ function Gemini:PostInit()
     Print("==[[==================================")
     Print("         Gemini Automod Loaded")
     Print("==================================]]==")
+    print("")
 
     hook.Run("Gemini.PostInit")
 end
 
-
-hook.Add("Gemini.PreInit", "Gemini.PreInit_TO_Init", Gemini.Init)
-hook.Add("Gemini.Init", "Gemini.Init_TO_PostInit", Gemini.PostInit)
 Gemini:PreInit()
 
 
@@ -442,14 +447,24 @@ Gemini:PreInit()
 ------------------------]]--
 
 if SERVER then
-    net.Receive("Gemini.ReplicateConfig", function(len, ply)
+    net.Receive("Gemini:ReplicateConfig", function(len, ply)
         if not ply:IsSuperAdmin() then return end
 
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
     end)
+
+    net.Receive("Gemini:SetConfig", function(len, ply)
+        if not ply:IsSuperAdmin() then return end
+
+        local Name = net.ReadString()
+        local Value = net.ReadType()
+        local Category = net.ReadString()
+
+        Gemini:SetConfig(Name, Value, Category)
+    end)
 else
-    net.Receive("Gemini.ReplicateConfig", function(len)
+    net.Receive("Gemini:ReplicateConfig", function(len)
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
     end)
@@ -460,10 +475,10 @@ concommand.Add("gemini_reload", function(ply)
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
 
-        net.Start("Gemini.ReplicateConfig")
+        net.Start("Gemini:ReplicateConfig")
         net.Broadcast()
     elseif ply:IsSuperAdmin() then
-        net.Start("Gemini.ReplicateConfig")
+        net.Start("Gemini:ReplicateConfig")
         net.SendToServer()
     else
         Gemini:Print("You are not a superadmin.")
