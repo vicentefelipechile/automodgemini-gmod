@@ -164,6 +164,9 @@ function Gemini:FromConvar(Name, Category)
     if not self.__cfg[Category] then
         self:Error([[The category does not exist.]], Category, "string")
     elseif not self.__cfg[Category][Name] then
+        if CLIENT then
+            self:Error([[The config does not exist in the CLIENT-SIDE.]], Name, "string")
+        end
         self:Error([[The config does not exist.]], Name, "string")
     end
 
@@ -400,10 +403,14 @@ function Gemini:PreInit()
     self:AddConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true)
     self:AddConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
 
-    local IncludeFile = self:GeneratePrint({prefix = "[AI] Included: "})
-    IncludeFile("gemini/sh_enum.lua")       include("gemini/sh_enum.lua")
-    IncludeFile("gemini/sh_language.lua")   include("gemini/sh_language.lua")
-    IncludeFile("gemini/sh_sandbox.lua")    include("gemini/sh_sandbox.lua")
+    if SERVER then
+        AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
+        AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
+        AddCSLuaFile("gemini/sh_sandbox.lua")   self:Print("File \"gemini/sh_sandbox.lua\" has been send to client.")
+    end
+    include("gemini/sh_enum.lua")       self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
+    include("gemini/sh_language.lua")   self:Print("File \"gemini/sh_language.lua\" has been loaded.")
+    include("gemini/sh_sandbox.lua")    self:Print("File \"gemini/sh_sandbox.lua\" has been loaded.")
 
     hook.Run("Gemini.PreInit")
     Gemini:Init()
