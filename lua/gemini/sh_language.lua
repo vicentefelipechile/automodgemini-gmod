@@ -87,6 +87,7 @@ function Gemini:GetPhrase(LanguageTarget, PhraseName, SkipValidation)
 end
 
 function Gemini:PoblateLanguages()
+    if CLIENT then return end
     local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
 
     for _, File in ipairs(LangFile) do
