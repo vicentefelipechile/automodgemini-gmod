@@ -71,7 +71,9 @@ Gemini:OverrideHookLanguage(LANG, {
     ["DoPlayerDeath"] = function(victim, attacker, dmg)
         local DmgType = DamageType[dmg:GetDamageType()] or DamageType[-1]
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
-        local Coordinates = string.format("(%s, %s, %s)", math.Round(victim:GetPos().x, 2), math.Round(victim:GetPos().y, 2), math.Round(victim:GetPos().z, 2))
+        local VictimPos = victim:GetPos()
+
+        local Coordinates = string.format("(%s, %s, %s)", math.Round(VictimPos.x, 2), math.Round(VictimPos.y, 2), math.Round(VictimPos.z, 2))
 
         return {victim:Name(), AttackerName, Coordinates, DmgType}
     end,
@@ -81,29 +83,35 @@ Gemini:OverrideHookLanguage(LANG, {
     ["PlayerInitialSpawn"] = function(ply)
         return {ply:Name()}
     end,
-    ["PlayerSpawnedEffect"] = function(ply, model, pos)
-        return {ply:Name(), model, string.format("(%s, %s, %s)", math.Round(pos.x, 2), math.Round(pos.y, 2), math.Round(pos.z, 2))}
+    ["PlayerSpawnedEffect"] = function(ply, model, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), model, string.format("(%s, %s, %s)", math.Round(EntPos.x, 2), math.Round(EntPos.y, 2), math.Round(EntPos.z, 2))}
     end,
-    ["PlayerSpawnedNPC"] = function(ply, npc, pos)
-        return {ply:Name(), npc, string.format("(%s, %s, %s)", math.Round(pos.x, 2), math.Round(pos.y, 2), math.Round(pos.z, 2))}
+    ["PlayerSpawnedNPC"] = function(ply, npc)
+        local EntPos = npc:GetPos()
+        return {ply:Name(), npc, string.format("(%s, %s, %s)", math.Round(EntPos.x, 2), math.Round(EntPos.y, 2), math.Round(EntPos.z, 2))}
     end,
-    ["PlayerSpawnedProp"] = function(ply, model, pos)
-        return {ply:Name(), model, string.format("(%s, %s, %s)", math.Round(pos.x, 2), math.Round(pos.y, 2), math.Round(pos.z, 2))}
+    ["PlayerSpawnedProp"] = function(ply, model, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), model, string.format("(%s, %s, %s)", math.Round(EntPos.x, 2), math.Round(EntPos.y, 2), math.Round(EntPos.z, 2))}
     end,
-    ["PlayerSpawnedRagdoll"] = function(ply, model, pos)
-        return {ply:Name(), model, string.format("(%s, %s, %s)", math.Round(pos.x, 2), math.Round(pos.y, 2), math.Round(pos.z, 2))}
+    ["PlayerSpawnedRagdoll"] = function(ply, model, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), model, string.format("(%s, %s, %s)", math.Round(EntPos.x, 2), math.Round(EntPos.y, 2), math.Round(EntPos.z, 2))}
     end,
-    ["PlayerSpawnedSENT"] = function(ply, sent, pos)
-        return {ply:Name(), sent, string.format("(%s, %s, %s)", math.Round(pos.x, 2), math.Round(pos.y, 2), math.Round(pos.z, 2))}
+    ["PlayerSpawnedSENT"] = function(ply, sent)
+        local EntPos = sent:GetPos()
+        return {ply:Name(), sent, string.format("(%s, %s, %s)", math.Round(EntPos.x, 2), math.Round(EntPos.y, 2), math.Round(EntPos.z, 2))}
     end,
-    ["PlayerGiveSWEP"] = function(ply, swep)
-        return {ply:Name(), swep}
+    ["PlayerGiveSWEP"] = function(ply, wpn, swep)
+        return {ply:Name(), swep.PrintName or wpn}
     end,
-    ["PlayerSpawnedVehicle"] = function(ply, vehicle, pos)
-        return {ply:Name(), vehicle, string.format("(%s, %s, %s)", math.Round(pos.x, 2), math.Round(pos.y, 2), math.Round(pos.z, 2))}
+    ["PlayerSpawnedVehicle"] = function(ply, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), ent:GetClass(), string.format("(%s, %s, %s)", math.Round(EntPos.x, 2), math.Round(EntPos.y, 2), math.Round(EntPos.z, 2))}
     end,
     ["OnDamagedByExplosion"] = function(ply, dmg)
-        return {ply:Name(), dmg}
+        return {ply:Name(), dmg:GetDamage()}
     end,
     ["PlayerHurt"] = function(ply, attacker, remaininghealth, damagetaken)
         local AttackerName = ( attacker == ply ) and "el mismo" or GetEntityName(attacker)
