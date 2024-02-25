@@ -46,7 +46,7 @@ local isbool = isbool
 function Gemini:GeneratePrint(cfg)
     if not istable(cfg) then return print end
 
-    cfg.prefix = cfg.prefix or "[AI] "
+    cfg.prefix = cfg.prefix or "[Gemini] "
     cfg.prefix_clr = cfg.prefix_clr or color_white
     cfg.color = cfg.color or color_white
     cfg.func = cfg.func or EmptyFunc
