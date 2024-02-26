@@ -48,7 +48,7 @@ Gemini:AddPhrase(LANG, "OnPlayerStopUseEntity", [[El jugador "%s" dejo de usar l
 
 local DamageType = {
     [-1]            = "algo que no se puede determinar",
-    [6144]          = "el suicidio",
+    [4096 + 2048]   = "el suicidio",
     [DMG_GENERIC]   = "un daño generico o los puños",
     [DMG_CRUSH]     = "un daño por aplastamiento",
     [DMG_BULLET]    = "un daño por un arma o centinela",
