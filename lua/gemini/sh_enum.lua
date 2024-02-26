@@ -1,5 +1,5 @@
 --[[----------------------------------------------------------------------------
-                    Google Gemini Automod - Hooks Enumeration
+                      Google Gemini Automod - Hooks Module
 ----------------------------------------------------------------------------]]--
 
 Gemini.HOOK_ENUM = {}

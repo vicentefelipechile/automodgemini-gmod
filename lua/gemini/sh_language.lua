@@ -1,10 +1,28 @@
 --[[----------------------------------------------------------------------------
-                        Google Gemini Automod - Language
+                     Google Gemini Automod - Language Module
 ----------------------------------------------------------------------------]]--
+
+Gemini.__LANG = Gemini.__LANG or {}
+
+--[[------------------------
+        Configuration
+------------------------]]--
+
+Gemini:AddConfig("CloseToPlayer", "Language", 300)
+
+--[[------------------------
+       Util Functions
+------------------------]]--
 
 local EmptyFunc = function() return "" end
 
-Gemini.__LANG = Gemini.__LANG or {}
+function Gemini:VectorToString(vec)
+    return string.format("(%s, %s, %s)", math.Round(vec.x, 2), math.Round(vec.y, 2), math.Round(vec.z, 2))
+end
+
+--[[------------------------
+       Language Module
+------------------------]]--
 
 function Gemini:CreateLanguage(LanguageTarget)
     Gemini.__LANG[LanguageTarget] = Gemini.__LANG[LanguageTarget] or {}
@@ -104,6 +122,15 @@ function Gemini:PoblateLanguages()
 
                 local Args = HookTable["Func"](...)
                 local Phrase = HookTable["Phrase"]
+
+                if ( Args == false ) then return end
+
+                local PlayersInvolved = {}
+                for _, any in ipairs(unpack(...)) do
+                    if ( isentity(any) and IsValid(any) and any:IsPlayer() ) then
+                        table.insert(PlayersInvolved, any)
+                    end
+                end
 
                 local Log = string.format(Phrase, unpack(Args))
                 self:Print(Log)
