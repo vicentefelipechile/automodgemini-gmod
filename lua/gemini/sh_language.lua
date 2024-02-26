@@ -8,7 +8,7 @@ Gemini.__LANG = Gemini.__LANG or {}
         Configuration
 ------------------------]]--
 
-Gemini:AddConfig("CloseToPlayer", "Language", 300)
+Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
 
 --[[------------------------
        Util Functions
