@@ -3,7 +3,9 @@
 ------------------------]]--
 
 local function GetEntityName(ent)
-    if ent:IsWorld() then
+    if not IsValid(ent) then
+        return "que ya no existe"
+    elseif ent:IsWorld() then
         return "el mundo"
     elseif ent:IsPlayer() then
         return ent:Name()
@@ -12,10 +14,6 @@ local function GetEntityName(ent)
     else
         return ent.PrintName or ent:GetClass()
     end
-end
-
-local function VectorToString(vec)
-    return string.format("(%s, %s, %s)", math.Round(vec.x, 2), math.Round(vec.y, 2), math.Round(vec.z, 2))
 end
 
 local LANG = Gemini:CreateLanguage("Spanish")
@@ -30,7 +28,7 @@ Gemini:AddPhrase(LANG, "PlayerSpawnedRagdoll", [[El jugador "%s" ha creado un ra
 Gemini:AddPhrase(LANG, "PlayerSpawnedSENT", [[El jugador "%s" ha creado la entidad "%s" en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu.]])
 Gemini:AddPhrase(LANG, "PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion.]])
+Gemini:AddPhrase(LANG, "OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
 Gemini:AddPhrase(LANG, "PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
 Gemini:AddPhrase(LANG, "PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
 Gemini:AddPhrase(LANG, "OnCrazyPhysics", [[Se ha detectado fisicas locas en la entidad "%s", esta entidad %s dueño%s.]])
@@ -38,6 +36,15 @@ Gemini:AddPhrase(LANG, "PlayerEnteredVehicle", [[El jugador "%s" ha entrado al a
 Gemini:AddPhrase(LANG, "PlayerLeaveVehicle", [[El jugador "%s" estuvo en el auto "%s" por %s segundos y ahora se fue del auto en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "PlayerOnVehicle", [[El jugador "%s" aun se encuentra en el auto "%s" pero ahora en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "VariableEdited", [[El jugador "%s" edito la entidad "%s" y cambio la variable "%s" a "%s".]])
+Gemini:AddPhrase(LANG, "GravGunOnPickedUp", [[El jugador "%s" agarro la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
+Gemini:AddPhrase(LANG, "GravGunOnDropped", [[El jugador "%s" solto la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
+Gemini:AddPhrase(LANG, "OnPhysgunPickup", [[El jugador "%s" agarro la entidad "%s" con la pistola fisica en las coordenadas %s.]])
+Gemini:AddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad "%s" con la pistola fisica en las coordenadas %s.]])
+Gemini:AddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s.]])
+Gemini:AddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
+Gemini:AddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
+Gemini:AddPhrase(LANG, "OnPlayerStartUseEntity", [[El jugador "%s" empezo a usar la entidad "%s" en las coordenadas %s.]])
+Gemini:AddPhrase(LANG, "OnPlayerStopUseEntity", [[El jugador "%s" dejo de usar la entidad "%s".]])
 
 local DamageType = {
     [-1]            = "algo que no se puede determinar",
@@ -63,12 +70,12 @@ local DamageType = {
     [DMG_POISON]    = "un veneno",
     [DMG_ACID]      = "un acido",
     [DMG_SLOWBURN]  = "un fuego lento",
-    [DMG_REMOVENORAGDOLL]       = "una muerte silenciosa",
+    [DMG_REMOVENORAGDOLL]   = "una muerte silenciosa",
     [DMG_PHYSGUN]   = "la pistola antigravedad",
     [DMG_PLASMA]    = "un daño por plasma",
     [DMG_AIRBOAT]   = "el airboat",
     [DMG_DISSOLVE]  = "una bola de energia (lo desintegraron)",
-    [DMG_BLAST_SURFACE]     = "una explosion en la superficie",
+    [DMG_BLAST_SURFACE] = "una explosion en la superficie",
     [DMG_DIRECT]    = "un daño directo",
     [DMG_BUCKSHOT]  = "una escopeta",
     [DMG_SNIPER]    = "un rifle de francotirador",
@@ -81,7 +88,7 @@ Gemini:OverrideHookLanguage(LANG, {
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
         local VictimPos = victim:GetPos()
 
-        local Coordinates = string.format("(%s, %s, %s)", VectorToString(VictimPos))
+        local Coordinates = string.format("(%s, %s, %s)", Gemini:VectorToString(VictimPos))
 
         return {victim:Name(), AttackerName, Coordinates, DmgType}
     end,
@@ -93,33 +100,33 @@ Gemini:OverrideHookLanguage(LANG, {
     end,
     ["PlayerSpawnedEffect"] = function(ply, model, ent)
         local EntPos = ent:GetPos()
-        return {ply:Name(), model, VectorToString(EntPos)}
+        return {ply:Name(), model, Gemini:VectorToString(EntPos)}
     end,
     ["PlayerSpawnedNPC"] = function(ply, npc)
         local EntPos = npc:GetPos()
-        return {ply:Name(), GAMEMODE:GetDeathNoticeEntityName(npc), VectorToString(EntPos)}
+        return {ply:Name(), GAMEMODE:GetDeathNoticeEntityName(npc), Gemini:VectorToString(EntPos)}
     end,
     ["PlayerSpawnedProp"] = function(ply, model, ent)
         local EntPos = ent:GetPos()
-        return {ply:Name(), model, VectorToString(EntPos)}
+        return {ply:Name(), model, Gemini:VectorToString(EntPos)}
     end,
     ["PlayerSpawnedRagdoll"] = function(ply, model, ent)
         local EntPos = ent:GetPos()
-        return {ply:Name(), model, VectorToString(EntPos)}
+        return {ply:Name(), model, Gemini:VectorToString(EntPos)}
     end,
     ["PlayerSpawnedSENT"] = function(ply, sent)
         local EntPos = sent:GetPos()
-        return {ply:Name(), GetEntityName(sent), VectorToString(EntPos)}
+        return {ply:Name(), GetEntityName(sent), Gemini:VectorToString(EntPos)}
     end,
     ["PlayerGiveSWEP"] = function(ply, wpn, swep)
         return {ply:Name(), swep.PrintName or wpn}
     end,
     ["PlayerSpawnedVehicle"] = function(ply, ent)
         local EntPos = ent:GetPos()
-        return {ply:Name(), ent:GetClass(), VectorToString(EntPos)}
+        return {ply:Name(), ent:GetClass(), Gemini:VectorToString(EntPos)}
     end,
     ["OnDamagedByExplosion"] = function(ply, dmg)
-        return {ply:Name(), dmg:GetDamage()}
+        return {ply:Name(), dmg:GetDamage(), GetEntityName(dmg:GetAttacker())}
     end,
     ["PlayerHurt"] = function(ply, attacker, remaininghealth, damagetaken)
         local AttackerName = ( attacker == ply ) and "el mismo" or GetEntityName(attacker)
@@ -140,17 +147,60 @@ Gemini:OverrideHookLanguage(LANG, {
     end,
     ["PlayerEnteredVehicle"] = function(ply, vehicle)
         local EntPos = vehicle:GetPos()
-        return {ply:Name(), vehicle:GetClass(), VectorToString(EntPos)}
+        return {ply:Name(), vehicle:GetClass(), Gemini:VectorToString(EntPos)}
     end,
     ["PlayerLeaveVehicle"] = function(ply, vehicle)
         local EntPos = vehicle:GetPos()
-        return {ply:Name(), vehicle:GetClass(), math.Round(CurTime() - ply.__LAST_VEHICLE, 2), VectorToString(EntPos)}
+        return {ply:Name(), vehicle:GetClass(), math.Round(CurTime() - ply.__LAST_VEHICLE, 2), Gemini:VectorToString(EntPos)}
     end,
     ["PlayerOnVehicle"] = function(ply)
         local EntPos = ply:GetPos()
-        return {ply:Name(), ply.__LAST_VEHICLE_NAME, VectorToString(EntPos)}
+        return {ply:Name(), ply.__LAST_VEHICLE_NAME, Gemini:VectorToString(EntPos)}
     end,
     ["VariableEdited"] = function(ent, ply, key, val)
         return {ply:Name(), GetEntityName(ent), key, val}
+    end,
+    ["GravGunOnPickedUp"] = function(ply, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+    end,
+    ["GravGunOnDropped"] = function(ply, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+    end,
+    ["OnPhysgunPickup"] = function(ply, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+    end,
+    ["PhysgunDrop"] = function(ply, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+    end,
+    ["PlayerSay"] = function(ply, text, IsTeamChat)
+        -- Obtener todos los jugadores cercanos a "ply" en un radio de 300 unidades
+        local NearbyPlayersPhrase = "nadie"
+        local NearToPlayer = Gemini:GetConfig("CloseToPlayer", "Language", true)
+
+        for k, plys in ipairs(player.GetAll()) do
+            if plys == ply then continue end
+            if ply:GetPos():Distance(plys:GetPos()) <= NearToPlayer then
+                NearbyPlayersPhrase = NearbyPlayersPhrase .. (NearbyPlayersPhrase == "nadie" and "" or ", ") .. plys:Name()
+            end
+        end
+
+        return {ply:Name(), text, NearbyPlayersPhrase}
+    end,
+    ["PlayerDisconnected"] = function(ply)
+        return {ply:Name()}
+    end,
+    ["PlayerSilentDeath"] = function(ply)
+        return {ply:Name()}
+    end,
+    ["OnPlayerStartUseEntity"] = function(ply, ent)
+        local EntPos = ent:GetPos()
+        return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+    end,
+    ["OnPlayerStopUseEntity"] = function(ply, ent)
+        return {ply:Name(), GetEntityName(ent)}
     end
 })
