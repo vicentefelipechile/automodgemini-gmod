@@ -116,6 +116,8 @@ function Gemini:PoblateLanguages()
     -- Poblate hook functions
     for LangName, LangTable in pairs(self.__LANG) do
         for HookName, HookTable in pairs(LangTable) do
+            if ( HookTable["Func"] == EmptyFunc ) then continue end
+
             hook.Add(HookName, "GeminiLanguageHook:" .. LangName .. "." .. HookName, function(...)
                 local CurrentLang = self:GetConfig("Language", "General", true)
                 if ( CurrentLang ~= LangName ) then return end
@@ -128,7 +130,7 @@ function Gemini:PoblateLanguages()
                 local PlayersInvolved = {}
                 for _, any in ipairs({...}) do
                     if ( isentity(any) and IsValid(any) and any:IsPlayer() ) then
-                        table.insert(PlayersInvolved, any)
+                        PlayersInvolved[any] = true
                     end
                 end
 
