@@ -126,7 +126,7 @@ function Gemini:PoblateLanguages()
                 if ( Args == false ) then return end
 
                 local PlayersInvolved = {}
-                for _, any in ipairs(unpack(...)) do
+                for _, any in ipairs({...}) do
                     if ( isentity(any) and IsValid(any) and any:IsPlayer() ) then
                         table.insert(PlayersInvolved, any)
                     end
