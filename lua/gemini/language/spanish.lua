@@ -3,10 +3,10 @@
 ------------------------]]--
 
 local function GetEntityName(ent)
-    if not IsValid(ent) then
-        return "que ya no existe"
-    elseif ent:IsWorld() then
+    if ent:IsWorld() then
         return "el mundo"
+    elseif not IsValid(ent) then
+        return "algo que ya no existe"
     elseif ent:IsPlayer() then
         return ent:Name()
     elseif ent:IsNPC() then

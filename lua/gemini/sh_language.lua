@@ -133,9 +133,10 @@ function Gemini:PoblateLanguages()
                         PlayersInvolved[any] = true
                     end
                 end
+                PlayersInvolved = table.GetKeys(PlayersInvolved)
 
                 local Log = string.format(Phrase, unpack(Args))
-                self:Print(Log)
+                hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
             end)
         end
     end

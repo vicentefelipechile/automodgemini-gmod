@@ -407,6 +407,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_sandbox.lua")   self:Print("File \"gemini/sh_sandbox.lua\" has been send to client.")
+        include("gemini/sv_logger.lua")         self:Print("File \"gemini/sv_logger.lua\" has been loaded.")
     end
     include("gemini/sh_enum.lua")       self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
     include("gemini/sh_language.lua")   self:Print("File \"gemini/sh_language.lua\" has been loaded.")
@@ -418,16 +419,24 @@ end
 
 
 function Gemini:Init()
-    if Gemini.PoblateHooks then
+    if self.PoblateHooks then
         self:PoblateHooks()
     else
-        Gemini:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "PoblateHooks", "function")
+        self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "PoblateHooks", "function")
     end
 
-    if Gemini.PoblateLanguages then
+    if self.PoblateLanguages then
         self:PoblateLanguages()
     else
-        Gemini:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "PoblateLanguages", "function")
+        self:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "PoblateLanguages", "function")
+    end
+
+    if SERVER then
+        if self.LoggerCheckTable then
+            self:LoggerCheckTable()
+        else
+            self:Error([[The function "LoggerCheckTable" has been replaced by another third-party addon!!!]], "LoggerCheckTable", "function")
+        end
     end
 
     hook.Run("Gemini.Init")
