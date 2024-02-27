@@ -229,7 +229,7 @@ function Gemini:ToConvar(Name, Value, Category)
     Name = string.lower( string.gsub(Name, "%W", "") )
 
     if not self.__cfg[Category] then
-        self:Error([[The category does not exist.]], Category, "string")
+        self.__cfg[Category] = {}
     end
 
     local ValueType = IsColor(Value) and "color" or type(Value)

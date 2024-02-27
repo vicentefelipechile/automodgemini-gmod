@@ -40,14 +40,13 @@ Gemini:AddPhrase(LANG, "GravGunOnPickedUp", [[El jugador "%s" agarro la entidad 
 Gemini:AddPhrase(LANG, "GravGunOnDropped", [[El jugador "%s" solto la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "OnPhysgunPickup", [[El jugador "%s" agarro la entidad "%s" con la pistola fisica en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad "%s" con la pistola fisica en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s.]])
+Gemini:AddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
 Gemini:AddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
-Gemini:AddPhrase(LANG, "OnPlayerStartUseEntity", [[El jugador "%s" empezo a usar la entidad "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "OnPlayerStopUseEntity", [[El jugador "%s" dejo de usar la entidad "%s".]])
 
 local DamageType = {
     [-1]            = "algo que no se puede determinar",
+    [4096 + 2]      = "la crossbow",
     [4096 + 2048]   = "el suicidio",
     [DMG_GENERIC]   = "un daño generico o los puños",
     [DMG_CRUSH]     = "un daño por aplastamiento",
@@ -84,13 +83,10 @@ local DamageType = {
 
 Gemini:OverrideHookLanguage(LANG, {
     ["DoPlayerDeath"] = function(victim, attacker, dmg)
-        local DmgType = DamageType[dmg:GetDamageType()] or DamageType[-1]
+        local DmgType = DamageType[dmg:GetDamageType()] or dmg:GetAmmoType() and "una bala de " .. game.GetAmmoName(dmg:GetAmmoType()) or "algo que no se puede determinar"
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
-        local VictimPos = victim:GetPos()
 
-        local Coordinates = string.format("(%s, %s, %s)", Gemini:VectorToString(VictimPos))
-
-        return {victim:Name(), AttackerName, Coordinates, DmgType}
+        return {victim:Name(), AttackerName, Gemini:VectorToString(victim:GetPos()), DmgType}
     end,
     ["PlayerSpawn"] = function(ply, time)
         return {ply:Name(), math.Round(ply.__LAST_DEATH and CurTime() - ply.__LAST_DEATH or 0, 2)}
@@ -126,11 +122,11 @@ Gemini:OverrideHookLanguage(LANG, {
         return {ply:Name(), ent:GetClass(), Gemini:VectorToString(EntPos)}
     end,
     ["OnDamagedByExplosion"] = function(ply, dmg)
-        return {ply:Name(), dmg:GetDamage(), GetEntityName(dmg:GetAttacker())}
+        return {ply:Name(), math.Round(dmg:GetDamage(), 2), dmg:GetAttacker() == ply and "el mismo" or GetEntityName(dmg:GetAttacker())}
     end,
     ["PlayerHurt"] = function(ply, attacker, remaininghealth, damagetaken)
         local AttackerName = ( attacker == ply ) and "el mismo" or GetEntityName(attacker)
-        return {ply:Name(), damagetaken, AttackerName, remaininghealth}
+        return {ply:Name(), math.Round(damagetaken, 2), AttackerName, remaininghealth}
     end,
     ["PlayerChangedTeam"] = function(ply, newteam, oldteam)
         return {ply:Name(), team.GetName(newteam), team.GetName(oldteam)}
@@ -184,23 +180,22 @@ Gemini:OverrideHookLanguage(LANG, {
         for k, plys in ipairs(player.GetAll()) do
             if plys == ply then continue end
             if ply:GetPos():Distance(plys:GetPos()) <= NearToPlayer then
-                NearbyPlayersPhrase = NearbyPlayersPhrase .. (NearbyPlayersPhrase == "nadie" and "" or ", ") .. plys:Name()
+                if NearbyPlayersPhrase == "nadie" then
+                    NearbyPlayersPhrase = ""
+                end
+
+                NearbyPlayersPhrase = NearbyPlayersPhrase .. plys:Name() .. ", "
             end
         end
 
-        return {ply:Name(), text, NearbyPlayersPhrase}
+        NearbyPlayersPhrase = NearbyPlayersPhrase == "nadie" and "nadie" or NearbyPlayersPhrase:sub(1, -3)
+
+        return {ply:Name(), text, NearbyPlayersPhrase, Gemini:VectorToString(ply:GetPos())}
     end,
     ["PlayerDisconnected"] = function(ply)
         return {ply:Name()}
     end,
     ["PlayerSilentDeath"] = function(ply)
         return {ply:Name()}
-    end,
-    ["OnPlayerStartUseEntity"] = function(ply, ent)
-        local EntPos = ent:GetPos()
-        return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
-    end,
-    ["OnPlayerStopUseEntity"] = function(ply, ent)
-        return {ply:Name(), GetEntityName(ent)}
     end
 })
