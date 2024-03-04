@@ -408,6 +408,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_sandbox.lua")   self:Print("File \"gemini/sh_sandbox.lua\" has been send to client.")
         include("gemini/sv_logger.lua")         self:Print("File \"gemini/sv_logger.lua\" has been loaded.")
+        include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
     end
     include("gemini/sh_enum.lua")       self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
     include("gemini/sh_language.lua")   self:Print("File \"gemini/sh_language.lua\" has been loaded.")
