@@ -219,7 +219,7 @@ Gemini:OverrideHookLanguage(LANG, {
    Gamemodes Descriptions
 ------------------------]]--
 
-Gemini:AddPhrase(LANG, "default", [[Título del Modo de Juego:
+Gemini:AddPhrase(LANG, "default", [[Modo de Juego:
 Ningún Modo de Juego Conocido
 
 Descripcion:
@@ -244,7 +244,7 @@ El comportamiento de los jugadores no esta establecido, por lo que se asumira qu
 Reglas:
 Las unicas reglas conocidas son las reglas establecidas por el servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "sandbox", [[Título del Modo de Juego:
+Gemini:AddPhrase(LANG, "sandbox", [[Modo de Juego:
 Sandbox
 
 Descripcion:
@@ -269,7 +269,7 @@ El comportamiento de los jugadores cambia dependiendo de la situacion, por ejemp
 Reglas:
 Las reglas del Sandbox son establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "darkrp", [[Título del Modo de Juego:
+Gemini:AddPhrase(LANG, "darkrp", [[Modo de Juego:
 DarkRP
 
 Descripcion:
@@ -299,7 +299,7 @@ Existen reglas predefinidad por el modo de juego, como por ejemplo:
 - FailRP: Hacer algo que no tiene sentido o que no esta dentro del contexto de que estan en un roleplay, como un policia robando a un civil.
 Y tambien existen reglas establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "terrortown", [[Título del Modo de Juego:
+Gemini:AddPhrase(LANG, "terrortown", [[Modo de Juego:
 Trouble in T Town
 
 Descripcion:
@@ -322,3 +322,30 @@ El comportamiento de los jugadores depende del rol que tengan, por ejemplo si un
 
 Reglas:
 Las reglas de Trouble in T Town son establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
+
+Gemini:AddPhrase(LANG, "trashcompactor", [[Modo de Juego:
+Trash Compactor
+
+Descripcion:
+Trash Compactor consiste en un modo de juego donde hay un jugador que tirara basura (props/entidades) a los jugadores de abajo y los jugadores de abajo tienen que esquivar los props.
+
+Objetivo:
+El objetivo del jugador que esta arriba es de asesinar a todos los jugadores que se encuentren abajo con los props que tiene, mientras que el objetivo de los jugadores que estan abajo es de esquivar los props que el jugador de arriba les tira, si el tiempo se acaba y los jugadores de abajo sobreviven, estos ganan, pero si el jugador de arriba mata a todos los jugadores de abajo, este gana.
+
+Mecanicas Conocidas:
+- Props y entidades
+- El jugador de arriba disponde de props para tirar
+- Los jugadores de abajo tienen un arma para disparar al jugador de arriba si llega a bajar
+- Los jugadores de abajo tambien pueden matar al jugador de arriba si se asoma
+- El jugador de arriba tiene un tiempo limite para matar a los jugadores de abajo
+- El jugador de arriba disponde de la physgun, gravity gun y granadas
+- Los jugadores pueden manualmente participar como el jugador de arriba
+
+Mapas/Entornos:
+Los mapas que estan dedicados a este modo de juego tienen entidades/props que se pueden tirar a los jugadores de abajo, en cambio los jugadores de abajo estan expuestos a los props que el jugador de arriba les tira ya que la zona de abajo es un lugar abierto. Los mapas tambien tienen un trigger que empuja los props con mas fuerza para mata a los jugadores de abajo.
+
+Comportamiento de los jugadores:
+Habra un jugador que intentara o matara a los jugadores con props, por lo que es normal que los jugadores de abajo se muevan constantemente para esquivar los props que el jugador de arriba les tira, tambien es normal que el jugador de arriba tome props con la physgun o gravity gun para tirarlos a los jugadores de abajo.
+
+Reglas:
+Debido a que el modo de juego es muy simple y los mapas estan hechos exclusivamente para este modo de juego, no hay reglas establecidas por el modo de juego, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
