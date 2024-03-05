@@ -16,7 +16,7 @@ Gemini = Gemini or {
     __cfg = {["general"] = {}},
     Version = "1.0",
     Author = "vicentefelipechile",
-    URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s"
+    URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 }
 
 --[[------------------------
@@ -329,7 +329,7 @@ end
 
 
 function Gemini:SetConfig(Name, Value, Category)
-    if not ( CLIENT and LocalPlayer():IsSuperAdmin() ) then return end
+    if ( CLIENT and not LocalPlayer():IsSuperAdmin() ) then return end
 
     if CLIENT then
         net.Start("Gemini:SetConfig")
@@ -360,6 +360,9 @@ function Gemini:SetConfig(Name, Value, Category)
             self:Error([[The second argument of Gemini:SetConfig() must not be empty.]], Category, "string")
         end
     end
+
+    Category = string.lower( string.gsub(Category, "%W", "") )
+    Name = string.lower( string.gsub(Name, "%W", "") )
 
     if not self.__cfg[Category] then
         self:Error([[The category does not exist.]], Category, "string")
@@ -409,13 +412,17 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_sandbox.lua")   self:Print("File \"gemini/sh_sandbox.lua\" has been send to client.")
         include("gemini/sv_logger.lua")         self:Print("File \"gemini/sv_logger.lua\" has been loaded.")
         include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
+        include("gemini/sv_httpcode.lua")       self:Print("File \"gemini/sv_httpcode.lua\" has been loaded.")
+        include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
     end
     include("gemini/sh_enum.lua")       self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
     include("gemini/sh_language.lua")   self:Print("File \"gemini/sh_language.lua\" has been loaded.")
     include("gemini/sh_sandbox.lua")    self:Print("File \"gemini/sh_sandbox.lua\" has been loaded.")
 
     hook.Run("Gemini.PreInit")
-    Gemini:Init()
+    hook.Add("PreGamemodeLoaded", "Gemini.PreInit_TO_Init", function()
+        Gemini:Init()
+    end)
 end
 
 
@@ -437,6 +444,12 @@ function Gemini:Init()
             self:LoggerCheckTable()
         else
             self:Error([[The function "LoggerCheckTable" has been replaced by another third-party addon!!!]], "LoggerCheckTable", "function")
+        end
+
+        if self.LoadModels then
+            self:LoadModels()
+        else
+            self:Error([[The function "LoadModels" has been replaced by another third-party addon!!!]], "LoadModels", "function")
         end
     end
 

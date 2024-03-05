@@ -58,6 +58,18 @@ Gemini.__LOGGER = {
         LIMIT
             %s
     ]],
+    ["GETONLYLOGS"] = [[
+        SELECT
+            strftime('Day %%d %%H:%%M:%%S', geminilog_time) || ' - ' || geminilog_log AS geminilog_log
+        FROM
+            gemini_log
+        WHERE
+            geminilog_user1 = %s OR geminilog_user2 = %s OR geminilog_user3 = %s OR geminilog_user4 = %s
+        ORDER BY
+            geminilog_id DESC
+        LIMIT
+            %s
+    ]],
     ["INSERTLOG"] = [[
         INSERT INTO
             gemini_log (geminilog_log, geminilog_user1, geminilog_user2, geminilog_user3, geminilog_user4)
@@ -102,10 +114,11 @@ function Gemini:LoggerGetPlayer(ply)
     end
 end
 
-function Gemini:LoggerGetLogsPlayer(ply, Limit)
+function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
     local UserID = isnumber(ply) and ply or Gemini:LoggerGetPlayer(ply)
+    local SQLScript = OnlyLogs and self.__LOGGER.GETONLYLOGS or self.__LOGGER.GETPLAYERLOGS
 
-    local QueryResult = sql_Query( string.format(self.__LOGGER.GETPLAYERLOGS, UserID, UserID, UserID, UserID, Limit) )
+    local QueryResult = sql_Query( string.format(SQLScript, UserID, UserID, UserID, UserID, Limit) )
 
     return QueryResult
 end

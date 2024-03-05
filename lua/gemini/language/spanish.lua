@@ -219,6 +219,8 @@ Gemini:OverrideHookLanguage(LANG, {
    Gamemodes Descriptions
 ------------------------]]--
 
+Gemini:AddPhrase(LANG, "context", [[La información que se muestra a continuacion se trata de los modos de juego que existen en Garry's Mod]])
+
 Gemini:AddPhrase(LANG, "default", [[Modo de Juego:
 Ningún Modo de Juego Conocido
 

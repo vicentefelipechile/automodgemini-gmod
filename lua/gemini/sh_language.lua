@@ -25,7 +25,7 @@ end
 ------------------------]]--
 
 function Gemini:CreateLanguage(LanguageTarget)
-    Gemini.__LANG[LanguageTarget] = Gemini.__LANG[LanguageTarget] or {}
+    Gemini.__LANG[LanguageTarget] = {}
 
     return LanguageTarget
 end
