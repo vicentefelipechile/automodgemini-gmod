@@ -10,8 +10,6 @@ function Gemini:AddHook( HookName, HookFunction )
         self:Error( "The first argument of Gemini:AddHook() must be a string", HookName, "string" )
     elseif ( HookName == "" ) then
         self:Error( "The first argument of Gemini:AddHook() must not be an empty string", HookName, "string" )
-    elseif isfunction( Gemini.HOOK_ENUM[HookName] ) then
-        self:Error( "The hook name '" .. HookName .. "' is already in use", HookName, "string" )
     end
 
     if not isfunction( HookFunction ) then

@@ -67,6 +67,10 @@ function Gemini:AddPhrase(LanguageTarget, PhraseName, Phrase)
 end
 
 function Gemini:GetPhrase(LanguageTarget, PhraseName, SkipValidation)
+    if ( LanguageTarget == nil ) then
+        LanguageTarget = self:GetConfig("Language", "General", true)
+    end
+
     if ( SkipValidation == true ) then
         return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
     end
@@ -95,13 +99,15 @@ function Gemini:GetPhrase(LanguageTarget, PhraseName, SkipValidation)
 end
 
 function Gemini:PoblateLanguages()
-    if CLIENT then return end
     local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
 
     for _, File in ipairs(LangFile) do
         include("gemini/language/" .. File)
         self:Print("Loaded language file: " .. File)
     end
+
+    -- The client does not need to poblate the hook functions
+    if CLIENT then return end
 
     -- Poblate hook functions
     for LangName, LangTable in pairs(self.__LANG) do

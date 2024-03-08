@@ -24,3 +24,14 @@ Gemini:AddHook("PostGamemodeLoaded", function()
         end
     end)
 end)
+
+Gemini:AddHook("PostCleanupMap", function()
+    for _, ply in ipairs(player.GetAll()) do
+        ply.__LAST_VEHICLE = nil
+        ply.__LAST_VEHICLE_NAME = nil
+
+        local Log = Gemini:GetPhrase(nil, "PostCleanupMap")
+
+        hook.Run("Gemini.Log", Log, ply)
+    end
+end)

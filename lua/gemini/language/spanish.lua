@@ -51,6 +51,7 @@ Gemini:AddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad "%s" co
 Gemini:AddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
 Gemini:AddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
 Gemini:AddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
+Gemini:AddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador ha presenciado el evento.]])
 
 
 --[[------------------------
