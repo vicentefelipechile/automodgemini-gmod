@@ -11,16 +11,6 @@ Gemini.__LANG = Gemini.__LANG or {}
 Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
 
 --[[------------------------
-       Util Functions
-------------------------]]--
-
-local EmptyFunc = function() return "" end
-
-function Gemini:VectorToString(vec)
-    return string.format("(%s, %s, %s)", math.Round(vec.x, 2), math.Round(vec.y, 2), math.Round(vec.z, 2))
-end
-
---[[------------------------
        Language Module
 ------------------------]]--
 

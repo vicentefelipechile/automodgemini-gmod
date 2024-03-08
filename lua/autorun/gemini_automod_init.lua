@@ -407,6 +407,7 @@ function Gemini:PreInit()
     self:AddConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
 
     if SERVER then
+        AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_sandbox.lua")   self:Print("File \"gemini/sh_sandbox.lua\" has been send to client.")
@@ -415,6 +416,7 @@ function Gemini:PreInit()
         include("gemini/sv_httpcode.lua")       self:Print("File \"gemini/sv_httpcode.lua\" has been loaded.")
         include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
     end
+    include("gemini/sh_util.lua")       self:Print("File \"gemini/sh_util.lua\" has been loaded.")
     include("gemini/sh_enum.lua")       self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
     include("gemini/sh_language.lua")   self:Print("File \"gemini/sh_language.lua\" has been loaded.")
     include("gemini/sh_sandbox.lua")    self:Print("File \"gemini/sh_sandbox.lua\" has been loaded.")
@@ -513,4 +515,17 @@ concommand.Add("gemini_reload", function(ply)
     else
         Gemini:Print("You are not a superadmin.")
     end
+end)
+
+
+--[[------------------------
+       Credits Command
+------------------------]]--
+
+concommand.Add("gemini_credits", function()
+    Gemini:Print("==== Gemini Automod ====")
+    Gemini:Print("Version:   ", Gemini.Version)
+    Gemini:Print("Author:    ", Gemini.Author)
+    Gemini:Print("(DEV) URL: ", Gemini.URL)
+    Gemini:Print("==== Gemini Automod ====")
 end)

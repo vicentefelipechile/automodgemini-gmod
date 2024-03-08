@@ -2,6 +2,10 @@
                       Google Gemini Automod - Gemini Module
 ----------------------------------------------------------------------------]]--
 
+--[[------------------------
+       Gamemode Models
+------------------------]]--
+
 Gemini.__MODELS = Gemini.__MODELS or {
     ["default"] = nil,
     ["sandbox"] = nil,
@@ -26,6 +30,8 @@ function Gemini:LoadModels()
     self:AddConfig("TopK", "Gemini", self.VERIFICATION_TYPE.number, 1)
     self:AddConfig("MaxTokens", "Gemini", self.VERIFICATION_TYPE.number, 2048)
     self:AddConfig("APIKey", "Gemini", self.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
+    self:AddConfig("DebugEnabled", "Gemini", self.VERIFICATION_TYPE.boolean, false)
+    self:AddConfig("DebugMessage", "Gemini", self.VERIFICATION_TYPE.string, "Make a summary of the logs of the player.")
 
     -- Safety settings
     self:AddConfig("SafetyHarassment", "Gemini", self.VERIFICATION_TYPE.number, 2)
@@ -46,6 +52,12 @@ function Gemini:LoadModels()
         ["HARM_CATEGORY_DANGEROUS_CONTENT"] = self.__SAFETY_ENUM[ self:GetConfig("SafetyDangerousContent", "Gemini") ]
     }
 end
+
+
+
+--[[------------------------
+       Safety Settings
+------------------------]]--
 
 function Gemini:GenerationResetConfig()
     self:SetConfig("ModelTarget", "auto", "Gemini")
@@ -87,6 +99,12 @@ function Gemini:GetSafetyConfig(UseCache)
     return SafetySettings
 end
 
+
+
+--[[------------------------
+       Pre-Processing
+------------------------]]--
+
 function Gemini:GetGamemodeModel()
     local ModelTarget = self:GetConfig("ModelTarget", "Gemini")
 
@@ -109,7 +127,28 @@ function Gemini:GetLogsOfPlayer(Player, Amount)
     return FormatedLogs
 end
 
+
+
+--[[------------------------
+        HTTP Request
+------------------------]]--
+
+local function HandleGeminiResponse(Code, BodyResponse, Headers)
+    local DebugEnabled = Gemini:GetConfig("DebugEnabled", "Gemini")
+    Gemini:GetHTTPDescription(Code)
+
+    if ( Code == 200 ) then
+        Gemini:Print("Response from Gemini API: " .. util.JSONToTable(BodyResponse)["candidates"][1]["content"]["parts"][1]["text"])
+
+        if DebugEnabled then
+            file.Write("gemini_response.txt", BodyResponse)
+        end
+    end
+end
+
 function Gemini:MakeRequest(Data)
+    local DebugEnabled = self:GetConfig("DebugEnabled", "Gemini")
+
     --[[ Body ]]--
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
     local GamemodeModel = self:GetGamemodeModel()
@@ -129,13 +168,17 @@ function Gemini:MakeRequest(Data)
         table.insert(Parts, {["text"] = Text})
     end
 
-    table.insert(Parts, {["text"] = "Segun viendo el registro de actividad, con tus propias palabras escribe, ¿Que conclusiones puedes sacar?"})
+    if DebugEnabled then
+        table.insert(Parts, {["text"] = self:GetConfig("DebugMessage", "Gemini")})
+    end
 
     Body["contents"] = {{["parts"] = Parts}}
     local APIKey = self:GetConfig("APIKey", "Gemini")
 
     --[[ Debug ]]--
-    file.Write("gemini_request.txt", util.TableToJSON(Body, true))
+    if DebugEnabled then
+        file.Write("gemini_request.txt", util.TableToJSON(Body, true))
+    end
 
     --[[ Request ]]--
     local RequestMade = HTTP({
@@ -143,16 +186,9 @@ function Gemini:MakeRequest(Data)
         ["method"] = "POST",
         ["type"] = "application/json",
         ["body"] = util.TableToJSON(Body),
-        ["success"] = function(Code, BodyResponse, Headers)
-            Gemini:GetHTTPDescription(Code)
-
-            if ( Code == 200 ) then
-                self:Print("Response from Gemini API: " .. util.JSONToTable(BodyResponse)["candidates"][1]["content"]["parts"][1]["text"])
-                file.Write("gemini_response.txt", BodyResponse)
-            end
-        end,
+        ["success"] = HandleGeminiResponse,
         ["failed"] = function(Error)
-            self:Print("Failed to make request to Gemini API. Error: " .. Error)
+            self:Print("Failed to make request to Gemini API. Error: ", Error)
         end
     })
 
