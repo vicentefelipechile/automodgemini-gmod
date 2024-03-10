@@ -66,7 +66,7 @@ function Gemini:AddPhrase(LanguageTarget, PhraseName, Phrase)
     self.__LANG[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = EmptyFunc}
 end
 
-function Gemini:GetPhrase(LanguageTarget, PhraseName, SkipValidation)
+function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
     if ( LanguageTarget == nil ) then
         LanguageTarget = self:GetConfig("Language", "General", true)
     end
@@ -75,16 +75,16 @@ function Gemini:GetPhrase(LanguageTarget, PhraseName, SkipValidation)
         return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
     end
 
-    if not isstring(LanguageTarget) then
-        self:Error([[The first argument of Gemini:GetPhrase() is not a string]], LanguageTarget, "string")
-    elseif (LanguageTarget == "") then
-        self:Error([[The first argument of Gemini:GetPhrase() is an empty string]], LanguageTarget, "string")
+    if not isstring(PhraseName) then
+        self:Error([[The first argument of Gemini:GetPhrase() is not a string]], PhraseName, "string")
+    elseif (PhraseName == "") then
+        self:Error([[The first argument of Gemini:GetPhrase() is an empty string]], PhraseName, "string")
     end
 
-    if not isstring(PhraseName) then
-        self:Error([[The second argument of Gemini:GetPhrase() is not a string]], PhraseName, "string")
-    elseif (PhraseName == "") then
-        self:Error([[The second argument of Gemini:GetPhrase() is an empty string]], PhraseName, "string")
+    if not isstring(LanguageTarget) then
+        self:Error([[The second argument of Gemini:GetPhrase() is not a string]], LanguageTarget, "string")
+    elseif (LanguageTarget == "") then
+        self:Error([[The second argument of Gemini:GetPhrase() is an empty string]], LanguageTarget, "string")
     end
 
     if not istable(self.__LANG[LanguageTarget]) then

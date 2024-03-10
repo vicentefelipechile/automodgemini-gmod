@@ -15,13 +15,11 @@ Gemini.__MODELS = Gemini.__MODELS or {
 }
 
 function Gemini:LoadModels()
-    self.LanguageTarget = self:GetConfig("Language", "General", true)
-
-    self.__MODELS["default"] = self:GetPhrase(self.LanguageTarget, "default")
-    self.__MODELS["sandbox"] = self:GetPhrase(self.LanguageTarget, "sandbox")
-    self.__MODELS["darkrp"] = self:GetPhrase(self.LanguageTarget, "darkrp")
-    self.__MODELS["terrortown"] = self:GetPhrase(self.LanguageTarget, "terrortown")
-    self.__MODELS["trashcompactor"] = self:GetPhrase(self.LanguageTarget, "trashcompactor")
+    self.__MODELS["default"] = self:GetPhrase("default")
+    self.__MODELS["sandbox"] = self:GetPhrase("sandbox")
+    self.__MODELS["darkrp"] = self:GetPhrase("darkrp")
+    self.__MODELS["terrortown"] = self:GetPhrase("terrortown")
+    self.__MODELS["trashcompactor"] = self:GetPhrase("trashcompactor")
 
     self:AddConfig("ModelTarget", "Gemini", self.VERIFICATION_TYPE.string, "auto")
     self:AddConfig("ModelName", "Gemini", self.VERIFICATION_TYPE.string, "gemini-1.0-pro")
@@ -67,7 +65,7 @@ function Gemini:GenerationResetConfig()
     self:SetConfig("TopK", 1, "Gemini")
     self:SetConfig("MaxTokens", 2048, "Gemini")
 
-    self:Print("Generation reset to default settings.")
+    self:Print("Generation reseted to default settings.")
 end
 
 function Gemini:GetGenerationConfig()
@@ -111,9 +109,9 @@ function Gemini:GetGamemodeModel()
     if ( ModelTarget == "auto" ) then
         local GamemodeModel = self.__MODELS[engine.ActiveGamemode()] or self.__MODELS["default"]
 
-        return self:GetPhrase(self.LanguageTarget, "context") .. "\n\n" .. GamemodeModel
+        return self:GetPhrase("context") .. "\n\n" .. GamemodeModel
     else
-        return self:GetPhrase(self.LanguageTarget, "context") .. "\n\n" .. self.__MODELS[ModelTarget]
+        return self:GetPhrase("context") .. "\n\n" .. self.__MODELS[ModelTarget]
     end
 end
 
@@ -138,11 +136,11 @@ local function HandleGeminiResponse(Code, BodyResponse, Headers)
     Gemini:GetHTTPDescription(Code)
 
     if ( Code == 200 ) then
-        Gemini:Print("Response from Gemini API: " .. util.JSONToTable(BodyResponse)["candidates"][1]["content"]["parts"][1]["text"])
-
         if DebugEnabled then
             file.Write("gemini_response.txt", BodyResponse)
         end
+
+        Gemini:Print("Response from Gemini API: " .. util.JSONToTable(BodyResponse)["candidates"][1]["content"]["parts"][1]["text"])
     end
 end
 
@@ -156,7 +154,7 @@ function Gemini:MakeRequest(Data)
     local SafetyConfig = self:GetSafetyConfig()
 
     local Parts = {
-        {["text"] = GamemodeModel}
+        {["text"] = GamemodeModel, ["role"] = "user"}
     }
 
     local Body = {
@@ -164,10 +162,11 @@ function Gemini:MakeRequest(Data)
         ["safetySettings"] = SafetyConfig
     }
 
-    for _, Text in ipairs(Data) do
-        table.insert(Parts, {["text"] = Text})
+    for _, SubData in ipairs(Data) do
+        table.insert(Parts, {["text"] = SubData["Text"], ["role"] = SubData["Role"] or "user"})
     end
 
+    --[[ Debug ]]--
     if DebugEnabled then
         table.insert(Parts, {["text"] = self:GetConfig("DebugMessage", "Gemini")})
     end
@@ -196,5 +195,6 @@ function Gemini:MakeRequest(Data)
         self:Print("Request made to Gemini API.")
     else
         self:Print("Failed to make request to Gemini API.")
+        self:Print("Make sure you make a valid body request.")
     end
 end

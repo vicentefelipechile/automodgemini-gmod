@@ -89,10 +89,28 @@ Gemini.__TYPE_PRIMITIVES["Blob"] = {
 }
 
 Gemini.__TYPE_PRIMITIVES["Part"] = {
+    -- Union field data can be only one of the following:
     ["text"] = "string",
     ["inlineData"] = {
         Gemini.__TYPE_PRIMITIVES["Blob"]
+    },
+
+    -- Only v1beta
+    ["functionCall"] = {
+        ["name"] = "string",
+        ["arguments"] = {
+            ["args"] = "string"
+        }
+    },
+    ["functionResponse"] = {
+        ["name"] = "string",
+        ["arguments"] = {
+            ["args"] = "string"
+        }
     }
+    -- Only v1beta
+
+    -- End of list of possible types for union field data.
 }
 
 
