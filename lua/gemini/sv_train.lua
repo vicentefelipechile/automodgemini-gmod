@@ -2,6 +2,8 @@
                       Google Gemini Automod - Train Module
 ----------------------------------------------------------------------------]]--
 
+local sql_Query = sql.Query
+
 --[[------------------------
         SQL Database
 ------------------------]]--
@@ -42,3 +44,11 @@ Gemini.__TRAIN_SQL = {
             %s
     ]]
 }
+
+--[[------------------------
+         Poblate SQL
+------------------------]]--
+
+function Gemini:Train_PoblateSQL()
+    sql_Query(self.__TRAIN_SQL["GEMINI_TRAIN"])
+end

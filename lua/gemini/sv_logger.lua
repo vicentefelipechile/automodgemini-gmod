@@ -11,6 +11,9 @@ local function Formating(str, ...)
     return sql_QueryValue( string.format( new, ... ) )
 end
 
+--[[------------------------
+        SQL Database
+------------------------]]--
 
 Gemini.__LOGGER = {
     ["GEMINI_USER"] = [[
@@ -70,6 +73,18 @@ Gemini.__LOGGER = {
         LIMIT
             %s
     ]],
+    ["GETALLPLAYERS"] = [[
+        SELECT
+            *
+        FROM
+            gemini_user
+    ]],
+    ["GETALLLOGS"] = [[
+        SELECT
+            *
+        FROM
+            gemini_log
+    ]],
     ["INSERTLOG"] = [[
         INSERT INTO
             gemini_log (geminilog_log, geminilog_user1, geminilog_user2, geminilog_user3, geminilog_user4)
@@ -78,6 +93,9 @@ Gemini.__LOGGER = {
     ]]
 }
 
+--[[------------------------
+        SQL Functions
+------------------------]]--
 
 function Gemini:LoggerCreateTable()
     -- Table of player info
@@ -85,6 +103,12 @@ function Gemini:LoggerCreateTable()
 
     -- Table of logs
     sql_Query(self.__LOGGER.GEMINI_LOG)
+
+    self:AddConfig("BackupEnabled", "Logger", self.VERIFICATION_TYPE.bool, true)
+    self:AddConfig("BackupIntervalEnabled", "Logger", self.VERIFICATION_TYPE.bool, false)
+    self:AddConfig("BackupInterval", "Logger", self.VERIFICATION_TYPE.number, 120)
+    self:AddConfig("CompressedBackup", "Logger", self.VERIFICATION_TYPE.bool, true)
+    self:AddConfig("RawBackup", "Logger", self.VERIFICATION_TYPE.bool, true)
 end
 
 function Gemini:LoggerCheckTable()
@@ -123,6 +147,10 @@ function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
     return QueryResult
 end
 
+--[[------------------------
+      Logger Functions
+------------------------]]--
+
 function Gemini:LoggerAddLog(log, ply, ply2, ply3, ply4)
     local UserID = Gemini:LoggerGetPlayer(ply)
 
@@ -137,4 +165,86 @@ end
 
 hook.Add("Gemini.Log", "Gemini:Log", function(...)
     Gemini:LoggerAddLog(...)
+end)
+
+--[[------------------------
+      Backup Functions
+------------------------]]--
+
+local PreventExploit = 0
+
+function Gemini:LoggerGenerateBackup()
+
+    if ( CurTime() - PreventExploit ) < 60 then
+        self:Print("Something is trying to create a backup, please wait at least 60 seconds before trying again.")
+        return
+    end
+
+    local Users = sql_Query(self.__LOGGER.GETALLPLAYERS)
+    local Logs = sql_Query(self.__LOGGER.GETALLLOGS)
+    local TimeStamp = os.date("%Y-%m-%d %H:%M:%S")
+
+    local Backup = {
+        ["Users"] = Users,
+        ["Logs"] = Logs
+    }
+
+    Backup = util.TableToJSON(Backup)
+
+    if not file.Exists("gemini/logs", "DATA") then
+        file.CreateDir("gemini/logs")
+    end
+
+    local AtLeastOneBackup = 0
+
+    -- File write
+    if self:GetConfig("RawBackup", "Logger") then
+        file.Write("gemini/logs/backup_" .. TimeStamp .. ".json", Backup)
+        AtLeastOneBackup = AtLeastOneBackup + 1
+    end
+
+    -- Compression
+    if self:GetConfig("CompressedBackup", "Logger") then
+        file.Write("gemini/logs/backup_" .. TimeStamp .. ".dat", util.Compress(Backup))
+        AtLeastOneBackup = AtLeastOneBackup + 1
+    end
+
+    if AtLeastOneBackup == 0 then
+        self:Print("No backup was created, please enable at least one backup type in the configuration.")
+    else
+        self:Print("Backup created successfully.")
+    end
+
+    PreventExploit = CurTime()
+end
+
+hook.Add("PostGamemodeLoaded", "Gemini:LoggerBackup", function()
+    if Gemini:GetConfig("BackupEnabled", "Logger") then
+        Gemini:LoggerGenerateBackup()
+    end
+
+    if Gemini:GetConfig("BackupIntervalEnabled", "Logger") then
+        local BackupInterval = Gemini:GetConfig("BackupInterval", "Logger")
+
+        timer.Create("Gemini:LoggerBackup", BackupInterval * 60, 0, function()
+            Gemini:LoggerGenerateBackup()
+        end)
+    end
+end)
+
+hook.Add("Gemini:ConfigChanged", "Gemini:LoggerBackup", function(Name, Value, Category)
+    if ( Name == "BackupIntervalEnabled" ) and ( Category == "Logger" ) then
+        if Value then
+            local BackupInterval = Gemini:GetConfig("BackupInterval", "Logger")
+
+            local Response = timer.Adjust("Gemini:LoggerBackup", BackupInterval * 60)
+            if Response then
+                self:Print("Backup interval set to " .. BackupInterval .. " minutes.")
+            else
+                self:Print("Failed to adjust the backup interval.")
+            end
+        else
+            timer.Remove("Gemini:LoggerBackup")
+        end
+    end
 end)

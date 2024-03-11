@@ -376,7 +376,10 @@ function Gemini:SetConfig(Name, Value, Category)
         self:Error([[The value does not match the verification function.]], Value, "any")
     end
 
-    self.__cfg[Category][Name][1]:SetString( self:ToConvar(Name, Value, Category) )
+    local ConvarValue = self:ToConvar(Name, Value, Category)
+    self.__cfg[Category][Name][1]:SetString( ConvarValue )
+
+    hook.Run("Gemini:ConfigChanged", Name, Value, Category, ConvarValue)
 end
 
 
@@ -432,6 +435,8 @@ end
 
 
 function Gemini:Init()
+    file.CreateDir("gemini")
+
     if self.PoblateHooks then
         self:PoblateHooks()
     else
