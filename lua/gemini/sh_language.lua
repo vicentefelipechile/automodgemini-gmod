@@ -14,21 +14,21 @@ Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 3
        Language Module
 ------------------------]]--
 
-function Gemini:CreateLanguage(LanguageTarget)
+function Gemini:LanguageCreate(LanguageTarget)
     Gemini.__LANG[LanguageTarget] = {}
 
     return LanguageTarget
 end
 
-function Gemini:OverrideHookLanguage(LanguageTarget, TableFunctions)
+function Gemini:LanguageOverrideHook(LanguageTarget, TableFunctions)
     if not isstring(LanguageTarget) then
-        self:Error([[The first argument of Gemini:OverrideHookLanguage() is not a string]], LanguageTarget, "string")
+        self:Error([[The first argument of Gemini:LanguageOverrideHook() is not a string]], LanguageTarget, "string")
     elseif (LanguageTarget == "") then
-        self:Error([[The first argument of Gemini:OverrideHookLanguage() is an empty string]], LanguageTarget, "string")
+        self:Error([[The first argument of Gemini:LanguageOverrideHook() is an empty string]], LanguageTarget, "string")
     end
 
     if not istable(TableFunctions) then
-        self:Error([[The second argument of Gemini:OverrideHookLanguage() is not a table]], TableFunctions, "table[function]")
+        self:Error([[The second argument of Gemini:LanguageOverrideHook() is not a table]], TableFunctions, "table[function]")
     end
 
     for HookName, HookFunc in pairs(TableFunctions) do
@@ -40,23 +40,23 @@ function Gemini:OverrideHookLanguage(LanguageTarget, TableFunctions)
     end
 end
 
-function Gemini:AddPhrase(LanguageTarget, PhraseName, Phrase)
+function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
     if not isstring(LanguageTarget) then
-        self:Error([[The first argument of Gemini:AddPhrase() is not a string]], LanguageTarget, "string")
+        self:Error([[The first argument of Gemini:LanguageAddPhrase() is not a string]], LanguageTarget, "string")
     elseif (LanguageTarget == "") then
-        self:Error([[The first argument of Gemini:AddPhrase() is an empty string]], LanguageTarget, "string")
+        self:Error([[The first argument of Gemini:LanguageAddPhrase() is an empty string]], LanguageTarget, "string")
     end
 
     if not isstring(PhraseName) then
-        self:Error([[The second argument of Gemini:AddPhrase() is not a string]], PhraseName, "string")
+        self:Error([[The second argument of Gemini:LanguageAddPhrase() is not a string]], PhraseName, "string")
     elseif (PhraseName == "") then
-        self:Error([[The second argument of Gemini:AddPhrase() is an empty string]], PhraseName, "string")
+        self:Error([[The second argument of Gemini:LanguageAddPhrase() is an empty string]], PhraseName, "string")
     end
 
     if not isstring(Phrase) then
-        self:Error([[The third argument of Gemini:AddPhrase() is not a string]], Phrase, "string")
+        self:Error([[The third argument of Gemini:LanguageAddPhrase() is not a string]], Phrase, "string")
     elseif (Phrase == "") then
-        self:Error([[The third argument of Gemini:AddPhrase() is an empty string]], Phrase, "string")
+        self:Error([[The third argument of Gemini:LanguageAddPhrase() is an empty string]], Phrase, "string")
     end
 
     if not istable(self.__LANG[LanguageTarget]) then
@@ -98,7 +98,9 @@ function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
     return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
 end
 
-function Gemini:PoblateLanguages()
+Gemini.LanguageGetPhrase = Gemini.GetPhrase
+
+function Gemini:LanguagePoblate()
     local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
 
     for _, File in ipairs(LangFile) do

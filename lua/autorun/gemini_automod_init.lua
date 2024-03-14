@@ -437,16 +437,16 @@ end
 function Gemini:Init()
     file.CreateDir("gemini")
 
-    if self.PoblateHooks then
-        self:PoblateHooks()
+    if self.HookPoblate then
+        self:HookPoblate()
     else
-        self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "PoblateHooks", "function")
+        self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "HookPoblate", "function")
     end
 
-    if self.PoblateLanguages then
-        self:PoblateLanguages()
+    if self.LanguagePoblate then
+        self:LanguagePoblate()
     else
-        self:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "PoblateLanguages", "function")
+        self:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "LanguagePoblate", "function")
     end
 
     if SERVER then
@@ -456,10 +456,16 @@ function Gemini:Init()
             self:Error([[The function "LoggerCheckTable" has been replaced by another third-party addon!!!]], "LoggerCheckTable", "function")
         end
 
-        if self.LoadModels then
-            self:LoadModels()
+        if self.GeminiPoblate then
+            self:GeminiPoblate()
         else
-            self:Error([[The function "LoadModels" has been replaced by another third-party addon!!!]], "LoadModels", "function")
+            self:Error([[The function "GeminiPoblate" has been replaced by another third-party addon!!!]], "GeminiPoblate", "function")
+        end
+
+        if self.TrainPoblate then
+            self:TrainPoblate()
+        else
+            self:Error([[The function "TrainPoblate" has been replaced by another third-party addon!!!]], "TrainPoblate", "function")
         end
     end
 

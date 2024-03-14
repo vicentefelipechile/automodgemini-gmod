@@ -24,34 +24,36 @@ end
           Language
 ------------------------]]--
 
-local LANG = Gemini:CreateLanguage("Spanish")
+local LANG = Gemini:LanguageCreate("Spanish")
 
-Gemini:AddPhrase(LANG, "DoPlayerDeath", [[El jugador "%s" fue asesinado por "%s" en las coordendas %s usando %s.]])
-Gemini:AddPhrase(LANG, "PlayerSpawn", [[El jugador "%s" ha respawneado, han pasado %s segundos desde su muerte.]])
-Gemini:AddPhrase(LANG, "PlayerInitialSpawn", [[El jugador "%s" ha conectado al servidor.]])
-Gemini:AddPhrase(LANG, "PlayerSpawnedEffect", [[El jugador "%s" ha creado el efecto "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerSpawnedNPC", [[El jugador "%s" ha creado el npc "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerSpawnedProp", [[El jugador "%s" ha creado el prop "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerSpawnedRagdoll", [[El jugador "%s" ha creado un ragdoll "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerSpawnedSENT", [[El jugador "%s" ha creado la entidad "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu.]])
-Gemini:AddPhrase(LANG, "PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
-Gemini:AddPhrase(LANG, "PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
-Gemini:AddPhrase(LANG, "PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
-Gemini:AddPhrase(LANG, "OnCrazyPhysics", [[Se ha detectado fisicas locas en la entidad "%s", esta entidad %s dueño%s.]])
-Gemini:AddPhrase(LANG, "PlayerEnteredVehicle", [[El jugador "%s" ha entrado al auto "%s" en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerLeaveVehicle", [[El jugador "%s" estuvo en el auto "%s" por %s segundos y ahora se fue del auto en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerOnVehicle", [[El jugador "%s" aun se encuentra en el auto "%s" pero ahora en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "VariableEdited", [[El jugador "%s" edito la entidad "%s" y cambio la variable "%s" a "%s".]])
-Gemini:AddPhrase(LANG, "GravGunOnPickedUp", [[El jugador "%s" agarro la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "GravGunOnDropped", [[El jugador "%s" solto la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "OnPhysgunPickup", [[El jugador "%s" agarro la entidad "%s" con la pistola fisica en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad "%s" con la pistola fisica en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
-Gemini:AddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
-Gemini:AddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
-Gemini:AddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador ha presenciado el evento.]])
+Gemini:LanguageAddPhrase(LANG. "day", "Día")
+
+Gemini:LanguageAddPhrase(LANG, "DoPlayerDeath", [[El jugador "%s" fue asesinado por "%s" en las coordendas %s usando %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawn", [[El jugador "%s" ha respawneado, han pasado %s segundos desde su muerte.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerInitialSpawn", [[El jugador "%s" ha conectado al servidor.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedEffect", [[El jugador "%s" ha creado el efecto "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedNPC", [[El jugador "%s" ha creado el npc "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedProp", [[El jugador "%s" ha creado el prop "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedRagdoll", [[El jugador "%s" ha creado un ragdoll "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedSENT", [[El jugador "%s" ha creado la entidad "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
+Gemini:LanguageAddPhrase(LANG, "PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
+Gemini:LanguageAddPhrase(LANG, "OnCrazyPhysics", [[Se ha detectado fisicas locas en la entidad "%s", esta entidad %s dueño%s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerEnteredVehicle", [[El jugador "%s" ha entrado al auto "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerLeaveVehicle", [[El jugador "%s" estuvo en el auto "%s" por %s segundos y ahora se fue del auto en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerOnVehicle", [[El jugador "%s" aun se encuentra en el auto "%s" pero ahora en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "VariableEdited", [[El jugador "%s" edito la entidad "%s" y cambio la variable "%s" a "%s".]])
+Gemini:LanguageAddPhrase(LANG, "GravGunOnPickedUp", [[El jugador "%s" agarro la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "GravGunOnDropped", [[El jugador "%s" solto la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "OnPhysgunPickup", [[El jugador "%s" agarro la entidad "%s" con la pistola fisica en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad "%s" con la pistola fisica en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
+Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador ha presenciado el evento.]])
 
 
 --[[------------------------
@@ -95,7 +97,7 @@ local DamageType = {
     [DMG_MISSILEDEFENSE]    = "un misil",
 }
 
-Gemini:OverrideHookLanguage(LANG, {
+Gemini:LanguageOverrideHook(LANG, {
     ["DoPlayerDeath"] = function(victim, attacker, dmg)
         local DmgType = DamageType[dmg:GetDamageType()] or dmg:GetAmmoType() and "una bala de " .. game.GetAmmoName(dmg:GetAmmoType()) or "algo que no se puede determinar"
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
@@ -220,9 +222,9 @@ Gemini:OverrideHookLanguage(LANG, {
    Gamemodes Descriptions
 ------------------------]]--
 
-Gemini:AddPhrase(LANG, "context", [[La información que se muestra a continuacion se trata de los modos de juego que existen en Garry's Mod]])
+Gemini:LanguageAddPhrase(LANG, "context", [[La información que se muestra a continuacion se trata de los modos de juego que existen en Garry's Mod]])
 
-Gemini:AddPhrase(LANG, "default", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "default", [[Modo de Juego:
 Ningún Modo de Juego Conocido
 
 Descripcion:
@@ -247,7 +249,7 @@ El comportamiento de los jugadores no esta establecido, por lo que se asumira qu
 Reglas:
 Las unicas reglas conocidas son las reglas establecidas por el servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "sandbox", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "sandbox", [[Modo de Juego:
 Sandbox
 
 Descripcion:
@@ -272,7 +274,7 @@ El comportamiento de los jugadores cambia dependiendo de la situacion, por ejemp
 Reglas:
 Las reglas del Sandbox son establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "darkrp", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "darkrp", [[Modo de Juego:
 DarkRP
 
 Descripcion:
@@ -302,7 +304,7 @@ Existen reglas predefinidad por el modo de juego, como por ejemplo:
 - FailRP: Hacer algo que no tiene sentido o que no esta dentro del contexto de que estan en un roleplay, como un policia robando a un civil.
 Y tambien existen reglas establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "terrortown", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "terrortown", [[Modo de Juego:
 Trouble in T Town
 
 Descripcion:
@@ -326,7 +328,7 @@ El comportamiento de los jugadores depende del rol que tengan, por ejemplo si un
 Reglas:
 Las reglas de Trouble in T Town son establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:AddPhrase(LANG, "trashcompactor", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "trashcompactor", [[Modo de Juego:
 Trash Compactor
 
 Descripcion:

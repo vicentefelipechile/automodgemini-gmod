@@ -49,6 +49,6 @@ Gemini.__TRAIN_SQL = {
          Poblate SQL
 ------------------------]]--
 
-function Gemini:Train_PoblateSQL()
+function Gemini:TrainPoblate()
     sql_Query(self.__TRAIN_SQL["GEMINI_TRAIN"])
 end

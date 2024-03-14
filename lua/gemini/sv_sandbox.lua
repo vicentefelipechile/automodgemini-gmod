@@ -2,20 +2,20 @@
                      Google Gemini Automod - Sandbox Module
 ----------------------------------------------------------------------------]]--
 
-Gemini:AddHook("PlayerDeath", function(ply)
+Gemini:HookAdd("PlayerDeath", function(ply)
     if IsValid(ply) then
         ply.__LAST_DEATH = CurTime()
     end
 end)
 
-Gemini:AddHook("PlayerEnteredVehicle", function(ply, veh)
+Gemini:HookAdd("PlayerEnteredVehicle", function(ply, veh)
     if IsValid(ply) then
         ply.__LAST_VEHICLE = CurTime()
         ply.__LAST_VEHICLE_NAME = veh.PrintName or veh:GetClass()
     end
 end)
 
-Gemini:AddHook("PostGamemodeLoaded", function()
+Gemini:HookAdd("PostGamemodeLoaded", function()
     timer.Create("Gemini:CheckPlayerInVehicle", 15, 0, function()
         for _, ply in ipairs(player.GetAll()) do
             if IsValid(ply) and ply:InVehicle() then
@@ -25,7 +25,7 @@ Gemini:AddHook("PostGamemodeLoaded", function()
     end)
 end)
 
-Gemini:AddHook("PostCleanupMap", function()
+Gemini:HookAdd("PostCleanupMap", function()
     for _, ply in ipairs(player.GetAll()) do
         ply.__LAST_VEHICLE = nil
         ply.__LAST_VEHICLE_NAME = nil

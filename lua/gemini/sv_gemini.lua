@@ -14,22 +14,22 @@ Gemini.__MODELS = Gemini.__MODELS or {
     ["trashcompactor"] = nil
 }
 
-function Gemini:LoadModels()
+function Gemini:GeminiPoblate()
     self.__MODELS["default"] = self:GetPhrase("default")
     self.__MODELS["sandbox"] = self:GetPhrase("sandbox")
     self.__MODELS["darkrp"] = self:GetPhrase("darkrp")
     self.__MODELS["terrortown"] = self:GetPhrase("terrortown")
     self.__MODELS["trashcompactor"] = self:GetPhrase("trashcompactor")
 
-    self:AddConfig("ModelTarget", "Gemini", self.VERIFICATION_TYPE.string, "auto")
-    self:AddConfig("ModelName", "Gemini", self.VERIFICATION_TYPE.string, "gemini-1.0-pro")
-    self:AddConfig("Temperature", "Gemini", self.VERIFICATION_TYPE.number, 0.9)
-    self:AddConfig("TopP", "Gemini", self.VERIFICATION_TYPE.number, 1)
-    self:AddConfig("TopK", "Gemini", self.VERIFICATION_TYPE.number, 1)
-    self:AddConfig("MaxTokens", "Gemini", self.VERIFICATION_TYPE.number, 2048)
-    self:AddConfig("APIKey", "Gemini", self.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
-    self:AddConfig("DebugEnabled", "Gemini", self.VERIFICATION_TYPE.boolean, false)
-    self:AddConfig("DebugMessage", "Gemini", self.VERIFICATION_TYPE.string, "Make a summary of the logs of the player.")
+    self:AddConfig("ModelTarget",   "Gemini", self.VERIFICATION_TYPE.string,    "auto")
+    self:AddConfig("ModelName",     "Gemini", self.VERIFICATION_TYPE.string,    "gemini-1.0-pro")
+    self:AddConfig("Temperature",   "Gemini", self.VERIFICATION_TYPE.number,    0.9)
+    self:AddConfig("TopP",          "Gemini", self.VERIFICATION_TYPE.number,    1)
+    self:AddConfig("TopK",          "Gemini", self.VERIFICATION_TYPE.number,    1)
+    self:AddConfig("MaxTokens",     "Gemini", self.VERIFICATION_TYPE.number,    2048)
+    self:AddConfig("APIKey",        "Gemini", self.VERIFICATION_TYPE.string,    "YOUR_API_KEY", true)
+    self:AddConfig("DebugEnabled",  "Gemini", self.VERIFICATION_TYPE.boolean,   false)
+    self:AddConfig("DebugMessage",  "Gemini", self.VERIFICATION_TYPE.string,    "Make a summary of the logs of the player.")
 
     -- Safety settings
     self:AddConfig("SafetyHarassment", "Gemini", self.VERIFICATION_TYPE.number, 2)
@@ -100,10 +100,10 @@ end
 
 
 --[[------------------------
-       Pre-Processing
+       Pre-Parameters
 ------------------------]]--
 
-function Gemini:GetGamemodeModel()
+function Gemini:GetGameContext()
     local ModelTarget = self:GetConfig("ModelTarget", "Gemini")
 
     if ( ModelTarget == "auto" ) then
@@ -116,13 +116,70 @@ function Gemini:GetGamemodeModel()
 end
 
 function Gemini:GetLogsOfPlayer(Player, Amount)
-    local Logs = self:LoggerGetLogsPlayer(Player, 15, true)
+    local Logs = self:LoggerGetLogsPlayer(Player, Amount, true)
     local FormatedLogs = ""
 
     for _, SQLTable in ipairs(Logs) do
         FormatedLogs = FormatedLogs .. "\n" .. SQLTable["geminilog_log"]
     end
     return FormatedLogs
+end
+
+
+
+--[[------------------------
+        AI Structure
+------------------------]]--
+
+--[[
+
+1- Game Context
+2- Pre-Context (Server owner config)
+3- Trained Data
+4- Player-related logs
+5- Post-Context (Server owner config)
+6- Output
+
+--]]
+
+function Gemini:CreateBodyStructure(Player, Limit)
+    --[[ Gemini Structure ]]--
+    local GeminiStructure = {
+        ["generationConfig"] = self:GetGenerationConfig(),
+        ["safetySettings"] = self:GetSafetyConfig(true),
+        ["contents"] = {}
+    }
+
+    --[[ Game Context ]]--
+    local GameContext = self:GetGameContext()
+
+    --[[ Pre-Context ]]--
+    local PreContext = self:LoadServerConfig("precontext")
+
+    --[[ Trained Data ]]--
+    local TrainedData = self:LoggerGetTrainedData() -- this return a key-value table with the trained data
+
+    --[[ Player-related logs ]]--
+    local PlayerLogs = self:GetLogsOfPlayer(Player, Limit)
+
+    --[[ Post-Context ]]--
+    local PostContext = self:LoadServerConfig("postcontext")
+
+    --[[ Output ]]--
+    local Contents = {
+        {["text"] = GameContext, ["role"] = "user"},
+        {["text"] = PreContext, ["role"] = "user"}
+    }
+
+    for _, Train in ipairs(TrainedData) do
+        table.insert(Contents, {["text"] = Train["User"], ["role"] = "user"}) -- Previuosly trained data
+        table.insert(Contents, {["text"] = Train["Bot"], ["role"] = "model"}) -- Bot response
+    end
+
+    table.insert(Contents, {["text"] = PlayerLogs, ["role"] = "user"})
+    table.insert(Contents, {["text"] = PostContext, ["role"] = "user"})
+
+    return GeminiStructure
 end
 
 
@@ -149,7 +206,7 @@ function Gemini:MakeRequest(Data)
 
     --[[ Body ]]--
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
-    local GamemodeModel = self:GetGamemodeModel()
+    local GamemodeModel = self:GetGameContext()
     local GenerationConfig = self:GetGenerationConfig()
     local SafetyConfig = self:GetSafetyConfig()
 

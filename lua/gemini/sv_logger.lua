@@ -63,7 +63,7 @@ Gemini.__LOGGER = {
     ]],
     ["GETONLYLOGS"] = [[
         SELECT
-            strftime('Day %%d %%H:%%M:%%S', geminilog_time) || ' - ' || geminilog_log AS geminilog_log
+            strftime('DAY_NAME %%d %%H:%%M:%%S', geminilog_time) || ' - ' || geminilog_log AS geminilog_log
         FROM
             gemini_log
         WHERE
@@ -98,6 +98,10 @@ Gemini.__LOGGER = {
 ------------------------]]--
 
 function Gemini:LoggerCreateTable()
+    self.DayName = self:GetPhrase("day")
+
+    self.__LOGGER["GETONLYLOGS"] = string.Replace(self.__LOGGER["GETONLYLOGS"], "DAY_NAME", self.DayName)
+
     -- Table of player info
     sql_Query(self.__LOGGER.GEMINI_USER)
 
