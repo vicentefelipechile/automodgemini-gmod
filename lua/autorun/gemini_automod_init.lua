@@ -477,6 +477,12 @@ end
 function Gemini:PostInit()
     local Print = Gemini:GeneratePrint({prefix = ""})
 
+    if self.ReloadRules then
+        self:ReloadRules()
+    else
+        self:Print("The module of Custom Rules has been replaced or removed.")
+    end
+
     Print("==[[==================================")
     Print("         Gemini Automod Loaded")
     Print("==================================]]==")
