@@ -42,7 +42,7 @@ Gemini.__TYPE_ENUM["HarmProbability"] = {
     HARM_PROBABILITY_UNSPECIFIED  = [[Default value. This value is unused.]],
     NEGLIGIBLE  = [[Content has a negligible chance of being unsafe.]],
     LOW     = [[Content has a low chance of being unsafe.]],
-    MEDIUM  = [[Content has a medium chance of being unsafe.]],,
+    MEDIUM  = [[Content has a medium chance of being unsafe.]],
     HIGH    = [[Content has a high chance of being unsafe.]],
 }
 
@@ -172,7 +172,7 @@ Gemini.__TYPE["Candidate"] = {
 }
 
 Gemini.__TYPE["PromptFeedback"] = {
-    ["blockReason"] = Gemini.__TYPE_ENUM["BlockReason"]
+    ["blockReason"] = Gemini.__TYPE_ENUM["BlockReason"],
     ["safetyRatings"] = {
         ["array"] = {Gemini.__TYPE["SafetyRating"]}
     }

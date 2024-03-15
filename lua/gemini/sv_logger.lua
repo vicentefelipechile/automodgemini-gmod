@@ -243,9 +243,9 @@ hook.Add("Gemini:ConfigChanged", "Gemini:LoggerBackup", function(Name, Value, Ca
 
             local Response = timer.Adjust("Gemini:LoggerBackup", BackupInterval * 60)
             if Response then
-                self:Print("Backup interval set to " .. BackupInterval .. " minutes.")
+                Gemini:Print("Backup interval set to " .. BackupInterval .. " minutes.")
             else
-                self:Print("Failed to adjust the backup interval.")
+                Gemini:Print("Failed to adjust the backup interval.")
             end
         else
             timer.Remove("Gemini:LoggerBackup")
