@@ -26,7 +26,7 @@ end
 
 local LANG = Gemini:LanguageCreate("Spanish")
 
-Gemini:LanguageAddPhrase(LANG. "day", "Día")
+Gemini:LanguageAddPhrase(LANG, "day", "Día")
 
 Gemini:LanguageAddPhrase(LANG, "DoPlayerDeath", [[El jugador "%s" fue asesinado por "%s" en las coordendas %s usando %s.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSpawn", [[El jugador "%s" ha respawneado, han pasado %s segundos desde su muerte.]])
