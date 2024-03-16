@@ -6,11 +6,11 @@
        Main Functions
 ------------------------]]--
 
-function Gemini:ReturnNoneFunction()
+function Gemini.ReturnNoneFunction()
     return
 end
 
-function Gemini:ReturnAnyFunction(...)
+function Gemini.ReturnAnyFunction(...)
     return ...
 end
 
