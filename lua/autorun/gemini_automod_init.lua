@@ -162,7 +162,11 @@ function Gemini:FromConvar(Name, Category)
     Name = string.lower( string.gsub(Name, "%W", "") )
 
     if not self.__cfg[Category] then
-        self:Error([[The category does not exist.]], Category, "string")
+        if CLIENT then
+            self:Error([[The category maybe does not exist in the CLIENT-SIDE.]], Category, "string")
+        else
+            self:Error([[The category does not exist.]], Category, "string")
+        end
     elseif not self.__cfg[Category][Name] then
         if CLIENT then
             self:Error([[The config does not exist in the CLIENT-SIDE.]], Name, "string")
@@ -317,7 +321,11 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
     Name = string.lower( string.gsub(Name, "%W", "") )
 
     if not self.__cfg[Category] then
-        self:Error([[The category does not exist.]], Category, "string")
+        if CLIENT then
+            self:Error([[The category maybe does not exist in the CLIENT-SIDE.]], Category, "string")
+        else
+            self:Error([[The category does not exist.]], Category, "string")
+        end
     end
 
     if not self.__cfg[Category][Name] then
@@ -365,7 +373,11 @@ function Gemini:SetConfig(Name, Value, Category)
     Name = string.lower( string.gsub(Name, "%W", "") )
 
     if not self.__cfg[Category] then
-        self:Error([[The category does not exist.]], Category, "string")
+        if CLIENT then
+            self:Error([[The category maybe does not exist in the CLIENT-SIDE.]], Category, "string")
+        else
+            self:Error([[The category does not exist.]], Category, "string")
+        end
     end
 
     if not self.__cfg[Category][Name] then
@@ -413,19 +425,25 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
+        AddCSLuaFile("gemini/sh_config.lua")    self:Print("File \"gemini/sh_config.lua\" has been send to client.")
+        AddCSLuaFile("gemini/cl_config.lua")    self:Print("File \"gemini/cl_config.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
+        include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
         include("gemini/sv_sandbox.lua")        self:Print("File \"gemini/sv_sandbox.lua\" has been loaded.")
         include("gemini/sv_logger.lua")         self:Print("File \"gemini/sv_logger.lua\" has been loaded.")
         include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
         include("gemini/sv_httpcode.lua")       self:Print("File \"gemini/sv_httpcode.lua\" has been loaded.")
         include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
+        include("gemini/sv_train.lua")          self:Print("File \"gemini/sv_train.lua\" has been loaded.")
     else
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
-        include("gemini/sh_sandbox.lua")        self:Print("File \"gemini/sh_sandbox.lua\" has been loaded.")
+        include("gemini/cl_config.lua")         self:Print("File \"gemini/cl_config.lua\" has been loaded.")
     end
+
+    include("gemini/sh_config.lua")             self:Print("File \"gemini/sh_config.lua\" has been loaded.")
 
     hook.Run("Gemini.PreInit")
     hook.Add("PreGamemodeLoaded", "Gemini.PreInit_TO_Init", function()
@@ -437,35 +455,35 @@ end
 function Gemini:Init()
     file.CreateDir("gemini")
 
-    if self.HookPoblate then
+    if isfunction(self.HookPoblate) then
         self:HookPoblate()
     else
-        self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], "HookPoblate", "function")
+        self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], self.HookPoblate, "function")
     end
 
-    if self.LanguagePoblate then
+    if isfunction(self.LanguagePoblate) then
         self:LanguagePoblate()
     else
-        self:Error([[The function "PoblateLanguages" has been replaced by another third-party addon!!!]], "LanguagePoblate", "function")
+        self:Error([[The function "LanguagePoblate" has been replaced by another third-party addon!!!]], self.LanguagePoblate, "function")
     end
 
     if SERVER then
-        if self.LoggerCheckTable then
+        if isfunction(self.LoggerCheckTable) then
             self:LoggerCheckTable()
         else
-            self:Error([[The function "LoggerCheckTable" has been replaced by another third-party addon!!!]], "LoggerCheckTable", "function")
+            self:Error([[The function "LoggerCheckTable" has been replaced by another third-party addon!!!]], self.LoggerCheckTable, "function")
         end
 
-        if self.GeminiPoblate then
+        if isfunction(self.GeminiPoblate) then
             self:GeminiPoblate()
         else
-            self:Error([[The function "GeminiPoblate" has been replaced by another third-party addon!!!]], "GeminiPoblate", "function")
+            self:Error([[The function "GeminiPoblate" has been replaced by another third-party addon!!!]], self.GeminiPoblate, "function")
         end
 
-        if self.TrainPoblate then
+        if isfunction(self.TrainPoblate) then
             self:TrainPoblate()
         else
-            self:Error([[The function "TrainPoblate" has been replaced by another third-party addon!!!]], "TrainPoblate", "function")
+            self:Error([[The function "TrainPoblate" has been replaced by another third-party addon!!!]], self.TrainPoblate, "function")
         end
     end
 
@@ -477,7 +495,7 @@ end
 function Gemini:PostInit()
     local Print = Gemini:GeneratePrint({prefix = ""})
 
-    if self.ReloadRules then
+    if isfunction(self.ReloadRules) then
         self:ReloadRules()
     else
         self:Print("The module of Custom Rules has been replaced or removed.")

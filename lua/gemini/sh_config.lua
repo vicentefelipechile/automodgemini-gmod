@@ -10,9 +10,9 @@ if SERVER then
 end
 
 Gemini.__RULES = Gemini.__RULES or {
-    ["Server Name"] = "NO SERVER NAME SET",
+    ["Server Name"] = GetHostName(),
     ["Server Owner"] = "NO SERVER OWNER SET",
-    ["Rules"] = [[]]
+    ["Rules"] = [[No rules]]
 }
 
 --[[------------------------
@@ -104,10 +104,8 @@ function Gemini:BroadcastServerInfo()
     if UInt > MaxBandwidth then
         self:Print("The rules are too big to be broadcasted", os.date("%H:%M:%S"))
         return
-    end
-
-    if UInt == 0 then
-        self:Print("Warning: The rules are empty", os.date("%H:%M:%S"))
+    elseif UInt == 0 then
+        self:Print("Warning: The rules are empty")
     end
 
     net.Start("Gemini:BroadcastRules")
@@ -131,6 +129,7 @@ end
 
 function Gemini:ReloadRules()
     local LuaFiles = file.Find(CustomConfig .. "*.lua", "LUA")
+    local AtLeastOne = false
 
     for _, LuaFile in ipairs(LuaFiles) do
         local LuaPath = CustomConfig .. File
@@ -139,6 +138,12 @@ function Gemini:ReloadRules()
         end
         include(LuaPath)
         self:Print("Loaded Server Owner File: ", LuaPath)
+
+        AtLeastOne = true
+    end
+
+    if not AtLeastOne then
+        self:Print("No server owner config found")
     end
 end
 
