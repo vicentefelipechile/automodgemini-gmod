@@ -28,7 +28,7 @@ function Gemini:GeminiPoblate()
     self:AddConfig("TopK",          "Gemini", self.VERIFICATION_TYPE.number,    1)
     self:AddConfig("MaxTokens",     "Gemini", self.VERIFICATION_TYPE.number,    2048)
     self:AddConfig("APIKey",        "Gemini", self.VERIFICATION_TYPE.string,    "YOUR_API_KEY", true)
-    self:AddConfig("DebugEnabled",  "Gemini", self.VERIFICATION_TYPE.boolean,   false)
+    self:AddConfig("DebugEnabled",  "Gemini", self.VERIFICATION_TYPE.bool,      false)
     self:AddConfig("DebugMessage",  "Gemini", self.VERIFICATION_TYPE.string,    "Make a summary of the logs of the player.")
 
     -- Safety settings

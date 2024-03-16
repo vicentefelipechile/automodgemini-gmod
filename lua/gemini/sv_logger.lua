@@ -107,18 +107,18 @@ function Gemini:LoggerCreateTable()
 
     -- Table of logs
     sql_Query(self.__LOGGER.GEMINI_LOG)
-
-    self:AddConfig("BackupEnabled", "Logger", self.VERIFICATION_TYPE.bool, true)
-    self:AddConfig("BackupIntervalEnabled", "Logger", self.VERIFICATION_TYPE.bool, false)
-    self:AddConfig("BackupInterval", "Logger", self.VERIFICATION_TYPE.number, 120)
-    self:AddConfig("CompressedBackup", "Logger", self.VERIFICATION_TYPE.bool, true)
-    self:AddConfig("RawBackup", "Logger", self.VERIFICATION_TYPE.bool, true)
 end
 
 function Gemini:LoggerCheckTable()
     if not ( sql_TableExists("gemini_user") or sql_TableExists("gemini_log") ) then
         Gemini:LoggerCreateTable()
     end
+
+    self:AddConfig("BackupEnabled",         "Logger", self.VERIFICATION_TYPE.bool,  true)
+    self:AddConfig("BackupIntervalEnabled", "Logger", self.VERIFICATION_TYPE.bool,  false)
+    self:AddConfig("BackupInterval",        "Logger", self.VERIFICATION_TYPE.number, 120)
+    self:AddConfig("CompressedBackup",      "Logger", self.VERIFICATION_TYPE.bool,  true)
+    self:AddConfig("RawBackup",             "Logger", self.VERIFICATION_TYPE.bool,  true)
 end
 
 function Gemini:LoggerGetPlayer(ply)
@@ -175,18 +175,22 @@ end)
       Backup Functions
 ------------------------]]--
 
-local PreventExploit = 0
+local PreventExploit = -1
 
 function Gemini:LoggerGenerateBackup()
+    local JustDoIt = false
+    if ( PreventExploit == -1 ) then
+        JustDoIt = true
+    end
 
-    if ( CurTime() - PreventExploit ) < 60 then
-        self:Print("Something is trying to create a backup, please wait at least 60 seconds before trying again.")
+    if ( CurTime() - PreventExploit ) < 60 or not JustDoIt then
+        self:Print("Something is trying to create a backup, please wait at least " .. math.Round(60 - (CurTime() - PreventExploit)) .. " seconds.")
         return
     end
 
     local Users = sql_Query(self.__LOGGER.GETALLPLAYERS)
     local Logs = sql_Query(self.__LOGGER.GETALLLOGS)
-    local TimeStamp = os.date("%Y-%m-%d %H:%M:%S")
+    local TimeStamp = os.date("%Y-%m-%d_%H-%M-%S")
 
     local Backup = {
         ["Users"] = Users,
