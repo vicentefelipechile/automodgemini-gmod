@@ -20,13 +20,12 @@ local function GetEntityName(ent)
     end
 end
 
+
 --[[------------------------
-          Language
+        Hook Language
 ------------------------]]--
 
 local LANG = Gemini:LanguageCreate("Spanish")
-
-Gemini:LanguageAddPhrase(LANG, "day", "Día")
 
 Gemini:LanguageAddPhrase(LANG, "DoPlayerDeath", [[El jugador "%s" fue asesinado por "%s" en las coordendas %s usando %s.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSpawn", [[El jugador "%s" ha respawneado, han pasado %s segundos desde su muerte.]])
@@ -53,7 +52,7 @@ Gemini:LanguageAddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad
 Gemini:LanguageAddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
-Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador ha presenciado el evento.]])
+Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador "%s" ha presenciado el evento.]])
 
 
 --[[------------------------
@@ -218,6 +217,24 @@ Gemini:LanguageOverrideHook(LANG, {
     end
 })
 
+
+--[[------------------------
+     Gemini Menu Phrases
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Credits", "Creditos")
+Gemini:LanguageAddPhrase(LANG, "Config", "Configuración")
+Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
+
+--[[------------------------
+     Logger Menu Phrases
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Logger", "Registros")
+Gemini:LanguageAddPhrase(LANG, "Logger.DontAllowed", "No tienes permisos para ver los registros.")
+Gemini:LanguageAddPhrase(LANG, "Logger.LogsSended", "Los registros han sido enviados con exito.")
+
+
 --[[------------------------
    Gamemodes Descriptions
 ------------------------]]--
@@ -354,3 +371,9 @@ Habra un jugador que intentara o matara a los jugadores con props, por lo que es
 
 Reglas:
 Debido a que el modo de juego es muy simple y los mapas estan hechos exclusivamente para este modo de juego, no hay reglas establecidas por el modo de juego, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
+
+--[[------------------------
+        Miscellaneous
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "day", "Día")

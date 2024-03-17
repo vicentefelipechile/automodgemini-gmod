@@ -104,6 +104,9 @@ function Gemini:LanguagePoblate()
     local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
 
     for _, File in ipairs(LangFile) do
+        if SERVER then
+            AddCSLuaFile("gemini/language/" .. File)
+        end
         include("gemini/language/" .. File)
         self:Print("Loaded language file: " .. File)
     end

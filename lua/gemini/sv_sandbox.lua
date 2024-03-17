@@ -30,7 +30,7 @@ Gemini:HookAdd("PostCleanupMap", function()
         ply.__LAST_VEHICLE = nil
         ply.__LAST_VEHICLE_NAME = nil
 
-        local Log = Gemini:GetPhrase("PostCleanupMap")
+        local Log = string.format( Gemini:GetPhrase("PostCleanupMap"), ply:Nick() )
 
         hook.Run("Gemini.Log", Log, ply)
     end
