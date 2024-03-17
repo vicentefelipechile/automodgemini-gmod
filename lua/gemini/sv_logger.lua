@@ -2,6 +2,11 @@
                       Google Gemini Automod - Logger Module
 ----------------------------------------------------------------------------]]--
 
+util.AddNetworkString("Gemini:AskLogs")
+util.AddNetworkString("Gemini:ReplicateLog")
+util.AddNetworkString("Gemini:StartAsyncronousLogs")
+util.AddNetworkString("Gemini:StopAsyncronousLogs")
+
 local sql_Query = sql.Query
 local sql_QueryValue = sql.QueryValue
 local sql_TableExists = sql.TableExists
@@ -10,6 +15,8 @@ local function Formating(str, ...)
     local new = string.Trim( string.gsub( string.Replace( str, "\n", "" ), "[%s]+", " " ) )
     return sql_QueryValue( string.format( new, ... ) )
 end
+
+local AsyncronousPlayers = {}
 
 --[[------------------------
         SQL Database
@@ -85,6 +92,16 @@ Gemini.__LOGGER = {
         FROM
             gemini_log
     ]],
+    ["GETALLLOGSLIMIT"] = [[
+        SELECT
+            *
+        FROM
+            gemini_log
+        ORDER BY
+            geminilog_id DESC
+        LIMIT
+            %s
+    ]],
     ["INSERTLOG"] = [[
         INSERT INTO
             gemini_log (geminilog_log, geminilog_user1, geminilog_user2, geminilog_user3, geminilog_user4)
@@ -151,6 +168,12 @@ function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
     return QueryResult
 end
 
+function Gemini:LoggerGetAllLogsLimit(Limit)
+    local QueryResult = sql_Query( string.format(self.__LOGGER.GETALLLOGSLIMIT, Limit) )
+
+    return QueryResult
+end
+
 --[[------------------------
       Logger Functions
 ------------------------]]--
@@ -165,11 +188,80 @@ function Gemini:LoggerAddLog(log, ply, ply2, ply3, ply4)
     local LogUser4 = ply4 and Gemini:LoggerGetPlayer(ply4) or nil
 
     Formating(self.__LOGGER.INSERTLOG, LogString, LogUser1, LogUser2, LogUser3, LogUser4)
+
+    -- Asyncronous logs
+    if #AsyncronousPlayers > 0 then
+        Gemini:LoggerSendAsyncronousLogs()
+    end
 end
 
 hook.Add("Gemini.Log", "Gemini:Log", function(...)
     Gemini:LoggerAddLog(...)
 end)
+
+--[[------------------------
+      Network Functions
+------------------------]]--
+
+function Gemini.LoggerAskLogs(len, ply)
+    if not ply:IsSuperAdmin() then
+        net.Start("Gemini:AskLogs")
+            net.WriteBool(false)
+            net.WriteString("Logger.DontAllowed")
+        net.Send(ply)
+
+        return
+    end
+
+    local Limit = net.ReadUInt(16)
+    local IsPlayer = net.ReadBool()
+    local Logs = {}
+
+    if ( IsPlayer == false ) then
+        Logs = Gemini:LoggerGetAllLogsLimit(Limit)
+    else
+        local Player = net.ReadEntity()
+        Logs = Gemini:LoggerGetLogsPlayer(Player, Limit)
+    end
+
+    net.Start("Gemini:AskLogs")
+        net.WriteBool(true)
+        net.WriteString("Logger.LogsSended")
+        net.WriteTable(Logs)
+    net.Send(ply)
+end
+net.Receive("Gemini:AskLogs", Gemini.LoggerAskLogs)
+
+function Gemini:LoggerSendAsyncronousLogs()
+    local LastLog = Gemini:LoggerGetAllLogsLimit(1)[1]
+
+    local ID = LastLog["geminilog_id"]
+    local Log = LastLog["geminilog_log"]
+    local Date = LastLog["geminilog_time"]
+    local PlayerID = LastLog["geminilog_user1"]
+
+    net.Start("Gemini:ReplicateLog")
+        net.WriteUInt(ID, 16)
+        net.WriteString(Log)
+        net.WriteString(Date)
+        net.WriteString(PlayerID)
+    net.Send(AsyncronousPlayers)
+end
+
+function Gemini.LoggerStartAsyncronousLogs(len, ply)
+    if not ply:IsSuperAdmin() then return end
+
+    table.insert(AsyncronousPlayers, ply)
+    Gemini:Print( string.format("Asyncronous logs started for \"%s\"", ply:Nick()) )
+end
+
+function Gemini.LoggerStopAsyncronousLogs(len, ply)
+    table.RemoveByValue(AsyncronousPlayers, ply)
+    Gemini:Print( string.format("Asyncronous logs stopped for \"%s\"", ply:Nick()) )
+end
+
+net.Receive("Gemini:StartAsyncronousLogs", Gemini.LoggerStartAsyncronousLogs)
+net.Receive("Gemini:StopAsyncronousLogs", Gemini.LoggerStopAsyncronousLogs)
 
 --[[------------------------
       Backup Functions
