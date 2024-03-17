@@ -5,6 +5,28 @@
 -- This is my best attempt to replicate the frutiger aero style
 -- Source: https://frutiger-aero.neocities.org/
 
+Gemini.__MODULE = {}
+
+local CachedModules = {}
+function Gemini:ModuleCreate(Name, TableModule)
+    local Pos = nil
+    if CachedModules[Name] then
+        Pos = CachedModules[Name]
+    end
+
+    TableModule["__name"] = Name
+    TableModule["OnFocus"] = TableModule["OnFocus"] or Gemini.ReturnNoneFunction
+    TableModule["OnLostFocus"] = TableModule["OnLostFocus"] or Gemini.ReturnNoneFunction
+
+    if ( Pos ~= nil ) then
+        Gemini.__MODULE[Pos] = TableModule
+    else
+        Pos = table.insert(Gemini.__MODULE, TableModule)
+    end
+
+    CachedModules[Name] = Pos
+end
+
 --[[------------------------
           Variables
 ------------------------]]--
@@ -16,10 +38,6 @@ local BackgroundColor1 = Color(60, 60, 60)
 local BackgroundColor2 = Color(30, 30, 30)
 local BodyHeight = 24
 
--- Materials
-
--- TODO
-
 -- Fonts
 local FrutigerFontData = {
     font = "Frutiger",
@@ -30,8 +48,13 @@ local FrutigerFontData = {
 }
 
 surface.CreateFont("Frutiger:Normal", FrutigerFontData)
-FrutigerFontData.size = 24
+FrutigerFontData.shadow = true
+surface.CreateFont("Frutiger:Normal-Shadow", FrutigerFontData)
+FrutigerFontData.shadow = false
+FrutigerFontData.size = 32
 surface.CreateFont("Frutiger:Big", FrutigerFontData)
+FrutigerFontData.shadow = true
+surface.CreateFont("Frutiger:Big-Shadow", FrutigerFontData)
 
 
 --[[------------------------
@@ -49,41 +72,39 @@ end
 local GEMINIPANEL = {}
 
 function GEMINIPANEL:PoblateItems()
-    local CreditsTab = vgui.Create("DPanel", self.Tabs)
-    CreditsTab:SetSize(self.Tabs:GetWide(), self.Tabs:GetTall())
-    CreditsTab.Paint = SelfPaint
 
-    -- Title
-    local TitleLabel = vgui.Create("DLabel", CreditsTab)
-    TitleLabel:SetFont("Frutiger:Big")
-    TitleLabel:SetText("Google Gemini Automod")
-    TitleLabel:SetTextColor(WhiteColor)
-    TitleLabel:SizeToContents()
-    TitleLabel:SetPos(CreditsTab:GetWide() * 0.5 - TitleLabel:GetWide() * 0.5, 16)
-
-    self.Tabs:AddSheet("  Creditos  ", CreditsTab, "icon16/heart.png")
-
-    --[[ TO DO
-    for k, Module in ipairs(Gemini.__MODULE) then
+    --[+[ TO DO
+    for Key, Module in pairs(Gemini.__MODULE) do
         local Tab = vgui.Create("DPanel", self.Tabs)
         Tab:SetSize(self.Tabs:GetWide(), self.Tabs:GetTall())
-        Tab.Paint = Module.Paint or SelfPaint
+        Tab.Paint = SelfPaint
 
-        -- Title
-        local TitleLabel = vgui.Create("DLabel", Tab)
-        TitleLabel:SetFont("Frutiger:Big")
-        TitleLabel:SetText("Google Gemini Automod")
-        TitleLabel:SetTextColor(WhiteColor)
-        TitleLabel:SizeToContents()
-        TitleLabel:SetPos(Tab:GetWide() * 0.5 - TitleLabel:GetWide() * 0.5, 16)
+        local Result = Module:MainFunc(self, self.Tabs, Tab)
+        if ( Result == false ) and ( Result ~= nil ) then continue end
 
-        self.Tabs:AddSheet("  " .. Module.Nombre .. "  ", Tab, "icon16/heart.png")
+        local NewTab = self.Tabs:AddSheet("  " .. Module["__name"] .. "  ", Tab, Module.Icon)["Tab"]
+        NewTab.__MODULE = Module
+        NewTab.OnFocus = Module.OnFocus
+        NewTab.OnLostFocus = Module.OnLostFocus
     end
     --]]
+
+    self.ACTIVE_PANEL = nil
+    self.Tabs.OnActiveTabChanged = function(selfTabs, OldTab, NewTab)
+        if ( OldTab.OnLostFocus ~= Gemini.ReturnNoneFunction ) then
+            OldTab.__MODULE:OnLostFocus()
+        end
+
+        if ( NewTab.OnFocus ~= Gemini.ReturnNoneFunction ) then
+            NewTab.__MODULE:OnFocus()
+        end
+
+        self.ACTIVE_PANEL = NewTab
+    end
 end
 
 function GEMINIPANEL:Init()
-    self:SetSize(math.max(ScrW() * 0.5, 800), math.max(ScrH() * 0.2, 400))
+    self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.55, 400))
     self:Center()
     self:MakePopup()
     self:SetTitle("Google Gemini Automod - Server Owner Config")
@@ -98,6 +119,20 @@ function GEMINIPANEL:Init()
     self:PoblateItems()
 end
 
+function GEMINIPANEL:Close()
+    if ispanel(self.ACTIVE_PANEL) then
+        self.ACTIVE_PANEL:OnLostFocus()
+    end
+
+    self:SetVisible( false )
+
+	if ( self:GetDeleteOnClose() ) then
+		self:Remove()
+	end
+
+	self:OnClose()
+end
+
 -- Trying to replicate the frutiger aero style
 function GEMINIPANEL:Paint(w, h)
     draw.RoundedBoxEx(8, 0, 0, w, BodyHeight, BackgroundColor, true, true)
@@ -106,10 +141,23 @@ function GEMINIPANEL:Paint(w, h)
 end
 
 --[[------------------------
-      Register Derma
+       Register Derma
 ------------------------]]--
 
 vgui.Register("Gemini:ConfigPanel", GEMINIPANEL, "DFrame")
+
+--[[------------------------
+        Load Modules
+------------------------]]--
+
+for _, File in ipairs(file.Find("gemini/module/*.lua", "LUA")) do
+    include("gemini/module/" .. File)
+    Gemini:Print("Loaded module: " .. File)
+end
+
+--[[------------------------
+          Debugging
+------------------------]]--
 
 concommand.Add("gemini_config_panel", function()
     local panel = vgui.Create("Gemini:ConfigPanel")
