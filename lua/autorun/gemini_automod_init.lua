@@ -255,8 +255,6 @@ end
 
 
 function Gemini:AddConfig(Name, Category, Verification, Default, Private)
-    if CLIENT then return end
-
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:AddConfig() must be a string.]], Name, "string")
     end
@@ -440,15 +438,12 @@ function Gemini:PreInit()
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
-        include("gemini/cl_config.lua")         self:Print("File \"gemini/cl_config.lua\" has been loaded.")
     end
 
     include("gemini/sh_config.lua")             self:Print("File \"gemini/sh_config.lua\" has been loaded.")
 
     hook.Run("Gemini.PreInit")
-    hook.Add("PreGamemodeLoaded", "Gemini.PreInit_TO_Init", function()
-        Gemini:Init()
-    end)
+    Gemini:Init()
 end
 
 
@@ -485,6 +480,15 @@ function Gemini:Init()
         else
             self:Error([[The function "TrainPoblate" has been replaced by another third-party addon!!!]], self.TrainPoblate, "function")
         end
+
+        -- AddCSLua file to all files inside "gemini/module"
+        local LuaCSFiles, _ = file.Find("gemini/module/*.lua", "LUA")
+        for _, File in ipairs(LuaCSFiles) do
+            AddCSLuaFile("gemini/module/" .. File)      self:Print("File \"gemini/module/" .. File .. "\" has been send to client.")
+        end
+
+    else
+        include("gemini/cl_config.lua")         self:Print("File \"gemini/cl_config.lua\" has been loaded.")
     end
 
     hook.Run("Gemini.Init")
