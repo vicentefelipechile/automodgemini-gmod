@@ -424,7 +424,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_config.lua")    self:Print("File \"gemini/sh_config.lua\" has been send to client.")
-        AddCSLuaFile("gemini/cl_config.lua")    self:Print("File \"gemini/cl_config.lua\" has been send to client.")
+        AddCSLuaFile("gemini/cl_ownermenu.lua") self:Print("File \"gemini/cl_ownermenu.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
@@ -488,7 +488,7 @@ function Gemini:Init()
         end
 
     else
-        include("gemini/cl_config.lua")         self:Print("File \"gemini/cl_config.lua\" has been loaded.")
+        include("gemini/cl_ownermenu.lua")      self:Print("File \"gemini/cl_ownermenu.lua\" has been loaded.")
     end
 
     hook.Run("Gemini.Init")

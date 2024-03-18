@@ -60,9 +60,14 @@ Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el ma
 ------------------------]]--
 
 local DamageType = {
-    [-1]            = "algo que no se puede determinar",
-    [4096 + 2]      = "la crossbow",
-    [4096 + 2048]   = "el suicidio",
+    [-1]    = "algo que no se puede determinar",
+
+    -- Custom Damage Types
+    [DMG_NEVERGIB + DMG_BULLET]                 = "la crossbow",
+    [DMG_NEVERGIB + DMG_PREVENT_PHYSICS_FORCE]  = "el suicidio",
+    [DMG_DISSOLVE + DMG_CRUSH]                  = "una bola de energia",
+
+    -- Default Damage Types
     [DMG_GENERIC]   = "un daño generico o los puños",
     [DMG_CRUSH]     = "un daño por aplastamiento",
     [DMG_BULLET]    = "un daño por un arma o centinela",
@@ -98,7 +103,10 @@ local DamageType = {
 
 Gemini:LanguageOverrideHook(LANG, {
     ["DoPlayerDeath"] = function(victim, attacker, dmg)
-        local DmgType = DamageType[dmg:GetDamageType()] or dmg:GetAmmoType() and "una bala de " .. game.GetAmmoName(dmg:GetAmmoType()) or "algo que no se puede determinar"
+        if not DamageType[dmg:GetDamageType()] then
+            print(dmg:GetDamageType())
+        end
+        local DmgType = DamageType[dmg:GetDamageType()] or game.GetAmmoName(dmg:GetAmmoType()) and "una bala de " .. game.GetAmmoName(dmg:GetAmmoType()) or "algo que no se puede determinar"
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
 
         return {victim:Name(), AttackerName, Gemini:VectorToString(victim:GetPos()), DmgType}
@@ -137,7 +145,9 @@ Gemini:LanguageOverrideHook(LANG, {
         return {ply:Name(), ent:GetClass(), Gemini:VectorToString(EntPos)}
     end,
     ["OnDamagedByExplosion"] = function(ply, dmg)
-        return {ply:Name(), math.Round(dmg:GetDamage(), 2), dmg:GetAttacker() == ply and "el mismo" or GetEntityName(dmg:GetAttacker())}
+        local Responsable = dmg:GetAttacker() == ply and "el mismo" or GetEntityName(dmg:GetAttacker())
+
+        return {ply:Name(), math.Round(dmg:GetDamage(), 2), Responsable}
     end,
     ["PlayerHurt"] = function(ply, attacker, remaininghealth, damagetaken)
         local AttackerName = ( attacker == ply ) and "el mismo" or GetEntityName(attacker)
@@ -232,8 +242,17 @@ Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
 
 Gemini:LanguageAddPhrase(LANG, "Logger", "Registros")
 Gemini:LanguageAddPhrase(LANG, "Logger.DontAllowed", "No tienes permisos para ver los registros.")
-Gemini:LanguageAddPhrase(LANG, "Logger.LogsSended", "Los registros han sido enviados con exito.")
-
+Gemini:LanguageAddPhrase(LANG, "Logger.LogsSended", [[Los %s registros han sido recibidos con exito. (Tardo %s segundos)]])
+Gemini:LanguageAddPhrase(LANG, "Logger.InitialLogs", [[Registros iniciales]])
+Gemini:LanguageAddPhrase(LANG, "Logger.PlayerID", [[ID del jugador]])
+Gemini:LanguageAddPhrase(LANG, "Logger.MaxLogs", [[Cantidad maxima de Logs]])
+Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs", [[Logs entre X e Y]])
+Gemini:LanguageAddPhrase(LANG, "Logger.EnableBetweenLogs", [[Habilitar Logs entre X e Y]])
+Gemini:LanguageAddPhrase(LANG, "Logger.Search", [[Buscar]])
+Gemini:LanguageAddPhrase(LANG, "Logger.Requesting", [[Obteniendo registros...]])
+Gemini:LanguageAddPhrase(LANG, "Logger.RequestLogs", [[Obtener registros]])
+Gemini:LanguageAddPhrase(LANG, "Logger.RequestFailed", [[No se pudieron obtener los registros.]])
+Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", [[No hay registros para mostrar.]])
 
 --[[------------------------
    Gamemodes Descriptions

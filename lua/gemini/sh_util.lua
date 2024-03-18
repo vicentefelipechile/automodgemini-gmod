@@ -19,5 +19,5 @@ end
 ------------------------]]--
 
 function Gemini:VectorToString(vec)
-    return string.format("(%s, %s, %s)", math.Round(vec.x, 2), math.Round(vec.y, 2), math.Round(vec.z, 2))
+    return string.format("(%s, %s, %s)", math.Round(vec.x, 0), math.Round(vec.y, 0), math.Round(vec.z, 0))
 end

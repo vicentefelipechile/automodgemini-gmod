@@ -1,5 +1,5 @@
 --[[----------------------------------------------------------------------------
-                Google Gemini Automod - Server Owner Config (CL)
+                 Google Gemini Automod - Server Owner Menu (CL)
 ----------------------------------------------------------------------------]]--
 
 -- This is my best attempt to replicate the frutiger aero style
@@ -33,6 +33,7 @@ end
 
 -- Colors
 local WhiteColor = Color(255, 255, 255)
+local BlackColor = Color(0, 0, 0)
 local BackgroundColor = Color(40, 40, 40)
 local BackgroundColor1 = Color(60, 60, 60)
 local BackgroundColor2 = Color(30, 30, 30)
@@ -44,17 +45,42 @@ local FrutigerFontData = {
     size = 16,
     weight = 500,
     antialias = true,
-    shadow = false
+    shadow = false,
+    blursize = 0
 }
 
 surface.CreateFont("Frutiger:Normal", FrutigerFontData)
+
 FrutigerFontData.shadow = true
 surface.CreateFont("Frutiger:Normal-Shadow", FrutigerFontData)
+
+FrutigerFontData.shadow = false
+FrutigerFontData.blursize = 2
+surface.CreateFont("Frutiger:Normal-Blur", FrutigerFontData)
+
+FrutigerFontData.blursize = 0
 FrutigerFontData.shadow = false
 FrutigerFontData.size = 32
 surface.CreateFont("Frutiger:Big", FrutigerFontData)
+
 FrutigerFontData.shadow = true
 surface.CreateFont("Frutiger:Big-Shadow", FrutigerFontData)
+
+FrutigerFontData.shadow = false
+FrutigerFontData.blursize = 2
+surface.CreateFont("Frutiger:Big-Blur", FrutigerFontData)
+
+FrutigerFontData.shadow = false
+FrutigerFontData.blursize = 0
+FrutigerFontData.size = 13
+surface.CreateFont("Frutiger:Small", FrutigerFontData)
+
+FrutigerFontData.shadow = true
+surface.CreateFont("Frutiger:Small-Shadow", FrutigerFontData)
+
+FrutigerFontData.shadow = false
+FrutigerFontData.blursize = 2
+surface.CreateFont("Frutiger:Small-Blur", FrutigerFontData)
 
 
 --[[------------------------
@@ -104,7 +130,7 @@ function GEMINIPANEL:PoblateItems()
 end
 
 function GEMINIPANEL:Init()
-    self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.55, 400))
+    self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.55, 500))
     self:Center()
     self:MakePopup()
     self:SetTitle("Google Gemini Automod - Server Owner Config")
@@ -121,7 +147,7 @@ end
 
 function GEMINIPANEL:Close()
     if ispanel(self.ACTIVE_PANEL) then
-        self.ACTIVE_PANEL:OnLostFocus()
+        self.ACTIVE_PANEL.__MODULE:OnLostFocus()
     end
 
     self:SetVisible( false )
