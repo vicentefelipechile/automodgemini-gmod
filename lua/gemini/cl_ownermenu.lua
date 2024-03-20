@@ -31,9 +31,13 @@ end
           Variables
 ------------------------]]--
 
+-- CVars
+local CVAR_EnableAnimation = CreateClientConVar("gemini_config_panel_enable_animation", 1, true, false, "Enable the animation of the config panel")
+
+
 -- Colors
-local WhiteColor = Color(255, 255, 255)
-local BlackColor = Color(0, 0, 0)
+-- local WhiteColor = Color(255, 255, 255)
+-- local BlackColor = Color(0, 0, 0)
 local BackgroundColor = Color(40, 40, 40)
 local BackgroundColor1 = Color(60, 60, 60)
 local BackgroundColor2 = Color(30, 30, 30)
@@ -131,7 +135,6 @@ end
 
 function GEMINIPANEL:Init()
     self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.55, 500))
-    self:Center()
     self:MakePopup()
     self:SetTitle("Google Gemini Automod - Server Owner Config")
     self:ShowCloseButton(true)
@@ -143,6 +146,9 @@ function GEMINIPANEL:Init()
     self.Tabs:SetPos(8, BodyHeight + 8)
 
     self:PoblateItems()
+
+    -- Animate to the center of the screen
+    self:OpenAnimation()
 end
 
 function GEMINIPANEL:Close()
@@ -152,11 +158,15 @@ function GEMINIPANEL:Close()
 
     self:SetVisible( false )
 
-	if ( self:GetDeleteOnClose() ) then
-		self:Remove()
-	end
+    local DeleteOnClose = false
 
-	self:OnClose()
+    if ( self:GetDeleteOnClose() ) then
+        -- self:Remove()
+        DeleteOnClose = true
+    end
+
+    -- self:OnClose()
+    self:CloseAnimation(DeleteOnClose)
 end
 
 -- Trying to replicate the frutiger aero style
@@ -164,6 +174,53 @@ function GEMINIPANEL:Paint(w, h)
     draw.RoundedBoxEx(8, 0, 0, w, BodyHeight, BackgroundColor, true, true)
     draw.RoundedBoxEx(8, 0, h - BodyHeight, w, BodyHeight, BackgroundColor2, false, false, true, true)
     draw.RoundedBox(0, 0, BodyHeight, w, h - BodyHeight * 2, BackgroundColor1)
+end
+
+--[[------------------------
+       Register Derma
+------------------------]]--
+
+function GEMINIPANEL:OpenAnimation()
+    if ( CVAR_EnableAnimation:GetBool() == false ) then self:Center() return end
+
+    self:ShowCloseButton(false)
+    self:CenterHorizontal()
+
+    local NewX = self:GetX()
+    self:SetPos(NewX, self:GetTall() * -1)
+    print(self:GetPos())
+
+    local NewY = (ScrH() / 2) - (self:GetTall() / 2)
+    print(self:GetX(), NewY)
+
+    self:MoveTo(NewX, NewY, 0.5, 0, 0.5, function()
+        self:ShowCloseButton(true)
+    end)
+end
+
+function GEMINIPANEL:CloseAnimation(DeleteOnClose)
+    if ( CVAR_EnableAnimation:GetBool() == false ) then
+        if ( DeleteOnClose ) then
+            self:Remove()
+        end
+
+        self:OnClose()
+
+        return
+    end
+
+    local height = self:GetTall()
+    local anim = self:SizeTo( -1, 0, 0.5 )
+    anim.OnEnd = function()
+        self:SetVisible( false )
+        self:SetTall( height )
+
+        if ( DeleteOnClose ) then
+            self:Remove()
+        end
+
+        self:OnClose()
+    end
 end
 
 --[[------------------------

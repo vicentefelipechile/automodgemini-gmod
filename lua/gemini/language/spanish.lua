@@ -253,6 +253,7 @@ Gemini:LanguageAddPhrase(LANG, "Logger.Requesting", [[Obteniendo registros...]])
 Gemini:LanguageAddPhrase(LANG, "Logger.RequestLogs", [[Obtener registros]])
 Gemini:LanguageAddPhrase(LANG, "Logger.RequestFailed", [[No se pudieron obtener los registros.]])
 Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", [[No hay registros para mostrar.]])
+Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", [[Obtener registros asincronos]])
 
 --[[------------------------
    Gamemodes Descriptions

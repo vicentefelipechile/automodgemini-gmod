@@ -8,19 +8,12 @@ local BlackColor = Color(0, 0, 0)
 local DefaultNetworkUInt = 16
 local DefaultNetworkUIntBig = 32
 
-local SortByIDLog = function(self)
-
-    self:GetParent():SortByColumn( self:GetColumnID(), self:GetDescending() )
-    self:SetDescending( !self:GetDescending() )
-
-    self:GetParent().CurrentColumn = self
-end
-
 --[[------------------------
            Convars
 ------------------------]]--
 
 local CVAR_RequestInitialLogs = CreateClientConVar("gemini_logger_requestinitiallogs", 10, true, true)
+local CVAR_AsyncLogs = CreateClientConVar("gemini_logger_asynclogs", 1, true, true)
 local CVAR_PlayerTarget = CreateClientConVar("gemini_logger_playertarget", 0, true, true, Gemini:GetPhrase("Logger.PlayerID"))
 local CVAR_MaxLogs = CreateClientConVar("gemini_logger_maxlogs", 10, true, true, Gemini:GetPhrase("Logger.MaxLogs"))
 local CVAR_BetweenLogs = CreateClientConVar("gemini_logger_betweenlogs", 0, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
@@ -58,7 +51,7 @@ end
 function MODULE:RetrieveNetwork(Success, Message, Logs)
     if ( Success == true ) then
         local TimeLapse = math.Round(CurTime() - self.LAST_REQUEST, 4)
-    
+
         self:SetMessageLog( string.format( Gemini:GetPhrase(Message), #Logs, TimeLapse ) )
         self:UpdateTable(Logs)
     end
@@ -155,13 +148,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         PlayerIDInput:SetValue( CVAR_PlayerTarget:GetInt() )
     end
 
-    PlayerIDInput.OnEnter = function(self)
-        local PlayerID = tonumber(self:GetValue()) or 0
+    PlayerIDInput.OnEnter = function(SubSelf)
+        local PlayerID = tonumber(SubSelf:GetValue()) or 0
         CVAR_PlayerTarget:SetInt(PlayerID)
     end
 
-    PlayerIDInput.OnLoseFocus = function(self)
-        local PlayerID = tonumber(self:GetValue()) or 0
+    PlayerIDInput.OnLoseFocus = function(SubSelf)
+        local PlayerID = tonumber(SubSelf:GetValue()) or 0
         CVAR_PlayerTarget:SetInt(PlayerID)
     end
 
@@ -181,7 +174,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     MaxLogs:SetMax(200)
     MaxLogs:SetValue( CVAR_MaxLogs:GetInt() )
 
-    MaxLogs.OnValueChanged = function(self, value)
+    MaxLogs.OnValueChanged = function(_, value)
         CVAR_MaxLogs:SetInt(value)
     end
 
@@ -208,7 +201,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     BetweenLogsMax:SetValue( CVAR_BetweenLogsMax:GetInt() )
 
     -- Between Logs Function
-    BetweenLogsMin.OnValueChanged = function(self, value)
+    BetweenLogsMin.OnValueChanged = function(_, value)
         CVAR_BetweenLogsMin:SetInt(value)
 
         -- if the max is lower than the min, set the max to the min
@@ -217,7 +210,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         end
     end
 
-    BetweenLogsMax.OnValueChanged = function(self, value)
+    BetweenLogsMax.OnValueChanged = function(_, value)
         CVAR_BetweenLogsMax:SetInt(value)
 
         -- if the min is higher than the max, set the min to the max
@@ -234,7 +227,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     EnableBetweenLogs:SetTextColor(BlackColor)
     EnableBetweenLogs:SetValue( CVAR_BetweenLogs:GetBool() )
 
-    EnableBetweenLogs.OnChange = function(self, value)
+    EnableBetweenLogs.OnChange = function(_, value)
         CVAR_BetweenLogs:SetBool(value)
     end
 
@@ -280,8 +273,20 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     InitialLogs:SetMax(200)
     InitialLogs:SetValue( CVAR_RequestInitialLogs:GetInt() )
 
-    InitialLogs.OnValueChanged = function(self, value)
+    InitialLogs.OnValueChanged = function(_, value)
         CVAR_RequestInitialLogs:SetInt(value)
+    end
+
+    -- Async Logs
+    local AsyncLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
+    AsyncLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
+    AsyncLogs:SetPos(10, 260)
+    AsyncLogs:SetText( Gemini:GetPhrase("Logger.AsyncLogs") )
+    AsyncLogs:SetTextColor(BlackColor)
+    AsyncLogs:SetValue( CVAR_AsyncLogs:GetBool() )
+
+    AsyncLogs.OnChange = function(_, value)
+        CVAR_AsyncLogs:SetBool(value)
     end
 
     -- Globalize
@@ -333,6 +338,8 @@ net.Receive("Gemini:AskLogs", function(len)
 end)
 
 net.Receive("Gemini:ReplicateLog", function(len)
+    if ( CVAR_AsyncLogs:GetBool() == false ) then return end
+
     local ID = net.ReadUInt(DefaultNetworkUInt)
     local Log = net.ReadString()
     local Time = net.ReadString()
