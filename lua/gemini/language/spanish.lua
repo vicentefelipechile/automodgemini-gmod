@@ -104,8 +104,9 @@ local DamageType = {
 Gemini:LanguageOverrideHook(LANG, {
     ["DoPlayerDeath"] = function(victim, attacker, dmg)
         if not DamageType[dmg:GetDamageType()] then
-            print(dmg:GetDamageType())
+            Gemini:Print("Daño desconocido: ", dmg:GetDamageType())
         end
+
         local DmgType = DamageType[dmg:GetDamageType()] or game.GetAmmoName(dmg:GetAmmoType()) and "una bala de " .. game.GetAmmoName(dmg:GetAmmoType()) or "algo que no se puede determinar"
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
 
@@ -254,6 +255,8 @@ Gemini:LanguageAddPhrase(LANG, "Logger.RequestLogs", [[Obtener registros]])
 Gemini:LanguageAddPhrase(LANG, "Logger.RequestFailed", [[No se pudieron obtener los registros.]])
 Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", [[No hay registros para mostrar.]])
 Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", [[Obtener registros asincronos]])
+Gemini:LanguageAddPhrase(LANG, "Logger.ClearLogs", [[Limpiar registros]])
+Gemini:LanguageAddPhrase(LANG, "Logger.ClearedLogs", [[Se han vaciado los registros.]])
 
 --[[------------------------
    Gamemodes Descriptions

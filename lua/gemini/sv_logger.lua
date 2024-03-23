@@ -325,6 +325,10 @@ end
 net.Receive("Gemini:StartAsynchronousLogs", Gemini.LoggerStartAsynchronousLogs)
 net.Receive("Gemini:StopAsynchronousLogs", Gemini.LoggerStopAsynchronousLogs)
 
+hook.Add("PlayerDisconnected", "Gemini:LoggerAsynchronousLogs", function(ply)
+    table.RemoveByValue(AsynchronousPlayers, ply)
+end)
+
 --[[------------------------
       Backup Functions
 ------------------------]]--
@@ -333,11 +337,9 @@ local PreventExploit = -1
 
 function Gemini:LoggerGenerateBackup()
     local JustDoIt = false
-    if ( PreventExploit == -1 ) then
-        JustDoIt = true
-    end
+    if ( PreventExploit == -1 ) then JustDoIt = true end
 
-    if ( CurTime() - PreventExploit ) < 60 or not JustDoIt then
+    if ( CurTime() - PreventExploit ) < 60 or JustDoIt then
         self:Print("Something is trying to create a backup, please wait at least " .. math.Round(60 - (CurTime() - PreventExploit)) .. " seconds.")
         return
     end

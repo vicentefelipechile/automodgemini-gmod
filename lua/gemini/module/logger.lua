@@ -257,6 +257,18 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         end
     end
 
+    -- Clear Logs Button
+    local ClearLogsButton = vgui.Create("DButton", SettingsPanel)
+    ClearLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
+    ClearLogsButton:SetPos(10, 204)
+    ClearLogsButton:SetText( Gemini:GetPhrase("Logger.ClearLogs") )
+    ClearLogsButton:SetFont("Frutiger:Small")
+
+    ClearLogsButton.DoClick = function()
+        self:UpdateTable({})
+        self:SetMessageLog( Gemini:GetPhrase("Logger.ClearedLogs") )
+    end
+
 
     -- Initial Ask
     local InitialLogsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -264,11 +276,11 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     InitialLogsLabel:SetTextColor(BlackColor)
     InitialLogsLabel:SetFont("Frutiger:Small")
     InitialLogsLabel:SizeToContents()
-    InitialLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - InitialLogsLabel:GetWide() / 2, 220)
+    InitialLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - InitialLogsLabel:GetWide() / 2, 240)
 
     local InitialLogs = vgui.Create("DNumberWang", SettingsPanel)
     InitialLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    InitialLogs:SetPos(10, 234)
+    InitialLogs:SetPos(10, 254)
     InitialLogs:SetMin(1)
     InitialLogs:SetMax(200)
     InitialLogs:SetValue( CVAR_RequestInitialLogs:GetInt() )
@@ -280,13 +292,15 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     -- Async Logs
     local AsyncLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
     AsyncLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    AsyncLogs:SetPos(10, 260)
+    AsyncLogs:SetPos(10, 280)
     AsyncLogs:SetText( Gemini:GetPhrase("Logger.AsyncLogs") )
     AsyncLogs:SetTextColor(BlackColor)
     AsyncLogs:SetValue( CVAR_AsyncLogs:GetBool() )
 
     AsyncLogs.OnChange = function(_, value)
         CVAR_AsyncLogs:SetBool(value)
+
+        self:SetAsynconousLogs(value)
     end
 
     -- Globalize
@@ -305,6 +319,9 @@ function MODULE:SetAsynconousLogs(Active)
 end
 
 function MODULE:OnFocus()
+    local EnableAsync = CVAR_AsyncLogs:GetBool()
+    if ( EnableAsync == false ) then return end
+
     local LogsMax = CVAR_MaxLogs:GetInt()
     local LogsAmount = CVAR_RequestInitialLogs:GetInt()
 

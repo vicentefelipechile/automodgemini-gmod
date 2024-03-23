@@ -151,22 +151,23 @@ function GEMINIPANEL:Init()
     self:OpenAnimation()
 end
 
+local function DeleteOnCloseFunc(SelfPanel)
+    if SelfPanel:GetDeleteOnClose() then
+        SelfPanel:Remove()
+    end
+
+    SelfPanel:OnClose()
+
+    return
+end
+
 function GEMINIPANEL:Close()
     if ispanel(self.ACTIVE_PANEL) then
         self.ACTIVE_PANEL.__MODULE:OnLostFocus()
     end
 
-    self:SetVisible( false )
-
-    local DeleteOnClose = false
-
-    if ( self:GetDeleteOnClose() ) then
-        -- self:Remove()
-        DeleteOnClose = true
-    end
-
-    -- self:OnClose()
-    self:CloseAnimation(DeleteOnClose)
+    -- self:SetVisible( true )
+    self:CloseAnimation(self)
 end
 
 -- Trying to replicate the frutiger aero style
@@ -184,43 +185,19 @@ function GEMINIPANEL:OpenAnimation()
     if ( CVAR_EnableAnimation:GetBool() == false ) then self:Center() return end
 
     self:ShowCloseButton(false)
-    self:CenterHorizontal()
+    self:Center()
 
-    local NewX = self:GetX()
-    self:SetPos(NewX, self:GetTall() * -1)
-    print(self:GetPos())
+    self:SlideDown(0.3)
 
-    local NewY = (ScrH() / 2) - (self:GetTall() / 2)
-    print(self:GetX(), NewY)
-
-    self:MoveTo(NewX, NewY, 0.5, 0, 0.5, function()
+    timer.Simple(0.301, function()
         self:ShowCloseButton(true)
     end)
 end
 
 function GEMINIPANEL:CloseAnimation(DeleteOnClose)
-    if ( CVAR_EnableAnimation:GetBool() == false ) then
-        if ( DeleteOnClose ) then
-            self:Remove()
-        end
+    if ( CVAR_EnableAnimation:GetBool() == false ) then DeleteOnCloseFunc(self, DeleteOnClose) return end
 
-        self:OnClose()
-
-        return
-    end
-
-    local height = self:GetTall()
-    local anim = self:SizeTo( -1, 0, 0.5 )
-    anim.OnEnd = function()
-        self:SetVisible( false )
-        self:SetTall( height )
-
-        if ( DeleteOnClose ) then
-            self:Remove()
-        end
-
-        self:OnClose()
-    end
+    self:SlideUp(0.3)
 end
 
 --[[------------------------
