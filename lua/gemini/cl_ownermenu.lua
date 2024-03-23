@@ -198,6 +198,9 @@ function GEMINIPANEL:CloseAnimation(DeleteOnClose)
     if ( CVAR_EnableAnimation:GetBool() == false ) then DeleteOnCloseFunc(self, DeleteOnClose) return end
 
     self:SlideUp(0.3)
+    timer.Simple(0.301, function()
+        DeleteOnCloseFunc(self, DeleteOnClose)
+    end)
 end
 
 --[[------------------------
