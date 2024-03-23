@@ -11,6 +11,28 @@ Gemini.__LANG = Gemini.__LANG or {}
 Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
 
 --[[------------------------
+        NPC Names
+------------------------]]--
+
+local NPCNamesPath = "resource/language/npc-ents_english.txt"
+local NPCNames = {}
+
+if ( file.Exists(NPCNamesPath, "GAME") ) then
+    local FileContent = util.KeyValuesToTable(file.Read(NPCNamesPath, "GAME"))
+    
+    for NameClass, NameEntity in pairs(FileContent["tokens"]) do
+        NPCNames[NameClass] = NameEntity
+    end
+end
+
+hook.Add("GetDeathNoticeEntityName", "GeminiLanguageHook:General.GetDeathNoticeEntityName", function(ent)
+    local EntityClass = ent:GetClass()
+    if ( NPCNames[EntityClass] ) then
+        return NPCNames[EntityClass]
+    end
+end)
+
+--[[------------------------
        Language Module
 ------------------------]]--
 
@@ -134,10 +156,13 @@ function Gemini:LanguagePoblate()
                         PlayersInvolved[any] = true
                     end
                 end
-                PlayersInvolved = table.GetKeys(PlayersInvolved)
 
+                PlayersInvolved = table.GetKeys(PlayersInvolved)
                 local Log = string.format(Phrase, unpack(Args))
-                hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
+
+                if ( #PlayersInvolved >= 1 ) then
+                    hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
+                end
             end)
         end
     end
