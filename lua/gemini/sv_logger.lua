@@ -169,7 +169,7 @@ end
 
 function Gemini:LoggerGetPlayer(ply)
     if not ( IsValid(ply) and ply:IsPlayer() ) then
-        self:Error([[The first argument of Gemini:LoggerGetPlayer() is not a Player]], PhraseName, "Player")
+        self:Error([[The first argument of Gemini:LoggerGetPlayer() is not a Player]], ply, "Player")
     end
 
     if ply.__LOGGER_ID then

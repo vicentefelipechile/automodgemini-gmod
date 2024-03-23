@@ -103,7 +103,15 @@ end
        Pre-Parameters
 ------------------------]]--
 
-function Gemini:GetGameContext()
+function Gemini:GetGamemodeContext(TargetModel)
+    if ( TargetModel ) then
+        if ( not self.__MODELS[TargetModel] ) then
+            self:Error("The first argument of Gemini:GetGamemodeContext() does not exist.", TargetModel, "string")
+        end
+
+        return self:GetPhrase("context") .. "\n\n" .. self.__MODELS[TargetModel]
+    end
+
     local ModelTarget = self:GetConfig("ModelTarget", "Gemini")
 
     if ( ModelTarget == "auto" ) then
@@ -151,7 +159,7 @@ function Gemini:CreateBodyStructure(Player, Limit)
     }
 
     --[[ Game Context ]]--
-    local GameContext = self:GetGameContext()
+    local GameContext = self:GetGamemodeContext()
 
     --[[ Pre-Context ]]--
     local PreContext = self:LoadServerConfig("precontext")
@@ -206,7 +214,7 @@ function Gemini:MakeRequest(Data)
 
     --[[ Body ]]--
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
-    local GamemodeModel = self:GetGameContext()
+    local GamemodeModel = self:GetGamemodeContext()
     local GenerationConfig = self:GetGenerationConfig()
     local SafetyConfig = self:GetSafetyConfig()
 

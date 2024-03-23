@@ -320,15 +320,15 @@ end
 
 function MODULE:OnFocus()
     local EnableAsync = CVAR_AsyncLogs:GetBool()
-    if ( EnableAsync == false ) then return end
-
     local LogsMax = CVAR_MaxLogs:GetInt()
     local LogsAmount = CVAR_RequestInitialLogs:GetInt()
 
     LogsAmount = math.min(LogsAmount, LogsMax)
 
     self:AskLogs(LogsAmount)
-    self:SetAsynconousLogs(true)
+    if ( EnableAsync == true ) then
+        self:SetAsynconousLogs(true)
+    end
 end
 
 function MODULE:OnLostFocus()

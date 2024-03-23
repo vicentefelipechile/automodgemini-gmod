@@ -14,7 +14,8 @@ local function GetEntityName(ent)
     elseif ent:IsPlayer() then
         return ent:Name()
     elseif ent:IsNPC() then
-        return GAMEMODE:GetDeathNoticeEntityName(ent)
+        local EntityName = hook.Run("GetDeathNoticeEntityName", ent)
+        return EntityName
     else
         return ent.PrintName or ent:GetClass()
     end
@@ -53,6 +54,7 @@ Gemini:LanguageAddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de
 Gemini:LanguageAddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
 Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador "%s" ha presenciado el evento.]])
+Gemini:LanguageAddPhrase(LANG, "OnNPCKilled", [[El NPC "%s" ha sido asesinado por "%s" en las coordenadas %s.]])
 
 
 --[[------------------------
@@ -66,6 +68,7 @@ local DamageType = {
     [DMG_NEVERGIB + DMG_BULLET]                 = "la crossbow",
     [DMG_NEVERGIB + DMG_PREVENT_PHYSICS_FORCE]  = "el suicidio",
     [DMG_DISSOLVE + DMG_CRUSH]                  = "una bola de energia",
+    [DMG_BUCKSHOT + DMG_BULLET]                 = "una escopeta",
 
     -- Default Damage Types
     [DMG_GENERIC]   = "un daño generico o los puños",
@@ -111,6 +114,9 @@ Gemini:LanguageOverrideHook(LANG, {
         local AttackerName = ( attacker == victim ) and "el mismo" or GetEntityName(attacker)
 
         return {victim:Name(), AttackerName, Gemini:VectorToString(victim:GetPos()), DmgType}
+    end,
+    ["OnNPCKilled"] = function(npc, attacker, inflictor)
+        return {GetEntityName(npc), GetEntityName(attacker), Gemini:VectorToString(npc:GetPos())}
     end,
     ["PlayerSpawn"] = function(ply, time)
         return {ply:Name(), math.Round(ply.__LAST_DEATH and CurTime() - ply.__LAST_DEATH or 0, 2)}
@@ -257,6 +263,12 @@ Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", [[No hay registros para mostrar.
 Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", [[Obtener registros asincronos]])
 Gemini:LanguageAddPhrase(LANG, "Logger.ClearLogs", [[Limpiar registros]])
 Gemini:LanguageAddPhrase(LANG, "Logger.ClearedLogs", [[Se han vaciado los registros.]])
+
+--[[------------------------
+   Playground Menu Phrases
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Playground", "Zona de Pruebas")
 
 --[[------------------------
    Gamemodes Descriptions
