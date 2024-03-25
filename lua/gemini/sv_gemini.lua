@@ -44,10 +44,10 @@ function Gemini:GeminiPoblate()
     }
 
     self.__SAFETY_TYPE = {
-        ["HARM_CATEGORY_HARASSMENT"] = self.__SAFETY_ENUM[ self:GetConfig("SafetyHarassment", "Gemini") ],
-        ["HARM_CATEGORY_HATE_SPEECH"] = self.__SAFETY_ENUM[ self:GetConfig("SafetyHateSpeech", "Gemini") ],
-        ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = self.__SAFETY_ENUM[ self:GetConfig("SafetySexuallyExplicit", "Gemini") ],
-        ["HARM_CATEGORY_DANGEROUS_CONTENT"] = self.__SAFETY_ENUM[ self:GetConfig("SafetyDangerousContent", "Gemini") ]
+        ["HARM_CATEGORY_HARASSMENT"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetyHarassment", "Gemini") ] end,
+        ["HARM_CATEGORY_HATE_SPEECH"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetyHateSpeech", "Gemini") ] end,
+        ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
+        ["HARM_CATEGORY_DANGEROUS_CONTENT"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetyDangerousContent", "Gemini") ] end
     }
 end
 
@@ -85,10 +85,10 @@ function Gemini:GetSafetyConfig(UseCache)
 
     local SafetySettings = {}
 
-    for Category, Value in pairs(self.__SAFETY_TYPE) do
+    for Category, FuncValue in pairs(self.__SAFETY_TYPE) do
         table.insert(SafetySettings, {
             ["category"] = Category,
-            ["threshold"] = Value
+            ["threshold"] = FuncValue()
         })
     end
 
@@ -103,15 +103,7 @@ end
        Pre-Parameters
 ------------------------]]--
 
-function Gemini:GetGamemodeContext(TargetModel)
-    if ( TargetModel ) then
-        if ( not self.__MODELS[TargetModel] ) then
-            self:Error("The first argument of Gemini:GetGamemodeContext() does not exist.", TargetModel, "string")
-        end
-
-        return self:GetPhrase("context") .. "\n\n" .. self.__MODELS[TargetModel]
-    end
-
+function Gemini:GetGamemodeContext()
     local ModelTarget = self:GetConfig("ModelTarget", "Gemini")
 
     if ( ModelTarget == "auto" ) then

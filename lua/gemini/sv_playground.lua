@@ -4,13 +4,15 @@
 
 util.AddNetworkString("Gemini:PlaygroundSendMessage")
 util.AddNetworkString("Gemini:PlaygroundMakeRequest")
-local WhoAreUsingPlayground = {}
+
+local DefaultNetworkUInt = 16
+local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
 
 --[[------------------------
        Util Functions
 ------------------------]]--
 
-function Gemini:PlaygroundSendMessage(ply, Message)
+function Gemini:PlaygroundSendMessage(ply, Message, Argument)
     if not IsValid(ply) then
         self:Error("The first argument of Gemini:PlaygroundSendMessage() must be a player.", ply, "player")
     end
@@ -29,6 +31,7 @@ function Gemini:PlaygroundSendMessage(ply, Message)
 
     net.Start("Gemini:PlaygroundSendMessage")
         net.WriteString(Message)
+        net.WriteString(Argument or "")
     net.Send(ply)
 end
 
@@ -47,7 +50,7 @@ function Gemini:PlaygroundGetLogsFromPly(ply)
     if IsBetween then
         local Min = ply:GetInfoNum("gemini_playground_betweenlogs_min", 1)
         local Max = ply:GetInfoNum("gemini_playground_betweenlogs_max", 1)
-        Logs = sql_Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
+        Logs = sql.Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
     
         Logs = ( Logs == nil ) and {} or Logs
     else
@@ -59,6 +62,8 @@ function Gemini:PlaygroundGetLogsFromPly(ply)
             Logs = self:LoggerGetLogsPlayer(PlayerID, Limit)
         end
     end
+
+    table.sort(Logs, function(a, b) return a["geminilog_time"] < b["geminilog_time"] end)
 
     local LogsTable = {}
     for _, LogInfo in ipairs(Logs) do
@@ -78,22 +83,26 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
     --[[ All Body ]]--
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
     local GamemodeModel = self:GetGamemodeContext()
-    local Prompt = AllConfig["Prompt"] or ""
+    local FullPrompt = ""
 
     --[[ Contents ]]--
     local Contents = {
-        { ["parts"] = {["text"] = GamemodeModel}, ["role"] = "user"}
+        { ["parts"] = {["text"] = self:GetPhrase("context.begin")}, ["role"] = "user"},
+        { ["parts"] = {["text"] = GamemodeModel}, ["role"] = "model"}
     }
 
     --[[ Context ]]--
     local PlayerWantContext = ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1
     if PlayerWantContext then
-        local Context = self:PlaygroundGetLogsFromPly(ply)
-        table.insert(Contents, { ["parts"] = {["text"] = Context}, ["role"] = "context"})
+        local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
+
+        FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
     end
 
     --[[ Prompt ]]--
-    table.insert(Contents, { ["parts"] = {["text"] = Prompt}, ["role"] = "prompt"})
+    FullPrompt = FullPrompt .. Prompt
+
+    table.insert(Contents, { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"})
 
     --[[ Body ]]--
     local Body = {
@@ -115,18 +124,56 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         ["body"] = BodyJSON,
         ["success"] = function(Code, BodyResponse, Headers)    
             self:GetHTTPDescription(Code)
-
             file.Write("gemini_response.txt", BodyResponse)
+
+            --[[ Check Response ]]--
+            TableBody = util.JSONToTable(BodyResponse)
+
+            if TableBody["prompt_feedback"] then
+                self:Print( self:GetPhrase("Gemini.Error.Blocked") )
+                self:PlaygroundSendMessage(ply, "Gemini.Error.Blocked")
+
+                return
+            end
+
+            local Candidates = TableBody["candidates"]
+
+            if not Candidates[1]["content"] then
+                self:Print("The response from Gemini API is invalid. The content is missing.")
+
+                self:PlaygroundSendMessage(ply, "Gemini.Error.FailedRequest")
+                return
+            end
+
+            --[[ Send Response ]]--
+            local Text = Candidates[1]["content"]["parts"][1]["text"]
+
+            local Compress = util.Compress( string.Replace(Text, "**", "") )
+            local CompressSize = #Compress
+
+            if ( CompressSize > MaxBandwidth ) then
+                self:Print("The response from Gemini API is too large to send to the client. Size: ", CompressSize, " bytes")
+
+                self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
+                return
+            end
+
+
+            net.Start("Gemini:PlaygroundMakeRequest")
+                net.WriteUInt(CompressSize, DefaultNetworkUInt)
+                net.WriteData(Compress, CompressSize)
+            net.Send(ply)
         end,
         ["failed"] = function(Error)
-            self:Print("Failed to make request to Gemini API. Error: ", Error)
+            self:Print( string.format("Gemini.Error.Reason", Error) )
+            self:PlaygroundSendMessage(ply, "Gemini.Error.Reason", Error)
         end
     })
 
     if RequestMade then
-        self:PlaygroundSendMessage(ply, "Request has been made to Gemini API.")
+        self:PlaygroundSendMessage(ply, "Gemini.Requested")
     else
-        self:PlaygroundSendMessage(ply, "Failed to make request to Gemini API.")
+        self:PlaygroundSendMessage(ply, "Gemini.Error")
     end
 end
 

@@ -26,7 +26,7 @@ local ContextIcon = "icon16/application_view_detail.png"
 local PromptHistory = {}
 local PromptExists = false
 
-local CurrentPanel = false
+local LastRequest = 0
 
 --[[------------------------
            Convars
@@ -57,35 +57,43 @@ function MODULE:PoblatePrompt()
     PromptExists = true
 end
 
-function MODULE:AddMessagePrompt(Role, Text, HasContext)
+function MODULE:AddMessagePrompt(Role, Text)
     if not AllowedRoles[Role] then return end
 
     local PromptMessage = vgui.Create("DPanel")
+    PromptMessage:SetHeight(70)
     PromptMessage:Dock(TOP)
     PromptMessage:DockMargin(5, 5, 5, 0)
     PromptMessage.Paint = Gemini.ReturnNoneFunction
 
-    local PromptAutor = vgui.Create("DImage", PromptMessage)
-    PromptAutor:SetSize(24, 16)
+    local PromptAuthorPanel = vgui.Create("DPanel", PromptMessage)
+    PromptAuthorPanel:SetSize(24, 24)
+    PromptAuthorPanel:Dock(LEFT)
+    PromptAuthorPanel.Paint = Gemini.ReturnNoneFunction
+
+    local PromptAutor = vgui.Create("DImage", PromptAuthorPanel)
+    PromptAutor:SetSize(16, 16)
     PromptAutor:SetImage(Role == "user" and UserIcon or ModelIcon)
-    PromptAutor:Dock(LEFT)
-    PromptAutor:DockMargin(0, 0, 5, 0)
+    PromptAutor:SetPos(0, 0)
 
     local PromptLabel = vgui.Create("DLabel", PromptMessage)
-    PromptLabel:SetText(Text)
+    PromptLabel:SetText( Text .. (Role == "model" and "\n\n" or "") )
     PromptLabel:SetFont("Frutiger:Small")
     PromptLabel:Dock(FILL)
     PromptLabel:SizeToContents()
+    PromptLabel:SetAutoStretchVertical(true)
     PromptLabel:SetWrap(true)
 
-    -- If HasContext, add a message below the prompt saying what that message was sended with context
+    local HasContext = ( Role == "user" ) and CVAR_AttachContext:GetBool()
     if HasContext then
         local ContextImage = vgui.Create("DImage", PromptMessage)
         ContextImage:SetSize(12, 12)
         ContextImage:SetImage(ContextIcon)
-        ContextImage:SetPos(self.PromptHistory:GetWide() - 26, 6)
+        ContextImage:SetPos(self.PromptHistory:GetWide() - 46, 6)
         ContextImage:SetImageColor(AlphaColor)
     end
+
+    PromptMessage:SizeToChildren(false, true)
 
     self.PromptHistory:AddItem(PromptMessage)
 
@@ -98,25 +106,16 @@ function MODULE:SendMessagePrompt(Text)
     net.SendToServer()
 
     if ( Status == true ) then
+        LastRequest = CurTime()
         self:SetMessageLog( Gemini:GetPhrase("Playground.Prompt.Sended") )
+
+        self.PromptInputSend:SetDisabled(true)
     end
 end
 
 --[[------------------------
            Logger
 ------------------------]]--
-
-function MODULE:GetLogs()
-    local LogsID = {}
-    
-    for k, v in ipairs(self.TablePanel:GetLines()) do
-        table.insert(LogsID, tonumber( v:GetColumnText(1) ))
-    end
-
-    table.sort(LogsID, function(a, b) return a < b end)
-
-    return LogsID
-end
 
 function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
     Target = Target or 0
@@ -158,15 +157,14 @@ function MODULE:UpdateTable(Logs)
         for k, Data in ipairs(Logs) do
             self:AddNewLog(Data["geminilog_id"], Data["geminilog_log"], Data["geminilog_time"], Data["geminilog_user1"])
         end
+
+        self.TablePanel:SortByColumn( self.TablePanel.CurrentColumn:GetColumnID(), true )
     end
 end
 
 function MODULE:AddNewLog(ID, Log, Time, User)
     if IsValid(self.TablePanel) then
         self.TablePanel:AddLine(ID, Log, Time, User):SetSortValue(1, tonumber(ID))
-
-        -- Sort by ID
-        self.TablePanel:SortByColumn( self.TablePanel.CurrentColumn:GetColumnID(), self.TablePanel.CurrentColumn:GetDescending() )
     end
 end
 
@@ -187,7 +185,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     local OutputMSG = vgui.Create("DTextEntry", OurTab)
-    OutputMSG:SetSize(470, 20)
+    OutputMSG:SetSize(500, 20)
     OutputMSG:SetPos(10, OurTab:GetTall() - 68)
     OutputMSG:SetEditable(false)
 
@@ -200,7 +198,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     local SettingsPanel = vgui.Create("DPanel", OurTab)
-    SettingsPanel:SetSize(180, OutputY - 25)
+    SettingsPanel:SetSize(170, OutputY - 25)
     SettingsPanel:SetPos(10, 15)
    
     local SettingsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -345,7 +343,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     local PromptPanel = vgui.Create("DPanel", OurTab)
-    PromptPanel:SetSize(280, OutputY - 25)
+    PromptPanel:SetSize(320, OutputY - 25)
     PromptPanel:SetPos( SettingsPanel:GetWide() + PanelOffset, 15 )
 
     local PromptTitlePanel = vgui.Create("DPanel", PromptPanel)
@@ -388,24 +386,28 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         if Text == "" then return end
 
         self:AddMessagePrompt("user", Text)
-
-        self:SendMessagePrompt("Testing")
+        self:SendMessagePrompt(Text)
     end
+
+    self.PromptInputSend = PromptInputSend
 
     --[[------------------------
             Context Panel
     ------------------------]]--
+    local PromptX = PromptPanel:GetPos()
+    local PromptWide = PromptPanel:GetWide()
 
     local HistoryPanel = vgui.Create("DListView", OurTab)
-    HistoryPanel:SetSize(OurTab:GetWide() - 486, OurTab:GetTall() - 60)
-    HistoryPanel:SetPos(490, 15)
+    HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), OurTab:GetTall() - 62)
+    HistoryPanel:SetPos( PromptX + PromptWide + 8, 15 )
+    -- HistoryPanel:SetPos( ( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), 15 )
     HistoryPanel:SetMultiSelect(false)
 
     self.List = {}
     self.List["ID"] = HistoryPanel:AddColumn("ID")
     self.List["Log"] = HistoryPanel:AddColumn("Log")
 
-    self.List["ID"]:SetWidth( 52 )
+    self.List["ID"]:SetWidth( 30 )
     self.List["Log"]:SetWidth( HistoryPanel:GetWide() - 52 )
 
     HistoryPanel.CurrentColumn = self.List["ID"]
@@ -434,6 +436,28 @@ net.Receive("Gemini:AskLogs:Playground", function(len)
     end
 
     MODULE:RetrieveNetwork(Success, Message, Logs)
+end)
+
+net.Receive("Gemini:PlaygroundSendMessage", function(len)
+    local Message = net.ReadString()
+    local Argument = net.ReadString()
+
+    Message = Argument ~= "" and string.format( Gemini:GetPhrase(Message), Argument ) or Gemini:GetPhrase(Message)
+
+    MODULE:SetMessageLog( Message )
+    MODULE.PromptInputSend:SetDisabled(false)
+end)
+
+net.Receive("Gemini:PlaygroundMakeRequest", function(len)
+    local CompressSize = net.ReadUInt(DefaultNetworkUInt)
+    local CompressData = net.ReadData(CompressSize)
+
+    local Message = util.Decompress(CompressData)
+    print(Message)
+    MODULE:AddMessagePrompt("model", Message)
+
+    MODULE:SetMessageLog( string.format( Gemini:GetPhrase("Playground.Prompt.Received"), math.Round(CurTime() - LastRequest , 2) ) )
+    MODULE.PromptInputSend:SetDisabled(false)
 end)
 
 --[[------------------------

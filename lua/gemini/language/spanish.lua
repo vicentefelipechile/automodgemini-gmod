@@ -15,7 +15,7 @@ local function GetEntityName(ent)
         return ent:Name()
     elseif ent:IsNPC() then
         local EntityName = hook.Run("GetDeathNoticeEntityName", ent)
-        return EntityName
+        return EntityName .. " (NPC)"
     else
         return ent.PrintName or ent:GetClass()
     end
@@ -244,6 +244,19 @@ Gemini:LanguageAddPhrase(LANG, "Config", "Configuración")
 Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
 
 --[[------------------------
+    Gemini Error Phrases
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Gemini.Requested", "Se ha realizado la petición a Gemini.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error", "Fallo al realizar la petición a Gemini.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Reason", "No se pudo realizar la petición a Gemini. Razón: %s")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.NoPermission", "No tienes permisos para realizar esta acción.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Failed", "No se pudo realizar la peticion a Gemini: %s")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.FailedRequest", "La peticion tuvo un error en el proceso.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.TooBig", "El tamaño de la respuesta es demasiado grande para ser enviado al cliente.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Blocked", [[La peticion fue bloqueada por el Gemini, verifica la configuracion de seguridad.]])
+
+--[[------------------------
      Logger Menu Phrases
 ------------------------]]--
 
@@ -275,6 +288,7 @@ Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Error", "El texto/contexto no 
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Placeholder", "Explica con tus palabras que...")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Context", "Este mensaje fue enviado con contexto.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Sended", "Mensaje enviado.")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Received", "Mensaje recibido. (Tardo %s segundos)")
 Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Enviar prompt con contexto")
 Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext.Sended", "Mensaje enviado con contexto.")
 
@@ -282,7 +296,10 @@ Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext.Sended", "Mensaje envia
    Gamemodes Descriptions
 ------------------------]]--
 
-Gemini:LanguageAddPhrase(LANG, "context", [[La información que se muestra a continuacion se trata de los modos de juego que existen en Garry's Mod]])
+Gemini:LanguageAddPhrase(LANG, "context", [[La información que se muestra a continuacion se trata del modo de juego actual que hay en el servidor de Garry's Mod]])
+Gemini:LanguageAddPhrase(LANG, "context.playground", [[Lo siguiente son registros/logs de lo que ocurrio en el juego:]])
+Gemini:LanguageAddPhrase(LANG, "context.begin", [[Eres un modelo de lenguaje de inteligencia artificial, tu mision principal es ser el juez/espectador de la informacion que exista en el juego, dime ¿Que es lo que sabes de Garry's Mod?]])
+Gemini:LanguageAddPhrase(LANG, "context.post", [[Lo anterior es lo que ocurrio en el juego, evita crear respuestas extensas/largas si el usuario no te lo pide y tampoco utilices caracteres especiales como "*" o "&" en ves de eso usa "-", si tienes la oportunidad de responder con una respuesta corta, hazlo, si el usuario desea mas informacion te lo pedira, mientras tanto solo haz respuestas cortas, si te habla en algun idioma que no sea el español tienes que responderle con el mismo idioma que te haya hablado, ahora debes responder lo que el usuario te indique despues de esta linea (recuerda el idioma)]])
 
 Gemini:LanguageAddPhrase(LANG, "default", [[Modo de Juego:
 Ningún Modo de Juego Conocido

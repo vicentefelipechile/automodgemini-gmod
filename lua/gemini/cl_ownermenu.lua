@@ -134,7 +134,7 @@ function GEMINIPANEL:PoblateItems()
 end
 
 function GEMINIPANEL:Init()
-    self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.55, 500))
+    self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.6, 500))
     self:MakePopup()
     self:SetTitle("Google Gemini Automod - Server Owner Config")
     self:ShowCloseButton(true)
@@ -223,8 +223,11 @@ end
 ------------------------]]--
 
 concommand.Add("gemini_config_panel", function()
-    local panel = vgui.Create("Gemini:ConfigPanel")
-    panel:MakePopup()
+    if ( ScrW() < 800 ) or ( ScrH() < 600 ) then
+        chat.AddText("The screen resolution is too small to open the config panel.")
+    else
+        vgui.Create("Gemini:ConfigPanel")
+    end
 end)
 
 -- on say !config
