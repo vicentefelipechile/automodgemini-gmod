@@ -3,7 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 local MODULE = { ["Icon"] = "icon16/page_white_text.png" }
-local BlackColor = Color(0, 0, 0)
+local BlackColor = COLOR_BLACK
 
 local DefaultNetworkUInt = 16
 local DefaultNetworkUIntBig = 32
@@ -30,6 +30,7 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
     IsPlayer = IsPlayer or false
 
     local Status = net.Start("Gemini:AskLogs")
+        net.WriteBool(false) -- IsPlayground
         net.WriteUInt(Limit, DefaultNetworkUInt)
         net.WriteBool(IsPlayer)
         net.WriteUInt(Target, DefaultNetworkUInt)
@@ -88,22 +89,24 @@ end
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
-    -- Print a dlabel to all OurTab
-    local Label = vgui.Create("DLabel", OurTab)
-    Label:SetText( Gemini:GetPhrase("Logger") )
-    Label:SetFont("Frutiger:Big-Shadow")
-    Label:SizeToContents()
-    Label:SetPos(OurTab:GetWide() / 2 - Label:GetWide() / 2, 10)
+    --[[------------------------
+           Output Message
+    ------------------------]]--
 
-    -- Output Message
     local OutputMSG = vgui.Create("DTextEntry", OurTab)
     OutputMSG:SetSize(OurTab:GetWide() - 40, 20)
-    OutputMSG:SetPos(10, OurTab:GetTall() - 70)
+    OutputMSG:SetPos(10, OurTab:GetTall() - 68)
     OutputMSG:SetEditable(false)
 
-    -- Table Panel
+    self.OutputMSG = OutputMSG
+    local OutputX, OutputY = OutputMSG:GetPos()
+
+    --[[------------------------
+             Table Panel
+    ------------------------]]--
+
     local TablePanel = vgui.Create("DListView", OurTab)
-    TablePanel:SetSize(OurTab:GetWide() - 230, OurTab:GetTall() - 100)
+    TablePanel:SetSize(OurTab:GetWide() - 230, OutputY - 25)
     TablePanel:SetPos(200, 15)
     TablePanel:SetMultiSelect(false)
 
@@ -115,19 +118,25 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.List["Date"] = TablePanel:AddColumn("Date", 3)
     self.List["PlayerID"] = TablePanel:AddColumn("Player ID", 4)
 
-    self.List["ID"]:SetWidth( WidthList * 0.05 )
-    self.List["Log"]:SetWidth( WidthList * 0.78 )
+
+    local WidthLog = TablePanel:GetWide() - ( 52 + 124 + 63 )
+
+    self.List["ID"]:SetWidth( 52 )
+    self.List["Log"]:SetWidth( WidthLog )
     self.List["Date"]:SetWidth( 128 )
-    self.List["PlayerID"]:SetWidth( WidthList * 0.06 )
+    self.List["PlayerID"]:SetWidth( 63 )
 
     self.List["ID"]:SetDescending( true )
     TablePanel.CurrentColumn = self.List["ID"]
 
-    -- self.List["ID"].DoClick = SortByIDLog
+    self.TablePanel = TablePanel
 
-    -- Settings Panel
+    --[[------------------------
+           Settings Panel
+    ------------------------]]--
+
     local SettingsPanel = vgui.Create("DPanel", OurTab)
-    SettingsPanel:SetSize(180, OurTab:GetTall() - 100)
+    SettingsPanel:SetSize(180, OutputY - 25)
     SettingsPanel:SetPos(10, 15)
 
     local SettingsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -137,7 +146,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     SettingsLabel:SizeToContents()
     SettingsLabel:SetPos(SettingsPanel:GetWide() / 2 - SettingsLabel:GetWide() / 2, 6)
 
-    -- Player ID Input
     local PlayerIDInput = vgui.Create("DTextEntry", SettingsPanel)
     PlayerIDInput:SetSize(SettingsPanel:GetWide() - 20, 20)
     PlayerIDInput:SetPos(10, 40)
@@ -158,7 +166,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         CVAR_PlayerTarget:SetInt(PlayerID)
     end
 
-    -- Max Logs Label
     local MaxLogsLabel = vgui.Create("DLabel", SettingsPanel)
     MaxLogsLabel:SetText( Gemini:GetPhrase("Logger.MaxLogs") )
     MaxLogsLabel:SetTextColor(BlackColor)
@@ -166,7 +173,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     MaxLogsLabel:SizeToContents()
     MaxLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - MaxLogsLabel:GetWide() / 2, 70)
 
-    -- Max Logs (DNumberWang)
     local MaxLogs = vgui.Create("DNumberWang", SettingsPanel)
     MaxLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
     MaxLogs:SetPos(10, 84)
@@ -178,7 +184,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         CVAR_MaxLogs:SetInt(value)
     end
 
-    -- Between Logs (2 DNumberWang)
     local BetweenLogsLabel = vgui.Create("DLabel", SettingsPanel)
     BetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.BetweenLogs") )
     BetweenLogsLabel:SetTextColor(BlackColor)
@@ -200,11 +205,9 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     BetweenLogsMax:SetMax(1000000)
     BetweenLogsMax:SetValue( CVAR_BetweenLogsMax:GetInt() )
 
-    -- Between Logs Function
     BetweenLogsMin.OnValueChanged = function(_, value)
         CVAR_BetweenLogsMin:SetInt(value)
 
-        -- if the max is lower than the min, set the max to the min
         if ( BetweenLogsMax:GetValue() < value ) then
             BetweenLogsMax:SetValue(value)
         end
@@ -213,13 +216,11 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     BetweenLogsMax.OnValueChanged = function(_, value)
         CVAR_BetweenLogsMax:SetInt(value)
 
-        -- if the min is higher than the max, set the min to the max
         if ( BetweenLogsMin:GetValue() > value ) then
             BetweenLogsMin:SetValue(value)
         end
     end
 
-    -- Enable Between Logs
     local EnableBetweenLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
     EnableBetweenLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
     EnableBetweenLogs:SetPos(10, 150)
@@ -231,8 +232,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         CVAR_BetweenLogs:SetBool(value)
     end
 
-
-    -- Ask Logs Button
     local AskLogsButton = vgui.Create("DButton", SettingsPanel)
     AskLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
     AskLogsButton:SetPos(10, 180)
@@ -257,7 +256,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         end
     end
 
-    -- Clear Logs Button
     local ClearLogsButton = vgui.Create("DButton", SettingsPanel)
     ClearLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
     ClearLogsButton:SetPos(10, 204)
@@ -269,8 +267,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self:SetMessageLog( Gemini:GetPhrase("Logger.ClearedLogs") )
     end
 
-
-    -- Initial Ask
     local InitialLogsLabel = vgui.Create("DLabel", SettingsPanel)
     InitialLogsLabel:SetText( Gemini:GetPhrase("Logger.InitialLogs") )
     InitialLogsLabel:SetTextColor(BlackColor)
@@ -289,7 +285,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         CVAR_RequestInitialLogs:SetInt(value)
     end
 
-    -- Async Logs
     local AsyncLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
     AsyncLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
     AsyncLogs:SetPos(10, 280)
@@ -302,10 +297,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
         self:SetAsynconousLogs(value)
     end
-
-    -- Globalize
-    self.OutputMSG = OutputMSG
-    self.TablePanel = TablePanel
 end
 
 function MODULE:SetAsynconousLogs(Active)
@@ -323,6 +314,7 @@ function MODULE:OnFocus()
     local LogsMax = CVAR_MaxLogs:GetInt()
     local LogsAmount = CVAR_RequestInitialLogs:GetInt()
 
+    if ( LogsAmount < 1 ) then return end
     LogsAmount = math.min(LogsAmount, LogsMax)
 
     self:AskLogs(LogsAmount)

@@ -3,6 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 util.AddNetworkString("Gemini:AskLogs")
+util.AddNetworkString("Gemini:AskLogs:Playground")
 util.AddNetworkString("Gemini:ReplicateLog")
 util.AddNetworkString("Gemini:StartAsynchronousLogs")
 util.AddNetworkString("Gemini:StopAsynchronousLogs")
@@ -45,6 +46,8 @@ Gemini.__LOGGER = {
             FOREIGN KEY (geminilog_user1) REFERENCES gemini_user (geminiuser_id)
         )
     ]],
+    ["GEMINI_LOG_CLEAR"] = [[DELETE FROM gemini_log]],
+    ["GEMINI_LOG_CLEAR_POST"] = [[DELETE FROM sqlite_sequence WHERE name = 'gemini_log']],
     ["GETUSER"] = [[
         SELECT
             geminiuser_id
@@ -150,7 +153,7 @@ function Gemini:LoggerCheckTable()
     self:AddConfig("BackupIntervalEnabled", "Logger", self.VERIFICATION_TYPE.bool,  false)
     self:AddConfig("BackupInterval",        "Logger", self.VERIFICATION_TYPE.number, 120)
     self:AddConfig("CompressedBackup",      "Logger", self.VERIFICATION_TYPE.bool,  true)
-    self:AddConfig("RawBackup",             "Logger", self.VERIFICATION_TYPE.bool,  true)
+    self:AddConfig("RawBackup",             "Logger", self.VERIFICATION_TYPE.bool,  false)
 
     self:AddConfig("MaxLogsRequest",        "Logger", self.VERIFICATION_TYPE.number, 500)
 end
@@ -216,7 +219,7 @@ function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
     return QueryResult
 end
 
-function Gemini:LoggerGetAllLogsLimit(Limit)
+function Gemini:LoggerGetLogsLimit(Limit)
     local QueryResult = sql_Query( string.format(self.__LOGGER.GETALLLOGSLIMIT, Limit) )
 
     return QueryResult
@@ -261,10 +264,14 @@ function Gemini.LoggerAskLogs(len, ply)
         return
     end
 
+    local IsPlayground = net.ReadBool()
+
     local Limit = net.ReadUInt(DefaultNetworkUInt)
     local IsPlayer = net.ReadBool()
     local PlayerID = net.ReadUInt(DefaultNetworkUInt)
     local IsBetween = net.ReadBool()
+
+    Limit = math.min(Limit, Gemini:GetConfig("MaxLogsRequest", "Logger"))
 
     local Logs = {}
 
@@ -272,11 +279,11 @@ function Gemini.LoggerAskLogs(len, ply)
         local Min = net.ReadUInt(DefaultNetworkUIntBig)
         local Max = net.ReadUInt(DefaultNetworkUIntBig)
         Logs = sql_Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
+    
+        Logs = ( Logs == nil ) and {} or Logs
     else
-        Limit = math.min(Limit, Gemini:GetConfig("MaxLogsRequest", "Logger"))
-
         if ( IsPlayer == false ) then
-            Logs = Gemini:LoggerGetAllLogsLimit(Limit)
+            Logs = Gemini:LoggerGetLogsLimit(Limit)
         else
             Logs = Gemini:LoggerGetLogsPlayer(PlayerID, Limit)
         end
@@ -285,7 +292,9 @@ function Gemini.LoggerAskLogs(len, ply)
     local CompressesLogs = util.Compress( util.TableToJSON(Logs) )
     local CompressedSize = #CompressesLogs
 
-    net.Start("Gemini:AskLogs")
+    local NetworkTarget = IsPlayground and "Gemini:AskLogs:Playground" or "Gemini:AskLogs"
+
+    net.Start(NetworkTarget)
         net.WriteBool(true)
         net.WriteString( "Logger.LogsSended" )
         net.WriteUInt( CompressedSize, DefaultNetworkUIntBig )
@@ -293,9 +302,10 @@ function Gemini.LoggerAskLogs(len, ply)
     net.Send(ply)
 end
 net.Receive("Gemini:AskLogs", Gemini.LoggerAskLogs)
+net.Receive("Gemini:AskLogs:Playground", Gemini.LoggerAskLogs)
 
 function Gemini:LoggerSendAsynchronousLogs()
-    local LastLog = Gemini:LoggerGetAllLogsLimit(1)[1]
+    local LastLog = Gemini:LoggerGetLogsLimit(1)[1]
 
     local ID = LastLog["geminilog_id"]
     local Log = LastLog["geminilog_log"]
@@ -336,14 +346,6 @@ end)
 local PreventExploit = -1
 
 function Gemini:LoggerGenerateBackup()
-    local JustDoIt = false
-    if ( PreventExploit == -1 ) then JustDoIt = true end
-
-    if ( CurTime() - PreventExploit ) < 60 or JustDoIt then
-        self:Print("Something is trying to create a backup, please wait at least " .. math.Round(60 - (CurTime() - PreventExploit)) .. " seconds.")
-        return
-    end
-
     local Users = sql_Query(self.__LOGGER.GETALLPLAYERS)
     local Logs = sql_Query(self.__LOGGER.GETALLLOGS)
     local TimeStamp = os.date("%Y-%m-%d_%H-%M-%S")
@@ -380,6 +382,15 @@ function Gemini:LoggerGenerateBackup()
     end
 
     PreventExploit = CurTime()
+end
+
+function Gemini:LoggerClearLogs()
+    sql.Begin()
+    sql_Query(self.__LOGGER.GEMINI_LOG_CLEAR)
+    sql_Query(self.__LOGGER.GEMINI_LOG_CLEAR_POST)
+    sql.Commit()
+
+    self:Print("Logs cleared successfully.")
 end
 
 hook.Add("PostGamemodeLoaded", "Gemini:LoggerBackup", function()

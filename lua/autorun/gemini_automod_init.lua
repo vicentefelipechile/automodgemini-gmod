@@ -163,15 +163,15 @@ function Gemini:FromConvar(Name, Category)
 
     if not self.__cfg[Category] then
         if CLIENT then
-            self:Error([[The category maybe does not exist in the CLIENT-SIDE.]], Category, "string")
+            self:Error([[The category maybe doesn't exist in the CLIENT-SIDE.]], Category, "string")
         else
-            self:Error([[The category does not exist.]], Category, "string")
+            self:Error([[The category doesn't exist.]], Category, "string")
         end
     elseif not self.__cfg[Category][Name] then
         if CLIENT then
-            self:Error([[The config does not exist in the CLIENT-SIDE.]], Name, "string")
+            self:Error([[The config doesn't exist in the CLIENT-SIDE.]], Name, "string")
         end
-        self:Error([[The config does not exist.]], Name, "string")
+        self:Error([[The config doesn't exist.]], Name, "string")
     end
 
     -- if the value is a PROTECTED convar, it will return the default value
@@ -320,14 +320,14 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
 
     if not self.__cfg[Category] then
         if CLIENT then
-            self:Error([[The category maybe does not exist in the CLIENT-SIDE.]], Category, "string")
+            self:Error([[The category maybe doesn't exist in the CLIENT-SIDE.]], Category, "string")
         else
-            self:Error([[The category does not exist.]], Category, "string")
+            self:Error([[The category doesn't exist.]], Category, "string")
         end
     end
 
     if not self.__cfg[Category][Name] then
-        self:Error([[The config does not exist.]], Name, "string")
+        self:Error([[The config doesn't exist.]], Name, "string")
     end
 
     return self:FromConvar(Name, Category)
@@ -372,18 +372,18 @@ function Gemini:SetConfig(Name, Value, Category)
 
     if not self.__cfg[Category] then
         if CLIENT then
-            self:Error([[The category maybe does not exist in the CLIENT-SIDE.]], Category, "string")
+            self:Error([[The category maybe doesn't exist in the CLIENT-SIDE.]], Category, "string")
         else
-            self:Error([[The category does not exist.]], Category, "string")
+            self:Error([[The category doesn't exist.]], Category, "string")
         end
     end
 
     if not self.__cfg[Category][Name] then
-        self:Error([[The config does not exist.]], Name, "string")
+        self:Error([[The config doesn't exist.]], Name, "string")
     end
 
     if not self.__cfg[Category][Name][2](Value) then
-        self:Error([[The value does not match the verification function.]], Value, "any")
+        self:Error([[The value doesn't match the verification function.]], Value, "any")
     end
 
     local ConvarValue = self:ToConvar(Name, Value, Category)

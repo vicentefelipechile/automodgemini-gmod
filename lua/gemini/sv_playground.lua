@@ -36,16 +36,48 @@ end
        Playground API
 ------------------------]]--
 
-function Gemini:PlaygroundMakeRequest(AllConfig, ply)
-    if not istable(AllConfig) then
-        self:Error("The first argument of Gemini:MakeRequest() must be a table.", AllConfig, "table")
+function Gemini:PlaygroundGetLogsFromPly(ply)
+    local IsBetween = ply:GetInfoNum("gemini_playground_betweenlogs", 0) == 1
+    local Limit = math.min(
+        self:GetConfig("MaxLogsRequest", "Logger"), 
+        ply:GetInfoNum("gemini_playground_maxlogs", 30)
+    )
+    local Logs = {}
+
+    if IsBetween then
+        local Min = ply:GetInfoNum("gemini_playground_betweenlogs_min", 1)
+        local Max = ply:GetInfoNum("gemini_playground_betweenlogs_max", 1)
+        Logs = sql_Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
+    
+        Logs = ( Logs == nil ) and {} or Logs
+    else
+        local PlayerID = ply:GetInfoNum("gemini_playground_playertarget", 0)
+
+        if ( PlayerID == 0 ) then
+            Logs = self:LoggerGetLogsLimit(Limit)
+        else
+            Logs = self:LoggerGetLogsPlayer(PlayerID, Limit)
+        end
+    end
+
+    local LogsTable = {}
+    for _, LogInfo in ipairs(Logs) do
+        table.insert(LogsTable, LogInfo["geminilog_time"] .. " - " .. LogInfo["geminilog_log"])
+    end
+
+    return LogsTable
+end
+
+function Gemini:PlaygroundMakeRequest(Prompt, ply)
+    if not isstring(Prompt) then
+        self:Error("The first argument of Gemini:PlaygroundMakeRequest() must be a string.", Prompt, "string")
+    elseif ( Prompt == "" ) then
+        self:Error("The first argument of Gemini:PlaygroundMakeRequest() must not be empty.", Prompt, "string")
     end
 
     --[[ All Body ]]--
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
     local GamemodeModel = self:GetGamemodeContext()
-    local GenerationConfig = AllConfig["GenerationConfig"] or self:GetGenerationConfig()
-    local SafetyConfig = AllConfig["SafetyConfig"] or self:GetSafetyConfig()
     local Prompt = AllConfig["Prompt"] or ""
 
     --[[ Contents ]]--
@@ -53,14 +85,20 @@ function Gemini:PlaygroundMakeRequest(AllConfig, ply)
         { ["parts"] = {["text"] = GamemodeModel}, ["role"] = "user"}
     }
 
-    if ( Prompt ~= "" ) then
-        table.insert(Contents, { ["parts"] = {["text"] = Prompt}, ["role"] = "prompt"})
+    --[[ Context ]]--
+    local PlayerWantContext = ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1
+    if PlayerWantContext then
+        local Context = self:PlaygroundGetLogsFromPly(ply)
+        table.insert(Contents, { ["parts"] = {["text"] = Context}, ["role"] = "context"})
     end
+
+    --[[ Prompt ]]--
+    table.insert(Contents, { ["parts"] = {["text"] = Prompt}, ["role"] = "prompt"})
 
     --[[ Body ]]--
     local Body = {
-        ["generationConfig"] = GenerationConfig,
-        ["safetySettings"] = SafetyConfig,
+        ["generationConfig"] = self:GetGenerationConfig(),
+        ["safetySettings"] = self:GetSafetyConfig(),
         ["contents"] = Contents
     }
 
@@ -93,20 +131,9 @@ function Gemini:PlaygroundMakeRequest(AllConfig, ply)
 end
 
 function Gemini.PlaygroundReceivePetition(len, ply)
-    local RequestGenerationConfig = net.ReadTable()
-    local RequestSafetyConfig = net.ReadTable()
-    local RequestPrompt = net.ReadString()
+    local Prompt = net.ReadString()
 
-    RequestGenerationConfig = RequestGenerationConfig == {} and nil or RequestGenerationConfig
-    RequestSafetyConfig = RequestSafetyConfig == {} and nil or RequestSafetyConfig
-
-    local RequestConfig = {
-        ["GenerationConfig"] = RequestGenerationConfig,
-        ["SafetyConfig"] = RequestSafetyConfig,
-        ["Prompt"] = RequestPrompt
-    }
-
-    Gemini:PlaygroundMakeRequest(RequestConfig, ply)
+    Gemini:PlaygroundMakeRequest(Prompt, ply)
 end
 
 net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)

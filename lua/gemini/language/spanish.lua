@@ -269,6 +269,14 @@ Gemini:LanguageAddPhrase(LANG, "Logger.ClearedLogs", [[Se han vaciado los regist
 ------------------------]]--
 
 Gemini:LanguageAddPhrase(LANG, "Playground", "Zona de Pruebas")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt", "Prompt")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Desc", "Escribe un texto/contexto para mostrar en el menu.")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Error", "El texto/contexto no puede estar vacio.")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Placeholder", "Explica con tus palabras que...")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Context", "Este mensaje fue enviado con contexto.")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Sended", "Mensaje enviado.")
+Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Enviar prompt con contexto")
+Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext.Sended", "Mensaje enviado con contexto.")
 
 --[[------------------------
    Gamemodes Descriptions
