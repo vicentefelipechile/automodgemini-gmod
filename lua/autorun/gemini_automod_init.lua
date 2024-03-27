@@ -16,6 +16,7 @@ Gemini = Gemini or {
     __cfg = {["general"] = {}},
     Version = "1.0",
     Author = "vicentefelipechile",
+    Name = "Gemini",
     URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 }
 
@@ -335,7 +336,7 @@ end
 
 
 function Gemini:SetConfig(Name, Value, Category)
-    if ( CLIENT and not LocalPlayer():IsSuperAdmin() ) then return end
+    if ( CLIENT and not Gemini:CanUse(nil, "gemini_config") ) then return end
 
     if CLIENT then
         net.Start("Gemini:SetConfig")
@@ -423,7 +424,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
-        AddCSLuaFile("gemini/sh_config.lua")    self:Print("File \"gemini/sh_config.lua\" has been send to client.")
+        AddCSLuaFile("gemini/sh_rules.lua")     self:Print("File \"gemini/sh_rules.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_ownermenu.lua") self:Print("File \"gemini/cl_ownermenu.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
@@ -439,9 +440,10 @@ function Gemini:PreInit()
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
+        include("gemini/sh_rules.lua")          self:Print("File \"gemini/sh_rules.lua\" has been loaded.")
     end
 
-    include("gemini/sh_config.lua")             self:Print("File \"gemini/sh_config.lua\" has been loaded.")
+    include("gemini/sh_rules.lua")              self:Print("File \"gemini/sh_rules.lua\" has been loaded.")
 
     hook.Run("Gemini.PreInit")
     Gemini:Init()
@@ -523,14 +525,14 @@ Gemini:PreInit()
 
 if SERVER then
     net.Receive("Gemini:ReplicateConfig", function(len, ply)
-        if not ply:IsSuperAdmin() then return end
+        if not Gemini:CanUse(ply, "gemini_config") then return end
 
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
     end)
 
     net.Receive("Gemini:SetConfig", function(len, ply)
-        if not ply:IsSuperAdmin() then return end
+        if not Gemini:CanUse(ply, "gemini_config") then return end
 
         local Name = net.ReadString()
         local Value = net.ReadType()
@@ -552,7 +554,7 @@ concommand.Add("gemini_reload", function(ply)
 
         net.Start("Gemini:ReplicateConfig")
         net.Broadcast()
-    elseif ply:IsSuperAdmin() then
+    elseif Gemini:CanUse(nil, "gemini_config") then
         net.Start("Gemini:ReplicateConfig")
         net.SendToServer()
     else

@@ -110,9 +110,19 @@ function GEMINIPANEL:PoblateItems()
         Tab.Paint = SelfPaint
 
         local Result = Module:MainFunc(self, self.Tabs, Tab)
-        if ( Result == false ) and ( Result ~= nil ) then continue end
-
         local NewTab = self.Tabs:AddSheet("  " .. Module["__name"] .. "  ", Tab, Module.Icon)["Tab"]
+
+        if ( Result == false ) then
+            NewTab:SetEnabled(false)
+
+            -- Make the button darker
+            NewTab.Paint = function(self, w, h)
+                draw.RoundedBox(4, 0, 0, w, h, BackgroundColor2)
+            end
+
+            continue
+        end
+
         NewTab.__MODULE = Module
         NewTab.OnFocus = Module.OnFocus
         NewTab.OnLostFocus = Module.OnLostFocus

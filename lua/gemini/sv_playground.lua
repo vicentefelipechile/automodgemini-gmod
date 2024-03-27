@@ -180,7 +180,11 @@ end
 function Gemini.PlaygroundReceivePetition(len, ply)
     local Prompt = net.ReadString()
 
-    Gemini:PlaygroundMakeRequest(Prompt, ply)
+    if not Gemini:CanUse(ply, "gemini_playground") then
+        Gemini:PlaygroundSendMessage(ply, "Gemini.Error.NoPermission")
+    else
+        Gemini:PlaygroundMakeRequest(Prompt, ply)
+    end
 end
 
 net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)

@@ -81,21 +81,6 @@ end
       Network Functions
 ------------------------]]--
 
-function Gemini.ReceiveServerInfo()
-    local ServerName = net.ReadString()
-    local ServerOwner = net.ReadString()
-
-    -- Rules are compressed to save bandwidth
-    local UInt = net.ReadUInt(16)
-    local Rules = util.Decompress(net.ReadData(UInt))
-
-    Gemini.__RULES["Server Name"] = ServerName
-    Gemini.__RULES["Server Owner"] = ServerOwner
-    Gemini.__RULES["Rules"] = Rules
-
-    Gemini:Print("Received server rules", os.date("%H:%M:%S"))
-end
-
 function Gemini:BroadcastServerInfo()
     -- Cut the rules to the maximum bandwidth
     local Compressed = util.Compress(self.__RULES["Rules"])
@@ -119,6 +104,21 @@ function Gemini:BroadcastServerInfo()
     self:Print("Broadcasted server rules", os.date("%H:%M:%S"))
 end
 
+function Gemini.ReceiveServerInfo()
+    local ServerName = net.ReadString()
+    local ServerOwner = net.ReadString()
+
+    -- Rules are compressed to save bandwidth
+    local UInt = net.ReadUInt(16)
+    local Rules = util.Decompress(net.ReadData(UInt))
+
+    Gemini.__RULES["Server Name"] = ServerName
+    Gemini.__RULES["Server Owner"] = ServerOwner
+    Gemini.__RULES["Rules"] = Rules
+
+    Gemini:Print("Received server rules", os.date("%H:%M:%S"))
+end
+
 if CLIENT then
     net.Receive("Gemini:BroadcastRules", Gemini.ReceiveServerInfo)
 end
@@ -129,7 +129,11 @@ end
 
 function Gemini:ReloadRules()
     local LuaFiles = file.Find(CustomConfig .. "*.lua", "LUA")
-    local AtLeastOne = false
+
+    if #LuaFiles == 0 then
+        self:Print("No server owner config found")
+        return
+    end
 
     for _, LuaFile in ipairs(LuaFiles) do
         local LuaPath = CustomConfig .. File
@@ -138,12 +142,6 @@ function Gemini:ReloadRules()
         end
         include(LuaPath)
         self:Print("Loaded Server Owner File: ", LuaPath)
-
-        AtLeastOne = true
-    end
-
-    if not AtLeastOne then
-        self:Print("No server owner config found")
     end
 end
 

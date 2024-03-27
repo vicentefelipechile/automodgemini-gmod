@@ -88,6 +88,7 @@ end
 ------------------------]]--
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
+    if not Gemini:CanUse(nil, "gemini_logger") then return false end
 
     --[[------------------------
            Output Message

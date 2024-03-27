@@ -179,6 +179,7 @@ function MODULE:SetMessageLog(Message)
 end
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
+    if not Gemini:CanUse(nil, "gemini_playground") then return false end
 
     --[[------------------------
            Output Message
@@ -400,7 +401,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     local HistoryPanel = vgui.Create("DListView", OurTab)
     HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), OurTab:GetTall() - 62)
     HistoryPanel:SetPos( PromptX + PromptWide + 8, 15 )
-    -- HistoryPanel:SetPos( ( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), 15 )
     HistoryPanel:SetMultiSelect(false)
 
     self.List = {}
@@ -453,7 +453,6 @@ net.Receive("Gemini:PlaygroundMakeRequest", function(len)
     local CompressData = net.ReadData(CompressSize)
 
     local Message = util.Decompress(CompressData)
-    print(Message)
     MODULE:AddMessagePrompt("model", Message)
 
     MODULE:SetMessageLog( string.format( Gemini:GetPhrase("Playground.Prompt.Received"), math.Round(CurTime() - LastRequest , 2) ) )

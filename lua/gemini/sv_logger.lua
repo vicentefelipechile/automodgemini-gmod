@@ -255,7 +255,7 @@ end)
 ------------------------]]--
 
 function Gemini.LoggerAskLogs(len, ply)
-    if not ply:IsSuperAdmin() then
+    if not Gemini:CanUse(ply, "gemini_logger") then
         net.Start("Gemini:AskLogs")
             net.WriteBool(false)
             net.WriteString("Logger.DontAllowed")
@@ -321,7 +321,7 @@ function Gemini:LoggerSendAsynchronousLogs()
 end
 
 function Gemini.LoggerStartAsynchronousLogs(len, ply)
-    if not ply:IsSuperAdmin() then return end
+    if not Gemini:CanUse(ply, "gemini_logger") then return end
 
     table.insert(AsynchronousPlayers, ply)
     Gemini:Print( string.format("Asynchronous logs started for \"%s\"", ply:Nick()) )
