@@ -4,9 +4,11 @@
 
 util.AddNetworkString("Gemini:PlaygroundSendMessage")
 util.AddNetworkString("Gemini:PlaygroundMakeRequest")
+util.AddNetworkString("Gemini:PlaygroundResetRequest")
 
 local DefaultNetworkUInt = 16
 local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
+local PlayerUsingPlayground = {}
 
 --[[------------------------
        Util Functions
@@ -81,35 +83,52 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
     end
 
     --[[ All Body ]]--
+    local Body = nil
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
-    local GamemodeModel = self:GetGamemodeContext()
-    local FullPrompt = ""
 
-    --[[ Contents ]]--
-    local Contents = {
-        { ["parts"] = {["text"] = self:GetPhrase("context.begin")}, ["role"] = "user"},
-        { ["parts"] = {["text"] = GamemodeModel}, ["role"] = "model"}
-    }
+    if PlayerUsingPlayground[ply] then
+        local Part = {
+            ["parts"] = {["text"] = Prompt},
+            ["role"] = "user"
+        }
 
-    --[[ Context ]]--
-    local PlayerWantContext = ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1
-    if PlayerWantContext then
-        local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
+        table.insert(PlayerUsingPlayground[ply]["contents"], Part)
 
-        FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
+        Body = PlayerUsingPlayground[ply]
+    else
+
+        --[[ All Body ]]--
+        local GamemodeModel = self:GetGamemodeContext()
+        local FullPrompt = ""
+    
+        --[[ Contents ]]--
+        local Contents = {
+            { ["parts"] = {["text"] = self:GetPhrase("context.begin")}, ["role"] = "user"},
+            { ["parts"] = {["text"] = GamemodeModel}, ["role"] = "model"}
+        }
+    
+        --[[ Context ]]--
+        local PlayerWantContext = ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1
+        if PlayerWantContext then
+            local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
+    
+            FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
+        end
+    
+        --[[ Prompt ]]--
+        FullPrompt = FullPrompt .. Prompt
+    
+        table.insert(Contents, { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"})
+    
+        --[[ Body ]]--
+        Body = {
+            ["generationConfig"] = self:GetGenerationConfig(),
+            ["safetySettings"] = self:GetSafetyConfig(),
+            ["contents"] = Contents
+        }
+
+        PlayerUsingPlayground[ply] = Body
     end
-
-    --[[ Prompt ]]--
-    FullPrompt = FullPrompt .. Prompt
-
-    table.insert(Contents, { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"})
-
-    --[[ Body ]]--
-    local Body = {
-        ["generationConfig"] = self:GetGenerationConfig(),
-        ["safetySettings"] = self:GetSafetyConfig(),
-        ["contents"] = Contents
-    }
 
     local BodyJSON = util.TableToJSON(Body, true)
     file.Write("gemini_request.txt", BodyJSON)
@@ -124,15 +143,21 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         ["body"] = BodyJSON,
         ["success"] = function(Code, BodyResponse, Headers)    
             self:GetHTTPDescription(Code)
+
+            if ( Code ~= 200 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.ServerError") return end
+
             file.Write("gemini_response.txt", BodyResponse)
 
             --[[ Check Response ]]--
             TableBody = util.JSONToTable(BodyResponse)
 
-            if TableBody["prompt_feedback"] then
-                self:Print( self:GetPhrase("Gemini.Error.Blocked") )
-                self:PlaygroundSendMessage(ply, "Gemini.Error.Blocked")
+            if TableBody["promptFeedback"] and TableBody["promptFeedback"]["blockReason"] then
+                local FeedbackMessage = "Enum.BlockReason." .. TableBody["promptFeedback"]["blockReason"]
 
+                self:Print( self:GetPhrase(FeedbackMessage) )
+                self:PlaygroundSendMessage(ply, FeedbackMessage)
+
+                PlayerUsingPlayground[ply] = nil
                 return
             end
 
@@ -140,12 +165,28 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
 
             if not Candidates[1]["content"] then
                 self:Print("The response from Gemini API is invalid. The content is missing.")
-
                 self:PlaygroundSendMessage(ply, "Gemini.Error.FailedRequest")
+
+                PlayerUsingPlayground[ply] = nil
                 return
             end
 
+            --[[ Check if the player still exists ]]--
+            if not IsValid(ply) then
+                self:Print("The player that requested the prompt no longer exists.")
+                return
+            end
+
+            if not istable( PlayerUsingPlayground[ply] ) then
+                self:Print("The player that requested the prompt is no longer using the playground.")
+                return
+            end
+
+            --[[ Save Response ]]--
+            table.insert(PlayerUsingPlayground[ply]["contents"], Candidates[1]["content"])
+
             --[[ Send Response ]]--
+
             local Text = Candidates[1]["content"]["parts"][1]["text"]
 
             local Compress = util.Compress( string.Replace(Text, "**", "") )
@@ -157,7 +198,6 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
                 self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
                 return
             end
-
 
             net.Start("Gemini:PlaygroundMakeRequest")
                 net.WriteUInt(CompressSize, DefaultNetworkUInt)
@@ -177,6 +217,10 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
     end
 end
 
+--[[------------------------
+      Network Functions
+------------------------]]--
+
 function Gemini.PlaygroundReceivePetition(len, ply)
     local Prompt = net.ReadString()
 
@@ -186,5 +230,11 @@ function Gemini.PlaygroundReceivePetition(len, ply)
         Gemini:PlaygroundMakeRequest(Prompt, ply)
     end
 end
-
 net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
+
+function Gemini.PlayGroundResetRequest(len, ply)
+    PlayerUsingPlayground[ply] = nil
+
+    Gemini:PlaygroundSendMessage(ply, "Playground.Prompt.Reseted")
+end
+net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlayGroundResetRequest)

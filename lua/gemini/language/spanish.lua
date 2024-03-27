@@ -254,7 +254,26 @@ Gemini:LanguageAddPhrase(LANG, "Gemini.Error.NoPermission", "No tienes permisos 
 Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Failed", "No se pudo realizar la peticion a Gemini: %s")
 Gemini:LanguageAddPhrase(LANG, "Gemini.Error.FailedRequest", "La peticion tuvo un error en el proceso.")
 Gemini:LanguageAddPhrase(LANG, "Gemini.Error.TooBig", "El tamaño de la respuesta es demasiado grande para ser enviado al cliente.")
-Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Blocked", [[La peticion fue bloqueada por el Gemini, verifica la configuracion de seguridad.]])
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Blocked", "La peticion fue bloqueada por el Gemini, verifica la configuracion de seguridad.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Safety", "La peticion fue bloqueada por el sistema de seguridad de Gemini.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.ServerError", "Error en el servidor de Gemini, espera un momento e intenta de nuevo.")
+
+--[[-----------------------
+    Gemini Enum Phrases
+-----------------------]]--
+
+-- Block Reason
+Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.BLOCK_REASON_UNSPECIFIED", "La peticion ha sido bloqueada por una razon no especificada.")
+Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.SAFETY", "La peticion ha sido bloqueada por razones de seguridad.")
+Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.OTHER", "La peticion ha sido bloqueada por una razon desconocida.")
+
+-- Finish Reason
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.FINISH_REASON_UNSPECIFIED", "La peticion ha sido finalizada por una razon no especificada.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.MAX_TOKENS", "La cantidad maxima de tokens especificada en la peticion ha sido alcanzada.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.RECITATION", "La peticion ha sido finalizada por motivos de recitación.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.SAFETY", "La peticion ha sido finalizada por razones de seguridad.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.STOP", "Punto de parada natural del modelo o secuencia de parada proporcionada.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.OTHER", "La peticion ha sido finalizada por una razon desconocida.")
 
 --[[------------------------
      Logger Menu Phrases
@@ -262,20 +281,20 @@ Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Blocked", [[La peticion fue bloquea
 
 Gemini:LanguageAddPhrase(LANG, "Logger", "Registros")
 Gemini:LanguageAddPhrase(LANG, "Logger.DontAllowed", "No tienes permisos para ver los registros.")
-Gemini:LanguageAddPhrase(LANG, "Logger.LogsSended", [[Los %s registros han sido recibidos con exito. (Tardo %s segundos)]])
-Gemini:LanguageAddPhrase(LANG, "Logger.InitialLogs", [[Registros iniciales]])
-Gemini:LanguageAddPhrase(LANG, "Logger.PlayerID", [[ID del jugador]])
-Gemini:LanguageAddPhrase(LANG, "Logger.MaxLogs", [[Cantidad maxima de Logs]])
-Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs", [[Logs entre X e Y]])
-Gemini:LanguageAddPhrase(LANG, "Logger.EnableBetweenLogs", [[Habilitar Logs entre X e Y]])
-Gemini:LanguageAddPhrase(LANG, "Logger.Search", [[Buscar]])
-Gemini:LanguageAddPhrase(LANG, "Logger.Requesting", [[Obteniendo registros...]])
-Gemini:LanguageAddPhrase(LANG, "Logger.RequestLogs", [[Obtener registros]])
-Gemini:LanguageAddPhrase(LANG, "Logger.RequestFailed", [[No se pudieron obtener los registros.]])
-Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", [[No hay registros para mostrar.]])
-Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", [[Obtener registros asincronos]])
-Gemini:LanguageAddPhrase(LANG, "Logger.ClearLogs", [[Limpiar registros]])
-Gemini:LanguageAddPhrase(LANG, "Logger.ClearedLogs", [[Se han vaciado los registros.]])
+Gemini:LanguageAddPhrase(LANG, "Logger.LogsSended", "Los %s registros han sido recibidos con exito. (Tardo %s segundos)")
+Gemini:LanguageAddPhrase(LANG, "Logger.InitialLogs", "Registros iniciales")
+Gemini:LanguageAddPhrase(LANG, "Logger.PlayerID", "ID del jugador")
+Gemini:LanguageAddPhrase(LANG, "Logger.MaxLogs", "Cantidad maxima de Logs")
+Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs", "Logs entre X e Y")
+Gemini:LanguageAddPhrase(LANG, "Logger.EnableBetweenLogs", "Habilitar Logs entre X e Y")
+Gemini:LanguageAddPhrase(LANG, "Logger.Search", "Buscar")
+Gemini:LanguageAddPhrase(LANG, "Logger.Requesting", "Obteniendo registros...")
+Gemini:LanguageAddPhrase(LANG, "Logger.RequestLogs", "Obtener registros")
+Gemini:LanguageAddPhrase(LANG, "Logger.RequestFailed", "No se pudieron obtener los registros.")
+Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", "No hay registros para mostrar.")
+Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", "Obtener registros asincronos")
+Gemini:LanguageAddPhrase(LANG, "Logger.ClearLogs", "Limpiar registros")
+Gemini:LanguageAddPhrase(LANG, "Logger.ClearedLogs", "Se han vaciado los registros.")
 
 --[[------------------------
    Playground Menu Phrases
@@ -289,6 +308,8 @@ Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Placeholder", "Explica con tus
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Context", "Este mensaje fue enviado con contexto.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Sended", "Mensaje enviado.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Received", "Mensaje recibido. (Tardo %s segundos)")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reset", "Reiniciar prompt")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reseted", "El prompt ha sido reiniciado.")
 Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Enviar prompt con contexto")
 Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext.Sended", "Mensaje enviado con contexto.")
 

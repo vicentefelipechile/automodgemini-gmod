@@ -20,7 +20,7 @@ local AllowedRoles = {
 }
 
 local UserIcon = "icon16/user.png"
-local ModelIcon = "icon16/user_suit.png"
+local ModelIcon = "icon16/server.png"
 local ContextIcon = "icon16/application_view_detail.png"
 
 local PromptHistory = {}
@@ -43,6 +43,16 @@ local CVAR_AttachContext = CreateClientConVar("gemini_playground_attachcontext",
         Prompt Logic
 ------------------------]]--
 
+function MODULE:ResetPrompt()
+    table.Empty(PromptHistory)
+    self.PromptHistory:Clear()
+
+    if not Gemini:CanUse(nil, "gemini_playground") then return end
+
+    net.Start("Gemini:PlaygroundResetRequest")
+    net.SendToServer()
+end
+
 function MODULE:PoblatePrompt()
     if PromptExists then return end
 
@@ -58,6 +68,7 @@ function MODULE:PoblatePrompt()
 end
 
 function MODULE:AddMessagePrompt(Role, Text)
+    if not IsValid(self.PromptHistory) then return end
     if not AllowedRoles[Role] then return end
 
     local PromptMessage = vgui.Create("DPanel")
@@ -84,7 +95,7 @@ function MODULE:AddMessagePrompt(Role, Text)
     PromptLabel:SetAutoStretchVertical(true)
     PromptLabel:SetWrap(true)
 
-    local HasContext = ( Role == "user" ) and CVAR_AttachContext:GetBool()
+    local HasContext = not PromptHistory and ( Role == "user" ) and CVAR_AttachContext:GetBool()
     if HasContext then
         local ContextImage = vgui.Create("DImage", PromptMessage)
         ContextImage:SetSize(12, 12)
@@ -94,10 +105,9 @@ function MODULE:AddMessagePrompt(Role, Text)
     end
 
     PromptMessage:SizeToChildren(false, true)
-
     self.PromptHistory:AddItem(PromptMessage)
 
-    table.insert(PromptHistory, { Role = Role, Text = Text })
+    table.insert(PromptHistory, { ["Role"] = Role, ["Text"] = Text })
 end
 
 function MODULE:SendMessagePrompt(Text)
@@ -339,6 +349,18 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.HasContext = AttachContextCheckbox
 
+
+    local ResetPromptButton = vgui.Create("DButton", SettingsPanel)
+    ResetPromptButton:SetSize(SettingsPanel:GetWide() - 20, 20)
+    ResetPromptButton:SetPos(10, 280)
+    ResetPromptButton:SetText( Gemini:GetPhrase("Playground.Prompt.Reset") )
+    ResetPromptButton:SetFont("Frutiger:Small")
+
+    ResetPromptButton.DoClick = function()
+        self:ResetPrompt()
+        self.PromptInputSend:SetDisabled(false)
+    end
+
     --[[------------------------
             Prompt Panel
     ------------------------]]--
@@ -419,6 +441,10 @@ function MODULE:OnFocus()
     self:PoblatePrompt()
 end
 
+function MODULE:OnLostFocus()
+    self:ResetPrompt()
+end
+
 --[[------------------------
            Network
 ------------------------]]--
@@ -445,7 +471,6 @@ net.Receive("Gemini:PlaygroundSendMessage", function(len)
     Message = Argument ~= "" and string.format( Gemini:GetPhrase(Message), Argument ) or Gemini:GetPhrase(Message)
 
     MODULE:SetMessageLog( Message )
-    MODULE.PromptInputSend:SetDisabled(false)
 end)
 
 net.Receive("Gemini:PlaygroundMakeRequest", function(len)
@@ -456,7 +481,9 @@ net.Receive("Gemini:PlaygroundMakeRequest", function(len)
     MODULE:AddMessagePrompt("model", Message)
 
     MODULE:SetMessageLog( string.format( Gemini:GetPhrase("Playground.Prompt.Received"), math.Round(CurTime() - LastRequest , 2) ) )
-    MODULE.PromptInputSend:SetDisabled(false)
+    if IsValid(MODULE.PromptInputSend) then
+        MODULE.PromptInputSend:SetDisabled(false)
+    end
 end)
 
 --[[------------------------
