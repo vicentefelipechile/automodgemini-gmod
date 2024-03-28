@@ -37,9 +37,9 @@ function Gemini:PlaygroundSendMessage(ply, Message, Argument)
     net.Send(ply)
 end
 
---[[------------------------
-       Playground API
-------------------------]]--
+function Gemini:PlaygroundClearHistory(ply)
+    PlayerUsingPlayground[ply] = nil
+end
 
 function Gemini:PlaygroundGetLogsFromPly(ply)
     local IsBetween = ply:GetInfoNum("gemini_playground_betweenlogs", 0) == 1
@@ -75,6 +75,14 @@ function Gemini:PlaygroundGetLogsFromPly(ply)
     return LogsTable
 end
 
+--[[------------------------
+       Playground API
+------------------------]]--
+
+function Gemini:PlaygroundHandleRequest(ply)
+
+end
+
 function Gemini:PlaygroundMakeRequest(Prompt, ply)
     if not isstring(Prompt) then
         self:Error("The first argument of Gemini:PlaygroundMakeRequest() must be a string.", Prompt, "string")
@@ -93,22 +101,20 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         }
 
         table.insert(PlayerUsingPlayground[ply]["contents"], Part)
-
         Body = PlayerUsingPlayground[ply]
-    else
 
+    else
         --[[ All Body ]]--
-        local GamemodeModel = self:GetGamemodeContext()
         local FullPrompt = ""
     
         --[[ Contents ]]--
         local Contents = {
             { ["parts"] = {["text"] = self:GetPhrase("context.begin")}, ["role"] = "user"},
-            { ["parts"] = {["text"] = GamemodeModel}, ["role"] = "model"}
+            { ["parts"] = {["text"] = self:GetGamemodeContext()}, ["role"] = "model"}
         }
     
         --[[ Context ]]--
-        local PlayerWantContext = ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1
+        local PlayerWantContext = ( ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1 )
         if PlayerWantContext then
             local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
     
@@ -157,7 +163,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
                 self:Print( self:GetPhrase(FeedbackMessage) )
                 self:PlaygroundSendMessage(ply, FeedbackMessage)
 
-                PlayerUsingPlayground[ply] = nil
+                Gemini:PlaygroundClearHistory(ply)
                 return
             end
 
@@ -167,7 +173,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
                 self:Print("The response from Gemini API is invalid. The content is missing.")
                 self:PlaygroundSendMessage(ply, "Gemini.Error.FailedRequest")
 
-                PlayerUsingPlayground[ply] = nil
+                Gemini:PlaygroundClearHistory(ply)
                 return
             end
 
@@ -186,7 +192,6 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             table.insert(PlayerUsingPlayground[ply]["contents"], Candidates[1]["content"])
 
             --[[ Send Response ]]--
-
             local Text = Candidates[1]["content"]["parts"][1]["text"]
 
             local Compress = util.Compress( string.Replace(Text, "**", "") )
@@ -232,9 +237,8 @@ function Gemini.PlaygroundReceivePetition(len, ply)
 end
 net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
 
-function Gemini.PlayGroundResetRequest(len, ply)
-    PlayerUsingPlayground[ply] = nil
-
+function Gemini.PlaygroundResetRequest(len, ply)
+    Gemini:PlaygroundClearHistory(ply)
     Gemini:PlaygroundSendMessage(ply, "Playground.Prompt.Reseted")
 end
-net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlayGroundResetRequest)
+net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlaygroundResetRequest)

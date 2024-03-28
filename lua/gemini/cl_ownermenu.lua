@@ -242,7 +242,9 @@ end)
 
 -- on say !config
 hook.Add("OnPlayerChat", "Gemini:ConfigPanel", function(ply, text)
-    if ply == LocalPlayer() and text == "a" then
+    if not ply == LocalPlayer() then return end
+
+    if string.Trim(text) == "!gemini" then
         RunConsoleCommand("gemini_config_panel")
         return true
     end

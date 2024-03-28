@@ -7,6 +7,7 @@ if SERVER then
     ULib.ucl.registerAccess("gemini_credits",       ULib.DEFAULT_ACCESS, "Allows access to the Gemini Credits menu.", Gemini.Name)
     ULib.ucl.registerAccess("gemini_playground",    ULib.ACCESS_ADMIN, "Allows access to the Gemini Playground menu.", Gemini.Name)
     ULib.ucl.registerAccess("gemini_logger",        ULib.ACCESS_ADMIN, "Allows access to the Gemini Logger menu.", Gemini.Name)
+    ULib.ucl.registerAccess("gemini_train",         ULib.ACCESS_ADMIN, "Allows access to the Gemini Train menu.", Gemini.Name)
     ULib.ucl.registerAccess("gemini_automod",       ULib.ACCESS_SUPERADMIN, "Allows access to the Gemini Automod menu.", Gemini.Name)
     ULib.ucl.registerAccess("gemini_config",        ULib.ACCESS_SUPERADMIN, "Allows to change the Gemini configuration.", Gemini.Name)
 end

@@ -340,49 +340,8 @@ hook.Add("PlayerDisconnected", "Gemini:LoggerAsynchronousLogs", function(ply)
 end)
 
 --[[------------------------
-      Backup Functions
+    Free Space Functions
 ------------------------]]--
-
-local PreventExploit = -1
-
-function Gemini:LoggerGenerateBackup()
-    local Users = sql_Query(self.__LOGGER.GETALLPLAYERS)
-    local Logs = sql_Query(self.__LOGGER.GETALLLOGS)
-    local TimeStamp = os.date("%Y-%m-%d_%H-%M-%S")
-
-    local Backup = {
-        ["Users"] = Users,
-        ["Logs"] = Logs
-    }
-
-    Backup = util.TableToJSON(Backup)
-
-    if not file.Exists("gemini/logs", "DATA") then
-        file.CreateDir("gemini/logs")
-    end
-
-    local AtLeastOneBackup = 0
-
-    -- File write
-    if self:GetConfig("RawBackup", "Logger") then
-        file.Write("gemini/logs/backup_" .. TimeStamp .. ".json", Backup)
-        AtLeastOneBackup = AtLeastOneBackup + 1
-    end
-
-    -- Compression
-    if self:GetConfig("CompressedBackup", "Logger") then
-        file.Write("gemini/logs/backup_" .. TimeStamp .. ".dat", util.Compress(Backup))
-        AtLeastOneBackup = AtLeastOneBackup + 1
-    end
-
-    if AtLeastOneBackup == 0 then
-        self:Print("No backup was created, please enable at least one backup type in the configuration.")
-    else
-        self:Print("Backup created successfully.")
-    end
-
-    PreventExploit = CurTime()
-end
 
 function Gemini:LoggerClearLogs()
     sql.Begin()
@@ -392,34 +351,3 @@ function Gemini:LoggerClearLogs()
 
     self:Print("Logs cleared successfully.")
 end
-
-hook.Add("PostGamemodeLoaded", "Gemini:LoggerBackup", function()
-    if Gemini:GetConfig("BackupEnabled", "Logger") then
-        Gemini:LoggerGenerateBackup()
-    end
-
-    if Gemini:GetConfig("BackupIntervalEnabled", "Logger") then
-        local BackupInterval = Gemini:GetConfig("BackupInterval", "Logger")
-
-        timer.Create("Gemini:LoggerBackup", BackupInterval * 60, 0, function()
-            Gemini:LoggerGenerateBackup()
-        end)
-    end
-end)
-
-hook.Add("Gemini:ConfigChanged", "Gemini:LoggerBackup", function(Name, Value, Category)
-    if ( Name == "BackupIntervalEnabled" ) and ( Category == "Logger" ) then
-        if Value then
-            local BackupInterval = Gemini:GetConfig("BackupInterval", "Logger")
-
-            local Response = timer.Adjust("Gemini:LoggerBackup", BackupInterval * 60)
-            if Response then
-                Gemini:Print("Backup interval set to " .. BackupInterval .. " minutes.")
-            else
-                Gemini:Print("Failed to adjust the backup interval.")
-            end
-        else
-            timer.Remove("Gemini:LoggerBackup")
-        end
-    end
-end)

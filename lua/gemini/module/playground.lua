@@ -4,6 +4,7 @@
 
 local MODULE = { ["Icon"] = "icon16/bug.png" }
 local BlackColor = COLOR_BLACK
+local WhiteColor = COLOR_WHITE
 local GrayColor = COLOR_GRAY
 local CyanColor = COLOR_CYAN
 
@@ -40,6 +41,43 @@ local CVAR_BetweenLogsMax = CreateClientConVar("gemini_playground_betweenlogs_ma
 local CVAR_AttachContext = CreateClientConVar("gemini_playground_attachcontext", 0, true, true, Gemini:GetPhrase("Playground.AttachContext"))
 
 --[[------------------------
+        F*ckin DLabel
+------------------------]]--
+
+local NewGetContentSize = function(self)
+    surface.SetFont( self:GetFont() )
+    return surface.GetTextSize( self:GetText() )
+end
+
+local DLABEL_PANEL = {}
+
+function DLABEL_PANEL:Init()
+    self:SetFont("Frutiger:Small")
+    self:SetTextColor(BlackColor)
+end
+
+function DLABEL_PANEL:GetContentSize()
+    surface.SetFont( self:GetFont() )
+    return surface.GetTextSize( self:GetText() )
+end
+
+function DLABEL_PANEL:SizeToContentsY(Offset)
+    local _, h = self:GetContentSize()
+    self:SetTall(h + (Offset or 0))
+end
+
+function DLABEL_PANEL:SizeToContents()
+    local w, h = self:GetContentSize()
+    self:SetSize(w, h)
+end
+
+function DLABEL_PANEL:SetWhiteText()
+    self:SetTextColor(WhiteColor)
+end
+
+vgui.Register("Gemini:DLabel", DLABEL_PANEL, "DLabel")
+
+--[[------------------------
         Prompt Logic
 ------------------------]]--
 
@@ -73,8 +111,8 @@ function MODULE:AddMessagePrompt(Role, Text)
 
     local PromptMessage = vgui.Create("DPanel")
     PromptMessage:SetHeight(70)
-    PromptMessage:Dock(TOP)
     PromptMessage:DockMargin(5, 5, 5, 0)
+    PromptMessage:Dock(TOP)
     PromptMessage.Paint = Gemini.ReturnNoneFunction
 
     local PromptAuthorPanel = vgui.Create("DPanel", PromptMessage)
@@ -88,12 +126,13 @@ function MODULE:AddMessagePrompt(Role, Text)
     PromptAutor:SetPos(0, 0)
 
     local PromptLabel = vgui.Create("DLabel", PromptMessage)
-    PromptLabel:SetText( Text .. (Role == "model" and "\n\n" or "") )
+    PromptLabel.NewGetContentSize = NewGetContentSize
+    PromptLabel:SetText( Text )
     PromptLabel:SetFont("Frutiger:Small")
     PromptLabel:Dock(FILL)
-    PromptLabel:SizeToContents()
-    PromptLabel:SetAutoStretchVertical(true)
     PromptLabel:SetWrap(true)
+    PromptLabel:SizeToContentsY()
+    PromptLabel:SetTall( PromptLabel:GetTall() * 0.039 )
 
     local HasContext = not PromptHistory and ( Role == "user" ) and CVAR_AttachContext:GetBool()
     if HasContext then
@@ -105,6 +144,15 @@ function MODULE:AddMessagePrompt(Role, Text)
     end
 
     PromptMessage:SizeToChildren(false, true)
+
+    local Line = vgui.Create("DPanel", PromptMessage)
+    Line:SetHeight(1)
+    Line:DockMargin(0, 6, 0, 6)
+    Line:Dock(BOTTOM)
+    Line.Paint = function(self, w, h)
+        draw.RoundedBox(0, 0, 0, w, h, GrayColor)
+    end
+
     self.PromptHistory:AddItem(PromptMessage)
 
     table.insert(PromptHistory, { ["Role"] = Role, ["Text"] = Text })

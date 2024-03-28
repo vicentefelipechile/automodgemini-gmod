@@ -80,6 +80,10 @@ function MODULE:UpdateTable(Logs)
         for k, Data in ipairs(Logs) do
             self:AddNewLog(Data["geminilog_id"], Data["geminilog_log"], Data["geminilog_time"], Data["geminilog_user1"])
         end
+
+        -- Sort by ID
+        self.TablePanel:SortByColumn( self.TablePanel.CurrentColumn:GetColumnID(), true )
+        self.TablePanel.CurrentColumn:SetDescending(false)
     end
 end
 
