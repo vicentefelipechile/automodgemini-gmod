@@ -116,7 +116,7 @@ function GEMINIPANEL:PoblateItems()
             NewTab:SetEnabled(false)
 
             -- Make the button darker
-            NewTab.Paint = function(self, w, h)
+            NewTab.Paint = function(TabSelf, w, h)
                 draw.RoundedBox(4, 0, 0, w, h, BackgroundColor2)
             end
 
@@ -242,9 +242,7 @@ end)
 
 -- on say !config
 hook.Add("OnPlayerChat", "Gemini:ConfigPanel", function(ply, text)
-    if not ply == LocalPlayer() then return end
-
-    if string.Trim(text) == "!gemini" then
+    if ( ply == LocalPlayer() ) and ( string.Trim(text) == "!gemini" ) then
         RunConsoleCommand("gemini_config_panel")
         return true
     end
