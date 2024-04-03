@@ -4,13 +4,9 @@ include("enum_color.lua")
                               Google Gemini Automod
 ----------------------------------------------------------------------------]]--
 
-if Gemini and ( Gemini.Version == nil ) then
-    print("Error: Something else is using the Gemini name.")
+if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is using the Gemini name.") return end
 
-    return
-end
-
-local isstring = isstring
+resource.AddFile("resource/fonts/Frutiger Roman.ttf")
 
 Gemini = Gemini or {
     __cfg = {["general"] = {}},
@@ -27,10 +23,11 @@ Gemini = Gemini or {
 if SERVER then
     util.AddNetworkString("Gemini:ReplicateConfig")
     util.AddNetworkString("Gemini:SetConfig")
+    util.AddNetworkString("Gemini:AddConfig")
 end
 
-local FCVAR_PRIVATE = bit.bor(FCVAR_ARCHIVE, FCVAR_PROTECTED)
-local FCVAR_PUBLIC = bit.bor(FCVAR_ARCHIVE, FCVAR_REPLICATED)
+local FCVAR_PRIVATE = {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
+local FCVAR_PUBLIC = {FCVAR_ARCHIVE, FCVAR_REPLICATED}
 
 
 local print = print
@@ -43,6 +40,17 @@ local isangle = isangle
 local istable = istable
 local IsColor = IsColor
 local isbool = isbool
+
+local VERIFICATION_TYPE = {
+    ["function"] = isfunction,
+    ["entity"] = isentity,
+    ["string"] = isstring,
+    ["number"] = isnumber,
+    ["Angle"] = isangle,
+    ["table"] = istable,
+    ["color"] = IsColor,
+    ["bool"] = isbool
+}
 
 function Gemini:GeneratePrint(cfg)
     if not istable(cfg) then return print end
@@ -162,25 +170,15 @@ function Gemini:FromConvar(Name, Category)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if not self.__cfg[Category] then
-        if CLIENT then
-            self:Error([[The category maybe doesn't exist in the CLIENT-SIDE.]], Category, "string")
-        else
+    if SERVER then
+        if not self.__cfg[Category] then
             self:Error([[The category doesn't exist.]], Category, "string")
+        elseif not self.__cfg[Category][Name] then
+            self:Error([[The config doesn't exist.]], Name, "string")
         end
-    elseif not self.__cfg[Category][Name] then
-        if CLIENT then
-            self:Error([[The config doesn't exist in the CLIENT-SIDE.]], Name, "string")
-        end
-        self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    -- if the value is a PROTECTED convar, it will return the default value
-    if ( CLIENT and self.__cfg[Category][Name][1]:GetFlags() == FCVAR_PRIVATE ) then
-        return "PROTECTED_CONVAR"
-    end
-
-    local Value = self.__cfg[Category][Name][1]:GetString()
+    local Value = SERVER and self.__cfg[Category][Name][1]:GetString() or GetConVar("gemini_" .. Category .. "_" .. Name):GetString()
 
     if ( Value == "" ) then
         self:Error([[The convar value is empty.]], Value, "string")
@@ -280,7 +278,6 @@ function Gemini:AddConfig(Name, Category, Verification, Default, Private)
         self:Error([[The fourth argument of Gemini:AddConfig() must be the same type as the return of the third argument.]], Default, "any")
     end
 
-    -- Eliminar todos los espacios y caracteres especiales
     local Flags = ( Private == true ) and FCVAR_PRIVATE or FCVAR_PUBLIC
     local Value = self:ToConvar(Name, Default, Category)
     Category = string.lower( string.gsub(Category, "%W", "") )
@@ -403,16 +400,7 @@ function Gemini:PreInit()
 
     self:Print("Generating Default Config " .. (SERVER and "[CL]" or "[SV]"))
 
-    self.VERIFICATION_TYPE = {
-        ["function"] = isfunction,
-        ["entity"] = isentity,
-        ["string"] = isstring,
-        ["number"] = isnumber,
-        ["Angle"] = isangle,
-        ["table"] = istable,
-        ["color"] = IsColor,
-        ["bool"] = isbool
-    }
+    self.VERIFICATION_TYPE = VERIFICATION_TYPE
 
     self:AddConfig("DefaultCategory", "General", self.VERIFICATION_TYPE.string, "General")
     self:AddConfig("DefaultAPI", "General", self.VERIFICATION_TYPE.string, "Gemini")
@@ -544,6 +532,15 @@ else
     net.Receive("Gemini:ReplicateConfig", function(len)
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
+    end)
+
+    net.Receive("Gemini:AddConfig", function(len)
+        local Name = net.ReadString()
+        local Category = net.ReadString()
+        local FunctionName = net.ReadString()
+        local DefaultValue = net.ReadType()
+
+        if not isfunction(Gemini[FunctionName]) then return end
     end)
 end
 

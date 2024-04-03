@@ -31,7 +31,7 @@ Gemini.__TRAIN_SQL = {
         WHERE
             train_gamemode = '%s'
     ]],
-    ["GET"] = [[
+    ["GETTRAIN"] = [[
         SELECT
             train_data,
             train_result
@@ -42,6 +42,15 @@ Gemini.__TRAIN_SQL = {
             train_gamemode = '%s'
         LIMIT
             %s
+    ]],
+    ["GETALLTRAIN"] = [[
+        SELECT
+            train_data,
+            train_result
+        FROM
+            gemini_train
+        WHERE
+            train_gamemode = '%s'
     ]]
 }
 

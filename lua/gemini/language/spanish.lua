@@ -55,6 +55,9 @@ Gemini:LanguageAddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue de
 Gemini:LanguageAddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
 Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador "%s" ha presenciado el evento.]])
 Gemini:LanguageAddPhrase(LANG, "OnNPCKilled", [[El NPC "%s" ha sido asesinado por "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PreGamemodeLoaded", [[El servidor esta pre-cargando el modo de juego "%s".]])
+Gemini:LanguageAddPhrase(LANG, "OnGamemodeLoaded", [[El servidor esta cargado el modo de juego "%s".]])
+Gemini:LanguageAddPhrase(LANG, "PostGamemodeLoaded", [[El servidor ha cargado por completo el modo de juego "%s".]])
 
 
 --[[------------------------

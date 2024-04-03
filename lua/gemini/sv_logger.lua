@@ -22,6 +22,8 @@ end
 
 local AsynchronousPlayers = {}
 
+Gemini.LoggerServerID = 1
+
 --[[------------------------
         SQL Database
 ------------------------]]--
@@ -33,6 +35,12 @@ Gemini.__LOGGER = {
             geminiuser_steamid TEXT NOT NULL,
             geminiuser_steamid64 TEXT NOT NULL UNIQUE
         )
+    ]],
+    ["GEMINI_USER_SERVER"] = [[
+        INSERT INTO
+            gemini_user (geminiuser_steamid, geminiuser_steamid64)
+        VALUES
+            ('SERVER', 'SERVER')
     ]],
     ["GEMINI_LOG"] = [[
         CREATE TABLE IF NOT EXISTS gemini_log (
@@ -139,6 +147,7 @@ function Gemini:LoggerCreateTable()
 
     -- Table of player info
     sql_Query(self.__LOGGER.GEMINI_USER)
+    sql_Query(self.__LOGGER.GEMINI_USER_SERVER)
 
     -- Table of logs
     sql_Query(self.__LOGGER.GEMINI_LOG)
@@ -166,8 +175,6 @@ function Gemini:LoggerSetPlayer(ply, id, target)
     if not isnumber(id) then
         self:Error([[The second argument of Gemini:LoggerSetPlayer() is not a number]], PhraseName, "number")
     end
-
-    
 end
 
 function Gemini:LoggerGetPlayer(ply)
@@ -175,9 +182,7 @@ function Gemini:LoggerGetPlayer(ply)
         self:Error([[The first argument of Gemini:LoggerGetPlayer() is not a Player]], ply, "Player")
     end
 
-    if ply.__LOGGER_ID then
-        return ply.__LOGGER_ID
-    end
+    if ply.__LOGGER_ID then return ply.__LOGGER_ID end
 
     local SteamID = ply:SteamID()
     local SteamID64 = ply:SteamID64()
@@ -230,7 +235,7 @@ end
 ------------------------]]--
 
 function Gemini:LoggerAddLog(log, ply, ply2, ply3, ply4)
-    local UserID = Gemini:LoggerGetPlayer(ply)
+    local UserID = ( ply ~= 1 ) and Gemini:LoggerGetPlayer(ply) or Gemini.LoggerServerID
 
     local LogString = log
     local LogUser1 = UserID

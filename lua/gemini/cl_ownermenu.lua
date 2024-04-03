@@ -132,11 +132,11 @@ function GEMINIPANEL:PoblateItems()
     self.ACTIVE_PANEL = nil
     self.Tabs.OnActiveTabChanged = function(selfTabs, OldTab, NewTab)
         if ( OldTab.OnLostFocus ~= Gemini.ReturnNoneFunction ) then
-            OldTab.__MODULE:OnLostFocus()
+            OldTab.__MODULE:OnLostFocus(self, self.Tabs)
         end
 
         if ( NewTab.OnFocus ~= Gemini.ReturnNoneFunction ) then
-            NewTab.__MODULE:OnFocus()
+            NewTab.__MODULE:OnFocus(self, self.Tabs)
         end
 
         self.ACTIVE_PANEL = NewTab

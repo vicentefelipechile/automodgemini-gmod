@@ -19,8 +19,9 @@ local NPCNames = {}
 
 if ( file.Exists(NPCNamesPath, "GAME") ) then
     local FileContent = util.KeyValuesToTable(file.Read(NPCNamesPath, "GAME"))
+    local FileTokens = FileContent["tokens"] or FileContent["Tokens"] or {}
     
-    for NameClass, NameEntity in pairs(FileContent["tokens"]) do
+    for NameClass, NameEntity in pairs(FileTokens) do
         NPCNames[NameClass] = NameEntity
     end
 end
