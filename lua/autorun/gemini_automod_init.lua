@@ -27,7 +27,7 @@ if SERVER then
 end
 
 local FCVAR_PRIVATE = {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
-local FCVAR_PUBLIC = {FCVAR_ARCHIVE, FCVAR_REPLICATED}
+local FCVAR_PUBLIC = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or FCVAR_ARCHIVE
 
 
 local print = print
@@ -168,15 +168,13 @@ function Gemini:FromConvar(Name, Category)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if SERVER then
-        if not self.__cfg[Category] then
-            self:Error([[The category doesn't exist.]], Category, "string")
-        elseif not self.__cfg[Category][Name] then
-            self:Error([[The config doesn't exist.]], Name, "string")
-        end
+    if not self.__cfg[Category] then
+        self:Error([[The category doesn't exist.]], Category, "string")
+    elseif not self.__cfg[Category][Name] then
+        self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    local Value = SERVER and self.__cfg[Category][Name][1]:GetString() or GetConVar("gemini_" .. Category .. "_" .. Name):GetString()
+    local Value = self.__cfg[Category][Name][1]:GetString()
 
     if ( Value == "" ) then
         self:Error([[The convar value is empty.]], Value, "string")
@@ -306,14 +304,12 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if SERVER then
-        if not self.__cfg[Category] then
-            self:Error([[The category doesn't exist.]], Category, "string")
-        end
+    if not self.__cfg[Category] then
+        self:Error([[The category doesn't exist.]], Category, "string")
+    end
 
-        if not self.__cfg[Category][Name] then
-            self:Error([[The config doesn't exist.]], Name, "string")
-        end
+    if not self.__cfg[Category][Name] then
+        self:Error([[The config doesn't exist.]], Name, "string")
     end
 
     return self:FromConvar(Name, Category)
@@ -321,18 +317,6 @@ end
 
 
 function Gemini:SetConfig(Name, Category, Value)
-    if ( CLIENT and not Gemini:CanUse("gemini_config") ) then return end
-
-    if CLIENT then
-        net.Start("Gemini:SetConfig")
-            net.WriteString(Name)
-            net.WriteType(Value)
-            net.WriteString(Category)
-        net.SendToServer()
-
-        return
-    end
-
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:SetConfig() must be a string.]], Name, "string")
     end
@@ -353,11 +337,7 @@ function Gemini:SetConfig(Name, Category, Value)
     Name = string.lower( string.gsub(Name, "%W", "") )
 
     if not self.__cfg[Category] then
-        if CLIENT then
-            self:Error([[The category maybe doesn't exist in the CLIENT-SIDE.]], Category, "string")
-        else
-            self:Error([[The category doesn't exist.]], Category, "string")
-        end
+        self:Error([[The category doesn't exist.]], Category, "string")
     end
 
     if not self.__cfg[Category][Name] then
@@ -370,7 +350,7 @@ function Gemini:SetConfig(Name, Category, Value)
         return
     end
 
-    local ConvarValue = self:ToConvar(Name, Value, Category)
+    local ConvarValue = self:ToConvar(Name, Category, Value)
     self.__cfg[Category][Name][1]:SetString( ConvarValue )
 
     hook.Run("Gemini:ConfigChanged", Name, Value, Category, ConvarValue)
@@ -384,7 +364,7 @@ function Gemini:PreInit()
     Print("       Loading Gemini Automod...")
     Print("==================================]]==")
 
-    self:Print("Generating Default Config " .. (SERVER and "[CL]" or "[SV]"))
+    self:Print("Generating Default Config " .. (SERVER and "[SV]" or "[CL]"))
 
     self.VERIFICATION_TYPE = VERIFICATION_TYPE
 
@@ -415,7 +395,6 @@ function Gemini:PreInit()
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
-        include("gemini/sh_rules.lua")          self:Print("File \"gemini/sh_rules.lua\" has been loaded.")
     end
 
     include("gemini/sh_rules.lua")              self:Print("File \"gemini/sh_rules.lua\" has been loaded.")

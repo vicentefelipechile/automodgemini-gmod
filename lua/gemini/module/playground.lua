@@ -185,8 +185,8 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
         net.WriteUInt(Target, DefaultNetworkUInt)
         net.WriteBool(Between or false)
         if ( Between ) then
-            net.WriteUInt(CVAR_BetweenLogsMin:GetInt(), DefaultNetworkUIntBig)
-            net.WriteUInt(CVAR_BetweenLogsMax:GetInt(), DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Playground"), DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Playground"), DefaultNetworkUIntBig)
         end
     net.SendToServer()
 
@@ -272,18 +272,18 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     PlayerIDInput:SetNumeric(true)
     PlayerIDInput:SetPlaceholderText( Gemini:GetPhrase("Logger.PlayerID") )
 
-    if ( CVAR_PlayerTarget:GetInt() ~= 0 ) then
-        PlayerIDInput:SetValue( CVAR_PlayerTarget:GetInt() )
+    if ( Gemini:GetConfig("PlayerTarget", "Playground") ~= 0 ) then
+        PlayerIDInput:SetValue( Gemini:GetConfig("PlayerTarget", "Playground") )
     end
 
     PlayerIDInput.OnEnter = function(SubSelf)
         local PlayerID = tonumber(SubSelf:GetValue()) or 0
-        CVAR_PlayerTarget:SetInt(PlayerID)
+        Gemini:SetConfig("PlayerTarget", "Playground",PlayerID)
     end
 
     PlayerIDInput.OnLoseFocus = function(SubSelf)
         local PlayerID = tonumber(SubSelf:GetValue()) or 0
-        CVAR_PlayerTarget:SetInt(PlayerID)
+        Gemini:SetConfig("PlayerTarget", "Playground",PlayerID)
     end
 
     local MaxLogsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -298,10 +298,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     MaxLogs:SetPos(10, 84)
     MaxLogs:SetMin(1)
     MaxLogs:SetMax(200)
-    MaxLogs:SetValue( CVAR_MaxLogs:GetInt() )
+    MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Playground") )
 
     MaxLogs.OnValueChanged = function(_, value)
-        CVAR_MaxLogs:SetInt(value)
+        Gemini:SetConfig("MaxLogs", "Playground", value)
     end
 
     local BetweenLogsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -312,21 +312,23 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     BetweenLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - BetweenLogsLabel:GetWide() / 2, 110)
 
     local BetweenLogsMin = vgui.Create("DNumberWang", SettingsPanel)
+    BetweenLogsMin:SetUpdateOnType(false)
     BetweenLogsMin:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
     BetweenLogsMin:SetPos(10, 124)
     BetweenLogsMin:SetMin(1)
     BetweenLogsMin:SetMax(1000000)
-    BetweenLogsMin:SetValue( CVAR_BetweenLogsMin:GetInt() )
+    BetweenLogsMin:SetValue( Gemini:GetConfig("BetweenLogsMin", "Playground") )
 
     local BetweenLogsMax = vgui.Create("DNumberWang", SettingsPanel)
+    BetweenLogsMax:SetUpdateOnType(false)
     BetweenLogsMax:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
     BetweenLogsMax:SetPos( ( SettingsPanel:GetWide() - 20 ) / 2 + 14, 124)
     BetweenLogsMax:SetMin(1)
     BetweenLogsMax:SetMax(1000000)
-    BetweenLogsMax:SetValue( CVAR_BetweenLogsMax:GetInt() )
+    BetweenLogsMax:SetValue( Gemini:GetConfig("BetweenLogsMax", "Playground") )
 
     BetweenLogsMin.OnValueChanged = function(_, value)
-        CVAR_BetweenLogsMin:SetInt(value)
+        Gemini:SetConfig("BetweenLogsMin", "Playground", value)
 
         if ( BetweenLogsMax:GetValue() < value ) then
             BetweenLogsMax:SetValue(value)
@@ -334,7 +336,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     end
 
     BetweenLogsMax.OnValueChanged = function(_, value)
-        CVAR_BetweenLogsMax:SetInt(value)
+        Gemini:SetConfig("BetweenLogsMax", "Playground", value)
 
         if ( BetweenLogsMin:GetValue() > value ) then
             BetweenLogsMin:SetValue(value)
@@ -346,10 +348,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     EnableBetweenLogs:SetPos(10, 150)
     EnableBetweenLogs:SetText( Gemini:GetPhrase("Logger.EnableBetweenLogs") )
     EnableBetweenLogs:SetTextColor(BlackColor)
-    EnableBetweenLogs:SetValue( CVAR_BetweenLogs:GetBool() )
+    EnableBetweenLogs:SetValue( Gemini:GetConfig("BetweenLogs", "Playground") )
 
     EnableBetweenLogs.OnChange = function(_, value)
-        CVAR_BetweenLogs:SetBool(value)
+        Gemini:SetConfig("BetweenLogs", "Playground", value)
     end
 
     self.IsBetweenLogs = EnableBetweenLogs
@@ -361,13 +363,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     AskLogsButton:SetFont("Frutiger:Small")
 
     AskLogsButton.DoClick = function()
-        local PlayerID = CVAR_PlayerTarget:GetInt()
+        local PlayerID = Gemini:GetConfig("PlayerTarget", "Playground")
 
         PlayerID = ( PlayerID ~= 0 ) and PlayerID or nil
 
-        local LogsMax = CVAR_MaxLogs:GetInt()
+        local LogsMax = Gemini:GetConfig("MaxLogs", "Playground")
         local LogsAmount = math.min(LogsMax, 200)
-        local Between = CVAR_BetweenLogs:GetBool()
+        local Between = Gemini:GetConfig("BetweenLogs", "Playground")
 
         self:AskLogs(LogsAmount, PlayerID, PlayerID ~= nil, Between)
     end
@@ -388,10 +390,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     AttachContextCheckbox:SetPos(10, 250)
     AttachContextCheckbox:SetText( Gemini:GetPhrase("Playground.AttachContext") )
     AttachContextCheckbox:SetTextColor(BlackColor)
-    AttachContextCheckbox:SetValue( CVAR_AttachContext:GetBool() )
+    AttachContextCheckbox:SetValue( Gemini:GetConfig("AttachContext", "Playground") )
 
     AttachContextCheckbox.OnChange = function(_, value)
-        CVAR_AttachContext:SetBool(value)
+        Gemini:SetConfig("AttachContext", "Playground", value)
     end
 
     self.HasContext = AttachContextCheckbox
