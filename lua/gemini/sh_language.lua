@@ -8,7 +8,9 @@ Gemini.__LANG = Gemini.__LANG or {}
         Configuration
 ------------------------]]--
 
-Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
+if SERVER then
+    Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
+end
 
 --[[------------------------
         NPC Names
@@ -20,7 +22,7 @@ local NPCNames = {}
 if ( file.Exists(NPCNamesPath, "GAME") ) then
     local FileContent = util.KeyValuesToTable(file.Read(NPCNamesPath, "GAME"))
     local FileTokens = FileContent["tokens"] or FileContent["Tokens"] or {}
-    
+
     for NameClass, NameEntity in pairs(FileTokens) do
         NPCNames[NameClass] = NameEntity
     end

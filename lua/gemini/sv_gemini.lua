@@ -23,9 +23,9 @@ function Gemini:GeminiPoblate()
 
     self:AddConfig("ModelTarget",   "Gemini", self.VERIFICATION_TYPE.string,    "auto")
     self:AddConfig("ModelName",     "Gemini", self.VERIFICATION_TYPE.string,    "gemini-1.0-pro")
-    self:AddConfig("Temperature",   "Gemini", self.VERIFICATION_TYPE.number,    0.9)
-    self:AddConfig("TopP",          "Gemini", self.VERIFICATION_TYPE.number,    1)
-    self:AddConfig("TopK",          "Gemini", self.VERIFICATION_TYPE.number,    1)
+    self:AddConfig("Temperature",   "Gemini", self.VERIFICATION_TYPE.range,     0.9)
+    self:AddConfig("TopP",          "Gemini", self.VERIFICATION_TYPE.range,     1)
+    self:AddConfig("TopK",          "Gemini", self.VERIFICATION_TYPE.range,     1)
     self:AddConfig("MaxTokens",     "Gemini", self.VERIFICATION_TYPE.number,    2048)
     self:AddConfig("APIKey",        "Gemini", self.VERIFICATION_TYPE.string,    "YOUR_API_KEY", true)
     self:AddConfig("DebugEnabled",  "Gemini", self.VERIFICATION_TYPE.bool,      false)
@@ -58,12 +58,12 @@ end
 ------------------------]]--
 
 function Gemini:GenerationResetConfig()
-    self:SetConfig("ModelTarget", "auto", "Gemini")
-    self:SetConfig("ModelName", "gemini-1.0-pro", "Gemini")
-    self:SetConfig("Temperature", 0.9, "Gemini")
-    self:SetConfig("TopP", 1, "Gemini")
-    self:SetConfig("TopK", 1, "Gemini")
-    self:SetConfig("MaxTokens", 2048, "Gemini")
+    self:SetConfig("ModelTarget",   "Gemini", "auto")
+    self:SetConfig("ModelName",     "Gemini", "gemini-1.0-pro")
+    self:SetConfig("Temperature",   "Gemini", 0.9)
+    self:SetConfig("TopP",          "Gemini", 1)
+    self:SetConfig("TopK",          "Gemini", 1)
+    self:SetConfig("MaxTokens",     "Gemini", 2048)
 
     self:Print("Generation reseted to default settings.")
 end

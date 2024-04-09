@@ -39,6 +39,7 @@ end
 ------------------------]]--
 
 function Gemini:CanUse(ply, permission)
+    permission = CLIENT and ply or permission
     ply = CLIENT and LocalPlayer() or ply
 
     if SERVER and not ( IsValid(ply) and ply:IsPlayer() ) then

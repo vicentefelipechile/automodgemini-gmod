@@ -5,7 +5,7 @@
 local MODULE = { ["Icon"] = "icon16/heart.png" }
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
-    if not Gemini:CanUse(nil, "gemini_credits") then return false end
+    if not Gemini:CanUse("gemini_credits") then return false end
 
     -- Print a dlabel to all OurTab
     local Label = vgui.Create("DLabel", OurTab)
@@ -17,4 +17,4 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 end
 
 
-Gemini:ModuleCreate("Creditos", MODULE)
+Gemini:ModuleCreate(Gemini:GetPhrase("Credits"), MODULE)

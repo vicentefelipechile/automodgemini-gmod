@@ -92,7 +92,7 @@ end
 ------------------------]]--
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
-    if not Gemini:CanUse(nil, "gemini_logger") then return false end
+    if not Gemini:CanUse("gemini_logger") then return false end
 
     --[[------------------------
            Output Message
@@ -104,7 +104,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     OutputMSG:SetEditable(false)
 
     self.OutputMSG = OutputMSG
-    local OutputX, OutputY = OutputMSG:GetPos()
+    local OutputY = OutputMSG:GetY()
 
     --[[------------------------
              Table Panel
@@ -114,8 +114,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     TablePanel:SetSize(OurTab:GetWide() - 230, OutputY - 25)
     TablePanel:SetPos(200, 15)
     TablePanel:SetMultiSelect(false)
-
-    local WidthList = TablePanel:GetWide()
 
     self.List = {}
     self.List["ID"] = TablePanel:AddColumn("ID", 1)
@@ -366,4 +364,4 @@ end)
        Register Module
 ------------------------]]--
 
-Gemini:ModuleCreate("Registros", MODULE)
+Gemini:ModuleCreate(Gemini:GetPhrase("Logger"), MODULE)

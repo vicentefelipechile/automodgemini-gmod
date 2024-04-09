@@ -53,7 +53,7 @@ Gemini:LanguageAddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad
 Gemini:LanguageAddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
-Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados y el jugador "%s" ha presenciado el evento.]])
+Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados.]])
 Gemini:LanguageAddPhrase(LANG, "OnNPCKilled", [[El NPC "%s" ha sido asesinado por "%s" en las coordenadas %s.]])
 Gemini:LanguageAddPhrase(LANG, "PreGamemodeLoaded", [[El servidor esta pre-cargando el modo de juego "%s".]])
 Gemini:LanguageAddPhrase(LANG, "OnGamemodeLoaded", [[El servidor esta cargado el modo de juego "%s".]])
@@ -310,11 +310,11 @@ Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Error", "El texto/contexto no 
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Placeholder", "Explica con tus palabras que...")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Context", "Este mensaje fue enviado con contexto.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Sended", "Mensaje enviado.")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.SendedContext", "Mensaje enviado con contexto.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Received", "Mensaje recibido. (Tardo %s segundos)")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reset", "Reiniciar prompt")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reseted", "El prompt ha sido reiniciado.")
 Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Enviar prompt con contexto")
-Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext.Sended", "Mensaje enviado con contexto.")
 
 --[[------------------------
    Gamemodes Descriptions

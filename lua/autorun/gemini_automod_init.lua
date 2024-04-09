@@ -49,7 +49,10 @@ local VERIFICATION_TYPE = {
     ["Angle"] = isangle,
     ["table"] = istable,
     ["color"] = IsColor,
-    ["bool"] = isbool
+    ["bool"] = isbool,
+    ["range"] = function(v)
+        return isnumber(v) and ( v >= 0 ) and ( v <= 1 )
+    end
 }
 
 function Gemini:GeneratePrint(cfg)
@@ -150,21 +153,16 @@ local FindColorConvar = "(.*)R (.*)G (.*)B"
 local FindColorAlphaConvar = "(.*)R (.*)G (.*)B (.*)A"
 
 function Gemini:FromConvar(Name, Category)
-    -- Extraer las variables de un convar
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:FromConvar() must be a string.]], Name, "string")
     elseif ( Name == "" ) then
         self:Error([[The first argument of Gemini:FromConvar() must not be empty.]], Name, "string")
     end
 
-    if ( Category == nil ) then
-        Category = string.lower( self.__cfg["general"]["defaultcategory"][1]:GetString() )
-    else
-        if not isstring(Category) then
-            self:Error([[The second argument of Gemini:FromConvar() must be a string.]], Category, "string")
-        elseif ( Category == "" ) then
-            self:Error([[The second argument of Gemini:FromConvar() must not be empty.]], Category, "string")
-        end
+    if not isstring(Category) then
+        self:Error([[The second argument of Gemini:FromConvar() must be a string.]], Category, "string")
+    elseif ( Category == "" ) then
+        self:Error([[The second argument of Gemini:FromConvar() must not be empty.]], Category, "string")
     end
 
     Category = string.lower( string.gsub(Category, "%W", "") )
@@ -207,7 +205,7 @@ function Gemini:FromConvar(Name, Category)
     return Value
 end
 
-function Gemini:ToConvar(Name, Value, Category)
+function Gemini:ToConvar(Name, Category, Value)
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:ToConvar() must be a string.]], Name, "string")
     end
@@ -216,16 +214,12 @@ function Gemini:ToConvar(Name, Value, Category)
         self:Error([[The first argument of Gemini:ToConvar() must not be empty.]], Name, "string")
     end
 
-    if ( Category == nil ) then
-        Category = string.lower( self.__cfg["general"]["defaultcategory"][1]:GetString() )
-    else
-        if not isstring(Category) then
-            self:Error([[The second argument of Gemini:ToConvar() must be a string.]], Category, "string")
-        end
+    if not isstring(Category) then
+        self:Error([[The second argument of Gemini:ToConvar() must be a string.]], Category, "string")
+    end
 
-        if ( Category == "" ) then
-            self:Error([[The second argument of Gemini:ToConvar() must not be empty.]], Category, "string")
-        end
+    if ( Category == "" ) then
+        self:Error([[The second argument of Gemini:ToConvar() must not be empty.]], Category, "string")
     end
 
     Category = string.lower( string.gsub(Category, "%W", "") )
@@ -279,7 +273,7 @@ function Gemini:AddConfig(Name, Category, Verification, Default, Private)
     end
 
     local Flags = ( Private == true ) and FCVAR_PRIVATE or FCVAR_PUBLIC
-    local Value = self:ToConvar(Name, Default, Category)
+    local Value = self:ToConvar(Name, Category, Default)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
@@ -301,39 +295,33 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
         self:Error([[The first argument of Gemini:GetConfig() must not be empty.]], Name, "string")
     end
 
-    if ( Category == nil ) then
-        Category = string.lower( self.__cfg["general"]["defaultcategory"][1]:GetString() )
-    else
-        if not isstring(Category) then
-            self:Error([[The second argument of Gemini:GetConfig() must be a string.]], Category, "string")
-        end
+    if not isstring(Category) then
+        self:Error([[The second argument of Gemini:GetConfig() must be a string.]], Category, "string")
+    end
 
-        if ( Category == "" ) then
-            self:Error([[The second argument of Gemini:GetConfig() must not be empty.]], Category, "string")
-        end
+    if ( Category == "" ) then
+        self:Error([[The second argument of Gemini:GetConfig() must not be empty.]], Category, "string")
     end
 
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if not self.__cfg[Category] then
-        if CLIENT then
-            self:Error([[The category maybe doesn't exist in the CLIENT-SIDE.]], Category, "string")
-        else
+    if SERVER then
+        if not self.__cfg[Category] then
             self:Error([[The category doesn't exist.]], Category, "string")
         end
-    end
 
-    if not self.__cfg[Category][Name] then
-        self:Error([[The config doesn't exist.]], Name, "string")
+        if not self.__cfg[Category][Name] then
+            self:Error([[The config doesn't exist.]], Name, "string")
+        end
     end
 
     return self:FromConvar(Name, Category)
 end
 
 
-function Gemini:SetConfig(Name, Value, Category)
-    if ( CLIENT and not Gemini:CanUse(nil, "gemini_config") ) then return end
+function Gemini:SetConfig(Name, Category, Value)
+    if ( CLIENT and not Gemini:CanUse("gemini_config") ) then return end
 
     if CLIENT then
         net.Start("Gemini:SetConfig")
@@ -353,16 +341,12 @@ function Gemini:SetConfig(Name, Value, Category)
         self:Error([[The first argument of Gemini:SetConfig() must not be empty.]], Name, "string")
     end
 
-    if ( Category == nil ) then
-        Category = string.lower( self.__cfg["general"]["defaultcategory"][1]:GetString() )
-    else
-        if not isstring(Category) then
-            self:Error([[The second argument of Gemini:SetConfig() must be a string.]], Category, "string")
-        end
+    if not isstring(Category) then
+        self:Error([[The second argument of Gemini:SetConfig() must be a string.]], Category, "string")
+    end
 
-        if ( Category == "" ) then
-            self:Error([[The second argument of Gemini:SetConfig() must not be empty.]], Category, "string")
-        end
+    if ( Category == "" ) then
+        self:Error([[The second argument of Gemini:SetConfig() must not be empty.]], Category, "string")
     end
 
     Category = string.lower( string.gsub(Category, "%W", "") )
@@ -381,7 +365,9 @@ function Gemini:SetConfig(Name, Value, Category)
     end
 
     if not self.__cfg[Category][Name][2](Value) then
-        self:Error([[The value doesn't match the verification function.]], Value, "any")
+        -- self:Error([[The value doesn't match the verification function.]], Value, "any")
+        self:Print("The value doesn't match the verification function. Skipping...")
+        return
     end
 
     local ConvarValue = self:ToConvar(Name, Value, Category)
@@ -402,10 +388,11 @@ function Gemini:PreInit()
 
     self.VERIFICATION_TYPE = VERIFICATION_TYPE
 
-    self:AddConfig("DefaultCategory", "General", self.VERIFICATION_TYPE.string, "General")
-    self:AddConfig("DefaultAPI", "General", self.VERIFICATION_TYPE.string, "Gemini")
+    if true then
+        self:AddConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, true)
+    end
+
     self:AddConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
-    self:AddConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true)
     self:AddConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
 
     if SERVER then
@@ -413,7 +400,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_rules.lua")     self:Print("File \"gemini/sh_rules.lua\" has been send to client.")
-        AddCSLuaFile("gemini/cl_ownermenu.lua") self:Print("File \"gemini/cl_ownermenu.lua\" has been send to client.")
+        AddCSLuaFile("gemini/cl_gemini_panel.lua") self:Print("File \"gemini/cl_gemini_panel.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
@@ -479,7 +466,7 @@ function Gemini:Init()
         end
 
     else
-        include("gemini/cl_ownermenu.lua")      self:Print("File \"gemini/cl_ownermenu.lua\" has been loaded.")
+        include("gemini/cl_gemini_panel.lua")      self:Print("File \"gemini/cl_gemini_panel.lua\" has been loaded.")
     end
 
     hook.Run("Gemini.Init")
@@ -523,10 +510,10 @@ if SERVER then
         if not Gemini:CanUse(ply, "gemini_config") then return end
 
         local Name = net.ReadString()
-        local Value = net.ReadType()
         local Category = net.ReadString()
+        local Value = net.ReadType()
 
-        Gemini:SetConfig(Name, Value, Category)
+        Gemini:SetConfig(Name, Category, Value)
     end)
 else
     net.Receive("Gemini:ReplicateConfig", function(len)
@@ -551,7 +538,7 @@ concommand.Add("gemini_reload", function(ply)
 
         net.Start("Gemini:ReplicateConfig")
         net.Broadcast()
-    elseif Gemini:CanUse(nil, "gemini_config") then
+    elseif Gemini:CanUse("gemini_config") then
         net.Start("Gemini:ReplicateConfig")
         net.SendToServer()
     else

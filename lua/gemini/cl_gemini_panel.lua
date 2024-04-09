@@ -1,5 +1,5 @@
 --[[----------------------------------------------------------------------------
-                 Google Gemini Automod - Server Owner Menu (CL)
+                 Google Gemini Automod - Gemini Panel Menu (CL)
 ----------------------------------------------------------------------------]]--
 
 -- This is my best attempt to replicate the frutiger aero style
@@ -32,8 +32,7 @@ end
 ------------------------]]--
 
 -- CVars
-local CVAR_EnableAnimation = CreateClientConVar("gemini_config_panel_enable_animation", 1, true, false, "Enable the animation of the config panel")
-
+Gemini:AddConfig("EnableAnimation", "Panel", Gemini.VERIFICATION_TYPE.bool, true)
 
 -- Colors
 -- local WhiteColor = Color(255, 255, 255)
@@ -95,6 +94,10 @@ local function SelfPaint(self, w, h)
     draw.RoundedBox(0, 0, 0, w, h, BackgroundColor1)
 end
 
+local function DisabledModule(self, w, h)
+    draw.RoundedBoxEx(3, 1, 1, w, h, BackgroundColor2, true, true)
+end
+
 --[[------------------------
            DFrame
 ------------------------]]--
@@ -102,8 +105,8 @@ end
 local GEMINIPANEL = {}
 
 function GEMINIPANEL:PoblateItems()
+    local AtLeastOneTab = false
 
-    --[+[ TO DO
     for Key, Module in pairs(Gemini.__MODULE) do
         local Tab = vgui.Create("DPanel", self.Tabs)
         Tab:SetSize(self.Tabs:GetWide(), self.Tabs:GetTall())
@@ -116,9 +119,7 @@ function GEMINIPANEL:PoblateItems()
             NewTab:SetEnabled(false)
 
             -- Make the button darker
-            NewTab.Paint = function(TabSelf, w, h)
-                draw.RoundedBox(4, 0, 0, w, h, BackgroundColor2)
-            end
+            NewTab.Paint = DisabledModule
 
             continue
         end
@@ -126,20 +127,46 @@ function GEMINIPANEL:PoblateItems()
         NewTab.__MODULE = Module
         NewTab.OnFocus = Module.OnFocus
         NewTab.OnLostFocus = Module.OnLostFocus
+
+        AtLeastOneTab = true
     end
-    --]]
 
     self.ACTIVE_PANEL = nil
+
+    if not AtLeastOneTab then
+        local DefaultTab = vgui.Create("DPanel", self.Tabs)
+        DefaultTab.DefaultTab = true
+        DefaultTab:SetSize(self.Tabs:GetWide(), self.Tabs:GetTall())
+        DefaultTab.Paint = SelfPaint
+
+        local NotModulesAvailable = vgui.Create("DLabel", DefaultTab)
+        NotModulesAvailable:SetText("No modules available.")
+        NotModulesAvailable:SetFont("Frutiger:Big")
+        NotModulesAvailable:SizeToContents()
+        NotModulesAvailable:Center()
+
+        self.Tabs:AddSheet("  No Modules  ", DefaultTab, "icon16/cross.png")
+        self.ACTIVE_PANEL = DefaultTab
+    end
+
     self.Tabs.OnActiveTabChanged = function(selfTabs, OldTab, NewTab)
-        if ( OldTab.OnLostFocus ~= Gemini.ReturnNoneFunction ) then
+        if isfunction(OldTab.OnLostFocus) and ( OldTab.OnLostFocus ~= Gemini.ReturnNoneFunction ) then
             OldTab.__MODULE:OnLostFocus(self, self.Tabs)
         end
 
-        if ( NewTab.OnFocus ~= Gemini.ReturnNoneFunction ) then
+        if isfunction(OldTab.OnFocus) and ( NewTab.OnFocus ~= Gemini.ReturnNoneFunction ) then
             NewTab.__MODULE:OnFocus(self, self.Tabs)
         end
 
         self.ACTIVE_PANEL = NewTab
+    end
+
+    -- Pick the first tab
+    for _, Tab in pairs(self.Tabs.Items) do
+        if Tab.Tab:IsEnabled() then
+            self.Tabs:SetActiveTab(Tab.Tab)
+            break
+        end
     end
 end
 
@@ -159,6 +186,7 @@ function GEMINIPANEL:Init()
 
     -- Animate to the center of the screen
     self:OpenAnimation()
+    self:SetKeyboardInputEnabled(true)
 end
 
 local function DeleteOnCloseFunc(SelfPanel)
@@ -172,8 +200,8 @@ local function DeleteOnCloseFunc(SelfPanel)
 end
 
 function GEMINIPANEL:Close()
-    if ispanel(self.ACTIVE_PANEL) then
-        self.ACTIVE_PANEL.__MODULE:OnLostFocus()
+    if ispanel(self.ACTIVE_PANEL) and IsValid(self.ACTIVE_PANEL.__MODULE) and isfunction(self.ACTIVE_PANEL.__MODULE.OnLostFocus) then
+        self.ACTIVE_PANEL.__MODULE:OnLostFocus(self, self.Tabs)
     end
 
     -- self:SetVisible( true )
@@ -192,7 +220,7 @@ end
 ------------------------]]--
 
 function GEMINIPANEL:OpenAnimation()
-    if ( CVAR_EnableAnimation:GetBool() == false ) then self:Center() return end
+    if ( Gemini:GetConfig("EnableAnimation", "Panel") == false ) then self:Center() return end
 
     self:ShowCloseButton(false)
     self:Center()
@@ -205,17 +233,16 @@ function GEMINIPANEL:OpenAnimation()
 end
 
 function GEMINIPANEL:CloseAnimation(DeleteOnClose)
-    if ( CVAR_EnableAnimation:GetBool() == false ) then DeleteOnCloseFunc(self, DeleteOnClose) return end
+    if ( Gemini:GetConfig("EnableAnimation", "Panel") == false ) then
+        DeleteOnCloseFunc(self, DeleteOnClose)
+        return
+    end
 
     self:SlideUp(0.3)
     timer.Simple(0.301, function()
         DeleteOnCloseFunc(self, DeleteOnClose)
     end)
 end
-
---[[------------------------
-       Register Derma
-------------------------]]--
 
 vgui.Register("Gemini:ConfigPanel", GEMINIPANEL, "DFrame")
 
@@ -232,7 +259,7 @@ end
           Debugging
 ------------------------]]--
 
-concommand.Add("gemini_config_panel", function()
+concommand.Add("gemini_panel", function()
     if ( ScrW() < 800 ) or ( ScrH() < 600 ) then
         chat.AddText("The screen resolution is too small to open the config panel.")
     else
@@ -243,7 +270,7 @@ end)
 -- on say !config
 hook.Add("OnPlayerChat", "Gemini:ConfigPanel", function(ply, text)
     if ( ply == LocalPlayer() ) and ( string.Trim(text) == "!gemini" ) then
-        RunConsoleCommand("gemini_config_panel")
+        RunConsoleCommand("gemini_panel")
         return true
     end
 end)

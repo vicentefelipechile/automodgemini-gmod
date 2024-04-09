@@ -6,7 +6,6 @@ local MODULE = { ["Icon"] = "icon16/bug.png" }
 local BlackColor = COLOR_BLACK
 local WhiteColor = COLOR_WHITE
 local GrayColor = COLOR_GRAY
-local CyanColor = COLOR_CYAN
 
 local AlphaColor = Color(255, 255, 255, 100)
 
@@ -33,12 +32,12 @@ local LastRequest = 0
            Convars
 ------------------------]]--
 
-local CVAR_PlayerTarget = CreateClientConVar("gemini_playground_playertarget", 0, true, true, Gemini:GetPhrase("Logger.PlayerID"))
-local CVAR_MaxLogs = CreateClientConVar("gemini_playground_maxlogs", 10, true, true, Gemini:GetPhrase("Logger.MaxLogs"))
-local CVAR_BetweenLogs = CreateClientConVar("gemini_playground_betweenlogs", 0, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
-local CVAR_BetweenLogsMin = CreateClientConVar("gemini_playground_betweenlogs_min", 5, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
-local CVAR_BetweenLogsMax = CreateClientConVar("gemini_playground_betweenlogs_max", 10, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
-local CVAR_AttachContext = CreateClientConVar("gemini_playground_attachcontext", 0, true, true, Gemini:GetPhrase("Playground.AttachContext"))
+Gemini:AddConfig("PlayerTarget", "Playground", Gemini.VERIFICATION_TYPE.number, 0)
+Gemini:AddConfig("MaxLogs", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
+Gemini:AddConfig("BetweenLogs", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
+Gemini:AddConfig("BetweenLogsMin", "Playground", Gemini.VERIFICATION_TYPE.number, 5)
+Gemini:AddConfig("BetweenLogsMax", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
+Gemini:AddConfig("AttachContext", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
 
 --[[------------------------
         F*ckin DLabel
@@ -85,7 +84,7 @@ function MODULE:ResetPrompt()
     table.Empty(PromptHistory)
     self.PromptHistory:Clear()
 
-    if not Gemini:CanUse(nil, "gemini_playground") then return end
+    if not Gemini:CanUse("gemini_playground") then return end
 
     net.Start("Gemini:PlaygroundResetRequest")
     net.SendToServer()
@@ -132,9 +131,9 @@ function MODULE:AddMessagePrompt(Role, Text)
     PromptLabel:Dock(FILL)
     PromptLabel:SetWrap(true)
     PromptLabel:SizeToContentsY()
-    PromptLabel:SetTall( PromptLabel:GetTall() * 0.039 )
+    PromptLabel:SetTall( PromptLabel:GetTall() * 0.039 + 8 )
 
-    local HasContext = not PromptHistory and ( Role == "user" ) and CVAR_AttachContext:GetBool()
+    local HasContext = not PromptHistory and ( Role == "user" ) and Gemini:GetConfig("AttachContext", "Playground")
     if HasContext then
         local ContextImage = vgui.Create("DImage", PromptMessage)
         ContextImage:SetSize(12, 12)
@@ -149,7 +148,7 @@ function MODULE:AddMessagePrompt(Role, Text)
     Line:SetHeight(1)
     Line:DockMargin(0, 6, 0, 6)
     Line:Dock(BOTTOM)
-    Line.Paint = function(self, w, h)
+    Line.Paint = function(_, w, h)
         draw.RoundedBox(0, 0, 0, w, h, GrayColor)
     end
 
@@ -237,29 +236,29 @@ function MODULE:SetMessageLog(Message)
 end
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
-    if not Gemini:CanUse(nil, "gemini_playground") then return false end
+    if not Gemini:CanUse("gemini_playground") then return false end
 
     --[[------------------------
            Output Message
     ------------------------]]--
 
     local OutputMSG = vgui.Create("DTextEntry", OurTab)
-    OutputMSG:SetSize(500, 20)
-    OutputMSG:SetPos(10, OurTab:GetTall() - 68)
+    OutputMSG:SetSize(OurTab:GetWide() - 68, 20)
+    OutputMSG:SetPos(518, OurTab:GetTall() - 68)
     OutputMSG:SetEditable(false)
 
     self.OutputMSG = OutputMSG
 
-    local OutputX, OutputY = OutputMSG:GetPos()
+    local _, OutputY = OutputMSG:GetPos()
 
     --[[------------------------
            Settings Panel
     ------------------------]]--
 
     local SettingsPanel = vgui.Create("DPanel", OurTab)
-    SettingsPanel:SetSize(170, OutputY - 25)
+    SettingsPanel:SetSize(170, OutputY + 4)
     SettingsPanel:SetPos(10, 15)
-   
+
     local SettingsLabel = vgui.Create("DLabel", SettingsPanel)
     SettingsLabel:SetText( Gemini:GetPhrase("Config") )
     SettingsLabel:SetTextColor(BlackColor)
@@ -414,13 +413,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     local PromptPanel = vgui.Create("DPanel", OurTab)
-    PromptPanel:SetSize(320, OutputY - 25)
+    PromptPanel:SetSize(320, OutputY + 4)
     PromptPanel:SetPos( SettingsPanel:GetWide() + PanelOffset, 15 )
 
     local PromptTitlePanel = vgui.Create("DPanel", PromptPanel)
     PromptTitlePanel:SetSize(PromptPanel:GetWide() - 10, 30)
     PromptTitlePanel:SetPos(5, 5)
-    PromptTitlePanel.Paint = function(self, w, h)
+    PromptTitlePanel.Paint = function(_, w, h)
         draw.RoundedBox(0, 0, 0, w, h, BlackColor)
     end
 
@@ -433,7 +432,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     local PromptHistoryPanel = vgui.Create("DScrollPanel", PromptPanel)
     PromptHistoryPanel:SetSize(PromptPanel:GetWide() - 10, PromptPanel:GetTall() - 75)
     PromptHistoryPanel:SetPos(5, 40)
-    PromptHistoryPanel.Paint = function(self, w, h)
+    PromptHistoryPanel.Paint = function(_, w, h)
         draw.RoundedBox(0, 0, 0, w, h, BlackColor)
     end
 
@@ -469,15 +468,17 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     local PromptWide = PromptPanel:GetWide()
 
     local HistoryPanel = vgui.Create("DListView", OurTab)
-    HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), OurTab:GetTall() - 62)
+    HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), OurTab:GetTall() - 92)
     HistoryPanel:SetPos( PromptX + PromptWide + 8, 15 )
     HistoryPanel:SetMultiSelect(false)
+
+    OutputMSG:SetWide(HistoryPanel:GetWide())
 
     self.List = {}
     self.List["ID"] = HistoryPanel:AddColumn("ID")
     self.List["Log"] = HistoryPanel:AddColumn("Log")
 
-    self.List["ID"]:SetWidth( 30 )
+    self.List["ID"]:SetWidth( 48 )
     self.List["Log"]:SetWidth( HistoryPanel:GetWide() - 52 )
 
     HistoryPanel.CurrentColumn = self.List["ID"]
@@ -538,4 +539,4 @@ end)
        Register Module
 ------------------------]]--
 
-Gemini:ModuleCreate("Playground", MODULE)
+Gemini:ModuleCreate(Gemini:GetPhrase("Playground"), MODULE)

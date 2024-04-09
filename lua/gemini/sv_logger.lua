@@ -284,7 +284,7 @@ function Gemini.LoggerAskLogs(len, ply)
         local Min = net.ReadUInt(DefaultNetworkUIntBig)
         local Max = net.ReadUInt(DefaultNetworkUIntBig)
         Logs = sql_Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
-    
+
         Logs = ( Logs == nil ) and {} or Logs
     else
         if ( IsPlayer == false ) then

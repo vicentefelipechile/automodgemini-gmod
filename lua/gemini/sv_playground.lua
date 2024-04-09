@@ -44,7 +44,7 @@ end
 function Gemini:PlaygroundGetLogsFromPly(ply)
     local IsBetween = ply:GetInfoNum("gemini_playground_betweenlogs", 0) == 1
     local Limit = math.min(
-        self:GetConfig("MaxLogsRequest", "Logger"), 
+        self:GetConfig("MaxLogsRequest", "Logger"),
         ply:GetInfoNum("gemini_playground_maxlogs", 30)
     )
     local Logs = {}
@@ -53,7 +53,7 @@ function Gemini:PlaygroundGetLogsFromPly(ply)
         local Min = ply:GetInfoNum("gemini_playground_betweenlogs_min", 1)
         local Max = ply:GetInfoNum("gemini_playground_betweenlogs_max", 1)
         Logs = sql.Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
-    
+
         Logs = ( Logs == nil ) and {} or Logs
     else
         local PlayerID = ply:GetInfoNum("gemini_playground_playertarget", 0)
@@ -106,26 +106,26 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
     else
         --[[ All Body ]]--
         local FullPrompt = ""
-    
+
         --[[ Contents ]]--
         local Contents = {
             { ["parts"] = {["text"] = self:GetPhrase("context.begin")}, ["role"] = "user"},
             { ["parts"] = {["text"] = self:GetGamemodeContext()}, ["role"] = "model"}
         }
-    
+
         --[[ Context ]]--
         local PlayerWantContext = ( ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1 )
         if PlayerWantContext then
             local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
-    
+
             FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
         end
-    
+
         --[[ Prompt ]]--
         FullPrompt = FullPrompt .. Prompt
-    
+
         table.insert(Contents, { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"})
-    
+
         --[[ Body ]]--
         Body = {
             ["generationConfig"] = self:GetGenerationConfig(),
@@ -147,7 +147,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         ["method"] = "POST",
         ["type"] = "application/json",
         ["body"] = BodyJSON,
-        ["success"] = function(Code, BodyResponse, Headers)    
+        ["success"] = function(Code, BodyResponse, Headers)
             self:GetHTTPDescription(Code)
 
             if ( Code ~= 200 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.ServerError") return end
