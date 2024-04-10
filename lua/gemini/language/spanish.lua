@@ -245,6 +245,7 @@ Gemini:LanguageOverrideHook(LANG, {
 Gemini:LanguageAddPhrase(LANG, "Credits", "Creditos")
 Gemini:LanguageAddPhrase(LANG, "Config", "Configuración")
 Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
+Gemini:LanguageAddPhrase(LANG, "Rules", "Reglas")
 
 --[[------------------------
     Gemini Error Phrases

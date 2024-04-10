@@ -7,15 +7,15 @@
 -- Significa que es una tabla del tipo de objeto que se encuentra dentro de las llaves
 
 
-Gemini.__TYPE_PRIMITIVES = Gemini.__TYPE_PRIMITIVES or {}
-Gemini.__TYPE_ENUM = Gemini.__TYPE_ENUM or {}
+Gemini.__PRIMITIVE = Gemini.__PRIMITIVE or {}
+Gemini.__ENUM = Gemini.__ENUM or {}
 Gemini.__TYPE = Gemini.__TYPE or {}
 
 --[[------------------------
         Enumerations
 ------------------------]]--
 
-Gemini.__TYPE_ENUM["FinishReason"] = {
+Gemini.__ENUM["FinishReason"] = {
     FINISH_REASON_UNSPECIFIED   = [[Default value. This value is unused.]],
     MAX_TOKENS  = [[The maximum number of tokens as specified in the request was reached.]],
     RECITATION  = [[The candidate content was flagged for recitation reasons.]],
@@ -24,7 +24,7 @@ Gemini.__TYPE_ENUM["FinishReason"] = {
     OTHER   = [[Unknown reason.]]
 }
 
-Gemini.__TYPE_ENUM["HarmCategory"] = {
+Gemini.__ENUM["HarmCategory"] = {
     HARM_CATEGORY_UNSPECIFIED   = [[Category is unspecified.]],
     HARM_CATEGORY_DEROGATORY    = [[Negative or harmful comments targeting identity and/or protected attribute.]],
     HARM_CATEGORY_TOXICITY  = [[Content that is rude, disrespectful, or profane.]],
@@ -38,7 +38,7 @@ Gemini.__TYPE_ENUM["HarmCategory"] = {
     HARM_CATEGORY_SEXUALLY_EXPLICIT     = [[Sexually explicit content.]],
 }
 
-Gemini.__TYPE_ENUM["HarmProbability"] = {
+Gemini.__ENUM["HarmProbability"] = {
     HARM_PROBABILITY_UNSPECIFIED  = [[Default value. This value is unused.]],
     NEGLIGIBLE  = [[Content has a negligible chance of being unsafe.]],
     LOW     = [[Content has a low chance of being unsafe.]],
@@ -46,7 +46,7 @@ Gemini.__TYPE_ENUM["HarmProbability"] = {
     HIGH    = [[Content has a high chance of being unsafe.]],
 }
 
-Gemini.__TYPE_ENUM["HarmBlockThreshold"] = {
+Gemini.__ENUM["HarmBlockThreshold"] = {
     HARM_BLOCK_THRESHOLD_UNSPECIFIED  = [[Threshold is unspecified.]],
     BLOCK_LOW_AND_ABOVE     = [[Content with NEGLIGIBLE will be allowed.]],
     BLOCK_MEDIUM_AND_ABOVE  = [[Content with NEGLIGIBLE and LOW will be allowed.]],
@@ -54,13 +54,13 @@ Gemini.__TYPE_ENUM["HarmBlockThreshold"] = {
     BLOCK_NONE              = [[All content will be allowed.]],
 }
 
-Gemini.__TYPE_ENUM["BlockReason"] = {
+Gemini.__ENUM["BlockReason"] = {
     BLOCK_REASON_UNSPECIFIED   = [[Default value. This value is unused.]],
     SAFETY  = [[Prompt was blocked due to safety reasons. You can inspect safetyRatings to understand which safety category blocked it.]],
     OTHER   = [[Prompt was blocked due to unknown reasons.]]
 }
 
-Gemini.__TYPE_ENUM["TaskType"] = {
+Gemini.__ENUM["TaskType"] = {
     TASK_TYPE_UNSPECIFIED   = [[Unset value, which will default to one of the other enum values.]],
     RETRIEVAL_QUERY     = [[Specifies the given text is a query in a search/retrieval setting.]],
     RETRIEVAL_DOCUMENT  = [[Specifies the given text is a document from the corpus being searched.]],
@@ -75,7 +75,7 @@ Gemini.__TYPE_ENUM["TaskType"] = {
        Primitive Types
 ------------------------]]--
 
-Gemini.__TYPE_PRIMITIVES["Blob"] = {
+Gemini.__PRIMITIVE["Blob"] = {
     ["mimeType"] = {
         ["image/png"] = true,
         ["image/jpeg"] = true,
@@ -88,11 +88,11 @@ Gemini.__TYPE_PRIMITIVES["Blob"] = {
     end
 }
 
-Gemini.__TYPE_PRIMITIVES["Part"] = {
+Gemini.__PRIMITIVE["Part"] = {
     -- Union field data can be only one of the following:
     ["text"] = "string",
     ["inlineData"] = {
-        Gemini.__TYPE_PRIMITIVES["Blob"]
+        Gemini.__PRIMITIVE["Blob"]
     },
 
     -- Only v1beta
@@ -120,8 +120,8 @@ Gemini.__TYPE_PRIMITIVES["Part"] = {
 ------------------------]]--
 
 Gemini.__TYPE["SafetyRating"] = {
-    ["category"] = Gemini.__TYPE_ENUM["HarmCategory"],
-    ["probability"] = Gemini.__TYPE_ENUM["HarmProbability"],
+    ["category"] = Gemini.__ENUM["HarmCategory"],
+    ["probability"] = Gemini.__ENUM["HarmProbability"],
     ["blocked"] = "boolean"
 }
 
@@ -160,7 +160,7 @@ Gemini.__TYPE["Candidate"] = {
     ["content"] = {
         Gemini.__TYPE["Content"]
     },
-    ["finishReason"] = Gemini.__TYPE_ENUM["FinishReason"],
+    ["finishReason"] = Gemini.__ENUM["FinishReason"],
     ["safetyRatings"] = {
         ["array"] = {Gemini.__TYPE["SafetyRating"]}
     },
@@ -172,7 +172,7 @@ Gemini.__TYPE["Candidate"] = {
 }
 
 Gemini.__TYPE["PromptFeedback"] = {
-    ["blockReason"] = Gemini.__TYPE_ENUM["BlockReason"],
+    ["blockReason"] = Gemini.__ENUM["BlockReason"],
     ["safetyRatings"] = {
         ["array"] = {Gemini.__TYPE["SafetyRating"]}
     }
@@ -207,7 +207,7 @@ Gemini.__TYPE["Operation"] = {
 
 Gemini.__TYPE["Content"] = {
     ["parts"] = {
-        ["array"] = {Gemini.__TYPE_PRIMITIVES["Part"]}
+        ["array"] = {Gemini.__PRIMITIVE["Part"]}
     },
     ["role"] = {["user"] = true, ["model"] = true}
 }
@@ -246,6 +246,6 @@ Gemini.__TYPE["ListOperationsResponse"] = {
 }
 
 Gemini.__TYPE["SafetySettings"] = {
-    ["category"] = Gemini.__TYPE_ENUM["HarmCategory"],
-    ["threshold"] = Gemini.__TYPE_ENUM["HarmBlockThreshold"]
+    ["category"] = Gemini.__ENUM["HarmCategory"],
+    ["threshold"] = Gemini.__ENUM["HarmBlockThreshold"]
 }

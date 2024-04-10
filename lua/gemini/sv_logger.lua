@@ -158,13 +158,7 @@ function Gemini:LoggerCheckTable()
         Gemini:LoggerCreateTable()
     end
 
-    self:AddConfig("BackupEnabled",         "Logger", self.VERIFICATION_TYPE.bool,  true)
-    self:AddConfig("BackupIntervalEnabled", "Logger", self.VERIFICATION_TYPE.bool,  false)
-    self:AddConfig("BackupInterval",        "Logger", self.VERIFICATION_TYPE.number, 120)
-    self:AddConfig("CompressedBackup",      "Logger", self.VERIFICATION_TYPE.bool,  true)
-    self:AddConfig("RawBackup",             "Logger", self.VERIFICATION_TYPE.bool,  false)
-
-    self:AddConfig("MaxLogsRequest",        "Logger", self.VERIFICATION_TYPE.number, 500)
+    self:CreateConfig("MaxLogsRequest",        "Logger", self.VERIFICATION_TYPE.number, 500)
 end
 
 function Gemini:LoggerSetPlayer(ply, id, target)

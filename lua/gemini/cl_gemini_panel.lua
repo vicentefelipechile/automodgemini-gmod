@@ -32,7 +32,7 @@ end
 ------------------------]]--
 
 -- CVars
-Gemini:AddConfig("EnableAnimation", "Panel", Gemini.VERIFICATION_TYPE.bool, true)
+Gemini:CreateConfig("EnableAnimation", "Panel", Gemini.VERIFICATION_TYPE.bool, true)
 
 -- Colors
 -- local WhiteColor = Color(255, 255, 255)

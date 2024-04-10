@@ -10,6 +10,13 @@ local DefaultNetworkUInt = 16
 local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
 local PlayerUsingPlayground = {}
 
+local RequestInitialLogs = "gemini_playground_requestinitiallogs"
+local PlayerTarget = "gemini_playground_playertarget"
+local MaxLogs = "gemini_playground_maxlogs"
+local BetweenLogs = "gemini_playground_betweenlogs"
+local BetweenLogsMin = "gemini_playground_betweenlogsmin"
+local BetweenLogsMax = "gemini_playground_betweenlogsmax"
+
 --[[------------------------
        Util Functions
 ------------------------]]--
@@ -42,21 +49,21 @@ function Gemini:PlaygroundClearHistory(ply)
 end
 
 function Gemini:PlaygroundGetLogsFromPly(ply)
-    local IsBetween = ply:GetInfoNum("gemini_playground_betweenlogs", 0) == 1
+    local IsBetween = self:GetPlayerInfo(ply, BetweenLogs)
     local Limit = math.min(
         self:GetConfig("MaxLogsRequest", "Logger"),
-        ply:GetInfoNum("gemini_playground_maxlogs", 30)
+        self:GetPlayerInfo(ply, MaxLogs)
     )
     local Logs = {}
 
     if IsBetween then
-        local Min = ply:GetInfoNum("gemini_playground_betweenlogs_min", 1)
-        local Max = ply:GetInfoNum("gemini_playground_betweenlogs_max", 1)
+        local Min = self:GetPlayerInfo(ply, BetweenLogsMin)
+        local Max = self:GetPlayerInfo(ply, BetweenLogsMax)
         Logs = sql.Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
     else
-        local PlayerID = ply:GetInfoNum("gemini_playground_playertarget", 0)
+        local PlayerID = self:GetPlayerInfo(ply, PlayerTarget)
 
         if ( PlayerID == 0 ) then
             Logs = self:LoggerGetLogsLimit(Limit)
@@ -114,7 +121,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         }
 
         --[[ Context ]]--
-        local PlayerWantContext = ( ply:GetInfoNum("gemini_playground_attachcontext", 0) == 1 )
+        local PlayerWantContext = self:GetPlayerInfo(ply, RequestInitialLogs)
         if PlayerWantContext then
             local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
 

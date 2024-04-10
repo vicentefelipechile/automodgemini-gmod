@@ -9,7 +9,7 @@ Gemini.__LANG = Gemini.__LANG or {}
 ------------------------]]--
 
 if SERVER then
-    Gemini:AddConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
+    Gemini:CreateConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
 end
 
 --[[------------------------
@@ -91,10 +91,9 @@ function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
     self.__LANG[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.ReturnNoneFunction}
 end
 
+local LanguageTargetCache = Gemini:GetConfig("Language", "General", true)
 function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
-    if ( LanguageTarget == nil ) then
-        LanguageTarget = self:GetConfig("Language", "General", true)
-    end
+    LanguageTarget = LanguageTarget or LanguageTargetCache
 
     if ( SkipValidation == true ) then
         return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
@@ -170,3 +169,9 @@ function Gemini:LanguagePoblate()
         end
     end
 end
+
+hook.Add("Gemini:ConfigChanged", "Gemini:UpdateMainLanguage", function(Name, Category, Value)
+    if ( Name == "Language" and Category == "General" ) then
+        LanguageTargetCache = Value
+    end
+end)

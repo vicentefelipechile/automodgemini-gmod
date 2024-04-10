@@ -12,14 +12,13 @@ local DefaultNetworkUIntBig = 32
            Convars
 ------------------------]]--
 
-local CVAR_RequestInitialLogs = CreateClientConVar("gemini_logger_requestinitiallogs", 10, true, true)
-local CVAR_AsyncLogs = CreateClientConVar("gemini_logger_asynclogs", 1, true, true)
-local CVAR_PlayerTarget = CreateClientConVar("gemini_logger_playertarget", 0, true, true, Gemini:GetPhrase("Logger.PlayerID"))
-local CVAR_MaxLogs = CreateClientConVar("gemini_logger_maxlogs", 10, true, true, Gemini:GetPhrase("Logger.MaxLogs"))
-local CVAR_BetweenLogs = CreateClientConVar("gemini_logger_betweenlogs", 0, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
-local CVAR_BetweenLogsMin = CreateClientConVar("gemini_logger_betweenlogs_min", 5, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
-local CVAR_BetweenLogsMax = CreateClientConVar("gemini_logger_betweenlogs_max", 10, true, true, Gemini:GetPhrase("Logger.BetweenLogs"))
-
+Gemini:CreateConfig("RequestInitialLogs", "Logger", Gemini.VERIFICATION_TYPE.number, 10)
+Gemini:CreateConfig("AsyncLogs", "Logger", Gemini.VERIFICATION_TYPE.bool, true)
+Gemini:CreateConfig("PlayerTarget", "Logger", Gemini.VERIFICATION_TYPE.number, 0)
+Gemini:CreateConfig("MaxLogs", "Logger", Gemini.VERIFICATION_TYPE.number, 10)
+Gemini:CreateConfig("BetweenLogs", "Logger", Gemini.VERIFICATION_TYPE.bool, false)
+Gemini:CreateConfig("BetweenLogsMin", "Logger", Gemini.VERIFICATION_TYPE.number, 5)
+Gemini:CreateConfig("BetweenLogsMax", "Logger", Gemini.VERIFICATION_TYPE.number, 10)
 
 --[[------------------------
            Logger
@@ -36,8 +35,8 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
         net.WriteUInt(Target, DefaultNetworkUInt)
         net.WriteBool(Between or false)
         if ( Between ) then
-            net.WriteUInt(CVAR_BetweenLogsMin:GetInt(), DefaultNetworkUIntBig)
-            net.WriteUInt(CVAR_BetweenLogsMax:GetInt(), DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Logger"), DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Logger"), DefaultNetworkUIntBig)
         end
     net.SendToServer()
 
@@ -155,18 +154,18 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     PlayerIDInput:SetNumeric(true)
     PlayerIDInput:SetPlaceholderText( Gemini:GetPhrase("Logger.PlayerID") )
 
-    if ( CVAR_PlayerTarget:GetInt() ~= 0 ) then
-        PlayerIDInput:SetValue( CVAR_PlayerTarget:GetInt() )
+    if ( Gemini:GetConfig("PlayerTarget", "Logger") ~= 0 ) then
+        PlayerIDInput:SetValue( Gemini:GetConfig("PlayerTarget", "Logger") )
     end
 
     PlayerIDInput.OnEnter = function(SubSelf)
         local PlayerID = tonumber(SubSelf:GetValue()) or 0
-        CVAR_PlayerTarget:SetInt(PlayerID)
+        Gemini:SetConfig("PlayerTarget", "Logger", PlayerID)
     end
 
     PlayerIDInput.OnLoseFocus = function(SubSelf)
         local PlayerID = tonumber(SubSelf:GetValue()) or 0
-        CVAR_PlayerTarget:SetInt(PlayerID)
+        Gemini:SetConfig("PlayerTarget", "Logger", PlayerID)
     end
 
     local MaxLogsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -181,10 +180,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     MaxLogs:SetPos(10, 84)
     MaxLogs:SetMin(1)
     MaxLogs:SetMax(200)
-    MaxLogs:SetValue( CVAR_MaxLogs:GetInt() )
+    MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Logger") )
 
     MaxLogs.OnValueChanged = function(_, value)
-        CVAR_MaxLogs:SetInt(value)
+        Gemini:SetConfig("MaxLogs", "Logger", value)
     end
 
     local BetweenLogsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -199,17 +198,17 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     BetweenLogsMin:SetPos(10, 124)
     BetweenLogsMin:SetMin(1)
     BetweenLogsMin:SetMax(1000000)
-    BetweenLogsMin:SetValue( CVAR_BetweenLogsMin:GetInt() )
+    BetweenLogsMin:SetValue( Gemini:GetConfig("BetweenLogsMin", "Logger") )
 
     local BetweenLogsMax = vgui.Create("DNumberWang", SettingsPanel)
     BetweenLogsMax:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
     BetweenLogsMax:SetPos( ( SettingsPanel:GetWide() - 20 ) / 2 + 14, 124)
     BetweenLogsMax:SetMin(1)
     BetweenLogsMax:SetMax(1000000)
-    BetweenLogsMax:SetValue( CVAR_BetweenLogsMax:GetInt() )
+    BetweenLogsMax:SetValue( Gemini:GetConfig("BetweenLogsMax", "Logger") )
 
     BetweenLogsMin.OnValueChanged = function(_, value)
-        CVAR_BetweenLogsMin:SetInt(value)
+        Gemini:SetConfig("BetweenLogsMin", "Logger", value)
 
         if ( BetweenLogsMax:GetValue() < value ) then
             BetweenLogsMax:SetValue(value)
@@ -217,7 +216,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     end
 
     BetweenLogsMax.OnValueChanged = function(_, value)
-        CVAR_BetweenLogsMax:SetInt(value)
+        Gemini:SetConfig("BetweenLogsMax", "Logger", value)
 
         if ( BetweenLogsMin:GetValue() > value ) then
             BetweenLogsMin:SetValue(value)
@@ -229,10 +228,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     EnableBetweenLogs:SetPos(10, 150)
     EnableBetweenLogs:SetText( Gemini:GetPhrase("Logger.EnableBetweenLogs") )
     EnableBetweenLogs:SetTextColor(BlackColor)
-    EnableBetweenLogs:SetValue( CVAR_BetweenLogs:GetBool() )
+    EnableBetweenLogs:SetValue( Gemini:GetConfig("BetweenLogs", "Logger") )
 
     EnableBetweenLogs.OnChange = function(_, value)
-        CVAR_BetweenLogs:SetBool(value)
+        Gemini:SetConfig("BetweenLogs", "Logger", value)
     end
 
     local AskLogsButton = vgui.Create("DButton", SettingsPanel)
@@ -242,13 +241,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     AskLogsButton:SetFont("Frutiger:Small")
 
     AskLogsButton.DoClick = function()
-        local PlayerID = CVAR_PlayerTarget:GetInt()
+        local PlayerID = Gemini:GetConfig("PlayerTarget", "Logger")
 
         PlayerID = ( PlayerID ~= 0 ) and PlayerID or nil
 
-        local LogsMax = CVAR_MaxLogs:GetInt()
+        local LogsMax = Gemini:GetConfig("MaxLogs", "Logger")
         local LogsAmount = math.min(LogsMax, 200)
-        local Between = CVAR_BetweenLogs:GetBool()
+        local Between = Gemini:GetConfig("BetweenLogs", "Logger")
 
         self:AskLogs(LogsAmount, PlayerID, PlayerID ~= nil, Between)
 
@@ -282,10 +281,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     InitialLogs:SetPos(10, 254)
     InitialLogs:SetMin(1)
     InitialLogs:SetMax(200)
-    InitialLogs:SetValue( CVAR_RequestInitialLogs:GetInt() )
+    InitialLogs:SetValue( Gemini:GetConfig("RequestInitialLogs", "Logger") )
 
     InitialLogs.OnValueChanged = function(_, value)
-        CVAR_RequestInitialLogs:SetInt(value)
+        Gemini:SetConfig("RequestInitialLogs", "Logger", value)
     end
 
     local AsyncLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
@@ -293,10 +292,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     AsyncLogs:SetPos(10, 280)
     AsyncLogs:SetText( Gemini:GetPhrase("Logger.AsyncLogs") )
     AsyncLogs:SetTextColor(BlackColor)
-    AsyncLogs:SetValue( CVAR_AsyncLogs:GetBool() )
+    AsyncLogs:SetValue( Gemini:GetConfig("AsyncLogs", "Logger") )
 
     AsyncLogs.OnChange = function(_, value)
-        CVAR_AsyncLogs:SetBool(value)
+        Gemini:SetConfig("AsyncLogs", "Logger", value)
 
         self:SetAsynconousLogs(value)
     end
@@ -313,9 +312,9 @@ function MODULE:SetAsynconousLogs(Active)
 end
 
 function MODULE:OnFocus()
-    local EnableAsync = CVAR_AsyncLogs:GetBool()
-    local LogsMax = CVAR_MaxLogs:GetInt()
-    local LogsAmount = CVAR_RequestInitialLogs:GetInt()
+    local EnableAsync = Gemini:GetConfig("AsyncLogs", "Logger")
+    local LogsMax = Gemini:GetConfig("MaxLogs", "Logger")
+    local LogsAmount = Gemini:GetConfig("RequestInitialLogs", "Logger")
 
     if ( LogsAmount < 1 ) then return end
     LogsAmount = math.min(LogsAmount, LogsMax)
@@ -350,7 +349,7 @@ net.Receive("Gemini:AskLogs", function(len)
 end)
 
 net.Receive("Gemini:ReplicateLog", function(len)
-    if ( CVAR_AsyncLogs:GetBool() == false ) then return end
+    if ( Gemini:GetConfig("AsyncLogs", "Logger") == false ) then return end
 
     local ID = net.ReadUInt(DefaultNetworkUInt)
     local Log = net.ReadString()

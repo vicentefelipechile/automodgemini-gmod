@@ -27,7 +27,7 @@ if SERVER then
 end
 
 local FCVAR_PRIVATE = {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
-local FCVAR_PUBLIC = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or FCVAR_ARCHIVE
+local FCVAR_PUBLIC = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or {FCVAR_ARCHIVE, FCVAR_USERINFO}
 
 
 local print = print
@@ -93,16 +93,17 @@ local FuncMatchRegEx = {
     "self:(.*)%("
 }
 
+local LuaRun = {["@lua_run"] = true, ["@LuaCmd"] = true}
 function Gemini:Error(Message, Value, Expected)
     local Data = debug.getinfo(3)
 
-    local FilePath = ( Data["source"] == "@lua_run" ) and "Console" or "lua/" .. string.match(Data["source"], "lua/(.*)")
+    local FilePath = LuaRun[ Data["source"] ] and "Console" or "lua/" .. string.match(Data["source"], "lua/(.*)")
     local File = ( FilePath == "Console" ) and "Console" or file.Read(FilePath, "GAME")
     local Line = string.Trim( string.Explode("\n", File)[Data["currentline"]] )
 
     local ErrorLine = "\t\t" .. Data["currentline"]
     local ErrorPath = "\t" .. FilePath
-    local ErrorFunc = ""
+    local ErrorFunc = nil
     local ErrorArg = "\t" .. tostring(Value) .. " (" .. type(Value) .. ")"
 
     for _, regex in ipairs(FuncMatchRegEx) do
@@ -152,6 +153,36 @@ local FindAngleConvar = "(.*)P (.*)Y (.*)R"
 local FindColorConvar = "(.*)R (.*)G (.*)B"
 local FindColorAlphaConvar = "(.*)R (.*)G (.*)B (.*)A"
 
+function Gemini:ConvertValue(Value)
+    if not isstring(Value) then
+        self:Error([[The first argument of Gemini:ConvertValue() must be a string.]], Value, "string")
+    elseif ( Value == "" ) then
+        self:Error([[The first argument of Gemini:ConvertValue() must not be empty.]], Value, "string")
+    end
+
+    local ValueType = string.sub(Value, -1)
+    if SufixToType[ValueType] then
+        if ( ValueType == "n" or ValueType == "f" ) then
+            Value = tonumber( string.sub(Value, 1, -2) )
+        elseif ValueType == "b" then
+            Value = ( string.sub(Value, 1, -2) == "1" )
+        end
+    else
+        if string.match(Value, FindColorAlphaConvar) then
+            local R, G, B, A = string.match(Value, FindColorAlphaConvar)
+            Value = Color(tonumber(R), tonumber(G), tonumber(B), tonumber(A))
+        elseif string.match(Value, FindColorConvar) then
+            local R, G, B = string.match(Value, FindColorConvar)
+            Value = Color(tonumber(R), tonumber(G), tonumber(B))
+        elseif string.match(Value, FindAngleConvar) then
+            local P, Y, R = string.match(Value, FindAngleConvar)
+            Value = Angle(tonumber(P), tonumber(Y), tonumber(R))
+        end
+    end
+
+    return Value
+end
+
 function Gemini:FromConvar(Name, Category)
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:FromConvar() must be a string.]], Name, "string")
@@ -180,27 +211,7 @@ function Gemini:FromConvar(Name, Category)
         self:Error([[The convar value is empty.]], Value, "string")
     end
 
-    local ValueType = string.sub(Value, -1)
-    if SufixToType[ValueType] then
-        if ( ValueType == "n" or ValueType == "f" ) then
-            Value = tonumber( string.sub(Value, 1, -2) )
-        elseif ValueType == "b" then
-            Value = ( string.sub(Value, 1, -2) == "1" )
-        end
-    else
-        if string.match(Value, FindColorAlphaConvar) then
-            local R, G, B, A = string.match(Value, FindColorAlphaConvar)
-            Value = Color(tonumber(R), tonumber(G), tonumber(B), tonumber(A))
-        elseif string.match(Value, FindColorConvar) then
-            local R, G, B = string.match(Value, FindColorConvar)
-            Value = Color(tonumber(R), tonumber(G), tonumber(B))
-        elseif string.match(Value, FindAngleConvar) then
-            local P, Y, R = string.match(Value, FindAngleConvar)
-            Value = Angle(tonumber(P), tonumber(Y), tonumber(R))
-        end
-    end
-
-    return Value
+    return self:ConvertValue(Value)
 end
 
 function Gemini:ToConvar(Name, Category, Value)
@@ -244,30 +255,49 @@ function Gemini:ToConvar(Name, Category, Value)
     return ConvertedValue
 end
 
+function Gemini:GetPlayerInfo(Player, ConvarName)
+    ConvarName = CLIENT and Player or ConvarName
+    Player = CLIENT and LocalPlayer() or Player
 
-function Gemini:AddConfig(Name, Category, Verification, Default, Private)
+    if not isentity(Player) then
+        self:Error([[The first argument of Gemini:GetPlayerInfo() must be a valid player.]], Player, "Player")
+    elseif not Player:IsPlayer() then
+        self:Error([[The first argument of Gemini:GetPlayerInfo() must be a valid player.]], Player, "Player")
+    end
+
+    if not isstring(ConvarName) then
+        self:Error([[The second argument of Gemini:GetPlayerInfo() must be a string.]], ConvarName, "string")
+    elseif ( ConvarName == "" ) then
+        self:Error([[The second argument of Gemini:GetPlayerInfo() must not be empty.]], ConvarName, "string")
+    end
+
+    local InfoValue = Player:GetInfo(ConvarName)
+    return self:ConvertValue(InfoValue)
+end
+
+function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
     if not isstring(Name) then
-        self:Error([[The first argument of Gemini:AddConfig() must be a string.]], Name, "string")
+        self:Error([[The first argument of Gemini:CreateConfig() must be a string.]], Name, "string")
     end
 
     if ( Name == "" ) then
-        self:Error([[The first argument of Gemini:AddConfig() must not be empty.]], Name, "string")
+        self:Error([[The first argument of Gemini:CreateConfig() must not be empty.]], Name, "string")
     end
 
     if not isstring(Category) then
-        self:Error([[The second argument of Gemini:AddConfig() must be a string.]], Category, "string")
+        self:Error([[The second argument of Gemini:CreateConfig() must be a string.]], Category, "string")
     end
 
     if ( Category == "" ) then
-        self:Error([[The second argument of Gemini:AddConfig() must not be empty.]], Category, "string")
+        self:Error([[The second argument of Gemini:CreateConfig() must not be empty.]], Category, "string")
     end
 
     if not isfunction(Verification) then
-        self:Error([[The third argument of Gemini:AddConfig() must be a function.]], Verification, "function")
+        self:Error([[The third argument of Gemini:CreateConfig() must be a function.]], Verification, "function")
     end
 
     if not Verification(Default) then
-        self:Error([[The fourth argument of Gemini:AddConfig() must be the same type as the return of the third argument.]], Default, "any")
+        self:Error([[The fourth argument of Gemini:CreateConfig() must be the same type as the return of the third argument.]], Default, "any")
     end
 
     local Flags = ( Private == true ) and FCVAR_PRIVATE or FCVAR_PUBLIC
@@ -353,7 +383,7 @@ function Gemini:SetConfig(Name, Category, Value)
     local ConvarValue = self:ToConvar(Name, Category, Value)
     self.__cfg[Category][Name][1]:SetString( ConvarValue )
 
-    hook.Run("Gemini:ConfigChanged", Name, Value, Category, ConvarValue)
+    hook.Run("Gemini:ConfigChanged", Name, Category, Value, ConvarValue)
 end
 
 
@@ -369,11 +399,11 @@ function Gemini:PreInit()
     self.VERIFICATION_TYPE = VERIFICATION_TYPE
 
     if true then
-        self:AddConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, true)
+        self:CreateConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, true)
     end
 
-    self:AddConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
-    self:AddConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
+    self:CreateConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
+    self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
 
     if SERVER then
         AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
@@ -439,9 +469,18 @@ function Gemini:Init()
         end
 
         -- AddCSLua file to all files inside "gemini/module"
-        local LuaCSFiles, _ = file.Find("gemini/module/*.lua", "LUA")
+        local LuaCSFiles, LuaSubFolder = file.Find("gemini/module/*.lua", "LUA")
         for _, File in ipairs(LuaCSFiles) do
-            AddCSLuaFile("gemini/module/" .. File)      self:Print("File \"gemini/module/" .. File .. "\" has been send to client.")
+            AddCSLuaFile("gemini/module/" .. File)
+            self:Print("File \"module/" .. File .. "\" has been send to client.")
+        end
+
+        for _, Folder in ipairs(LuaSubFolder) do
+            local LuaSubCSFiles, _ = file.Find("gemini/module/" .. Folder .. "/*.lua", "LUA")
+            for _, File in ipairs(LuaSubCSFiles) do
+                AddCSLuaFile("gemini/module/" .. Folder .. "/" .. File)
+                self:Print("File \"module/" .. Folder .. "/" .. File .. "\" has been send to client.")
+            end
         end
 
     else
@@ -486,7 +525,7 @@ if SERVER then
     end)
 
     net.Receive("Gemini:SetConfig", function(len, ply)
-        if not Gemini:CanUse(ply, "gemini_config") then return end
+        if not Gemini:CanUse(ply, "gemini_config_sv") then return end
 
         local Name = net.ReadString()
         local Category = net.ReadString()
@@ -498,15 +537,6 @@ else
     net.Receive("Gemini:ReplicateConfig", function(len)
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
-    end)
-
-    net.Receive("Gemini:AddConfig", function(len)
-        local Name = net.ReadString()
-        local Category = net.ReadString()
-        local FunctionName = net.ReadString()
-        local DefaultValue = net.ReadType()
-
-        if not isfunction(Gemini[FunctionName]) then return end
     end)
 end
 

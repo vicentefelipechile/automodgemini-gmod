@@ -3,6 +3,25 @@
 ----------------------------------------------------------------------------]]--
 
 --[[------------------------
+       Gemini Config
+------------------------]]--
+
+Gemini:CreateConfig("ModelTarget",   "Gemini", Gemini.VERIFICATION_TYPE.string,    "auto")
+Gemini:CreateConfig("ModelName",     "Gemini", Gemini.VERIFICATION_TYPE.string,    "gemini-1.0-pro")
+Gemini:CreateConfig("Temperature",   "Gemini", Gemini.VERIFICATION_TYPE.range,     0.9)
+Gemini:CreateConfig("TopP",          "Gemini", Gemini.VERIFICATION_TYPE.range,     1)
+Gemini:CreateConfig("TopK",          "Gemini", Gemini.VERIFICATION_TYPE.range,     1)
+Gemini:CreateConfig("MaxTokens",     "Gemini", Gemini.VERIFICATION_TYPE.number,    2048)
+Gemini:CreateConfig("APIKey",        "Gemini", Gemini.VERIFICATION_TYPE.string,    "YOUR_API_KEY", true)
+Gemini:CreateConfig("DebugEnabled",  "Gemini", Gemini.VERIFICATION_TYPE.bool,      false)
+Gemini:CreateConfig("DebugMessage",  "Gemini", Gemini.VERIFICATION_TYPE.string,    "Make a summary of the logs of the player.")
+
+Gemini:CreateConfig("SafetyHarassment", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
+Gemini:CreateConfig("SafetyHateSpeech", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
+Gemini:CreateConfig("SafetySexuallyExplicit", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
+Gemini:CreateConfig("SafetyDangerousContent", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
+
+--[[------------------------
        Gamemode Models
 ------------------------]]--
 
@@ -20,22 +39,6 @@ function Gemini:GeminiPoblate()
     self.__MODELS["darkrp"] = self:GetPhrase("darkrp")
     self.__MODELS["terrortown"] = self:GetPhrase("terrortown")
     self.__MODELS["trashcompactor"] = self:GetPhrase("trashcompactor")
-
-    self:AddConfig("ModelTarget",   "Gemini", self.VERIFICATION_TYPE.string,    "auto")
-    self:AddConfig("ModelName",     "Gemini", self.VERIFICATION_TYPE.string,    "gemini-1.0-pro")
-    self:AddConfig("Temperature",   "Gemini", self.VERIFICATION_TYPE.range,     0.9)
-    self:AddConfig("TopP",          "Gemini", self.VERIFICATION_TYPE.range,     1)
-    self:AddConfig("TopK",          "Gemini", self.VERIFICATION_TYPE.range,     1)
-    self:AddConfig("MaxTokens",     "Gemini", self.VERIFICATION_TYPE.number,    2048)
-    self:AddConfig("APIKey",        "Gemini", self.VERIFICATION_TYPE.string,    "YOUR_API_KEY", true)
-    self:AddConfig("DebugEnabled",  "Gemini", self.VERIFICATION_TYPE.bool,      false)
-    self:AddConfig("DebugMessage",  "Gemini", self.VERIFICATION_TYPE.string,    "Make a summary of the logs of the player.")
-
-    -- Safety settings
-    self:AddConfig("SafetyHarassment", "Gemini", self.VERIFICATION_TYPE.number, 2)
-    self:AddConfig("SafetyHateSpeech", "Gemini", self.VERIFICATION_TYPE.number, 2)
-    self:AddConfig("SafetySexuallyExplicit", "Gemini", self.VERIFICATION_TYPE.number, 2)
-    self:AddConfig("SafetyDangerousContent", "Gemini", self.VERIFICATION_TYPE.number, 2)
 
     self.__SAFETY_ENUM = {
         [1] = "BLOCK_LOW_AND_ABOVE",

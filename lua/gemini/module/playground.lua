@@ -32,12 +32,12 @@ local LastRequest = 0
            Convars
 ------------------------]]--
 
-Gemini:AddConfig("PlayerTarget", "Playground", Gemini.VERIFICATION_TYPE.number, 0)
-Gemini:AddConfig("MaxLogs", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
-Gemini:AddConfig("BetweenLogs", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
-Gemini:AddConfig("BetweenLogsMin", "Playground", Gemini.VERIFICATION_TYPE.number, 5)
-Gemini:AddConfig("BetweenLogsMax", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
-Gemini:AddConfig("AttachContext", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
+Gemini:CreateConfig("PlayerTarget", "Playground", Gemini.VERIFICATION_TYPE.number, 0)
+Gemini:CreateConfig("MaxLogs", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
+Gemini:CreateConfig("BetweenLogs", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
+Gemini:CreateConfig("BetweenLogsMin", "Playground", Gemini.VERIFICATION_TYPE.number, 5)
+Gemini:CreateConfig("BetweenLogsMax", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
+Gemini:CreateConfig("AttachContext", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
 
 --[[------------------------
         F*ckin DLabel
