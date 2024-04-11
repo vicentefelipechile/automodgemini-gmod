@@ -9,9 +9,21 @@ if SERVER then
     util.AddNetworkString("Gemini:BroadcastRules")
 end
 
-Gemini.__RULES = Gemini.__RULES or {
-    ["Server Name"] = GetHostName(),
-    ["Server Owner"] = "NO SERVER OWNER SET",
+local ServerRule = ServerRule or {
+    ["ServerInfo"] = string.format([[# Server Owner
+Put your name here
+
+# Server Name
+Garry's Mod
+
+# Extra Info
+- Put extra info about your server, like:
+- This is a english server
+- This server has a discord server
+- Also has a forum on forum.example.com
+
+
+// Warning: This text is purely informative, it only serves so that the artificial intelligence has more context of your server]], GetHostName()),
     ["Rules"] = [[No rules]]
 }
 
@@ -19,32 +31,18 @@ Gemini.__RULES = Gemini.__RULES or {
        Main Functions
 ------------------------]]--
 
-function Gemini:SetServerOwner(Name)
-    if not isstring(Name) then
-        self:Error("The server owner must be a string", Name, "string")
-    end
-
-    if ( Name == "" ) then
-        self:Error("The server owner cannot be empty", Name, "string")
-    end
-
-    self.__RULES["Server Owner"] = Name
-
-    self:Print("Server owner has been set", os.date("%H:%M:%S"))
-end
-
-function Gemini:SetServerName(Name)
-    if not isstring(Name) then
+function Gemini:SetServerInfo(Info)
+    if not isstring(Info) then
         self:Error("The server name must be a string", Name, "string")
     end
 
-    if ( Name == "" ) then
+    if ( Info == "" ) then
         self:Error("The server name cannot be empty", Name, "string")
     end
 
-    self.__RULES["Server Name"] = Name
+    ServerRule["ServerInfo"] = Info
 
-    self:Print("Server name has been set", os.date("%H:%M:%S"))
+    self:Print("Server info has been set", os.date("%H:%M:%S"))
 end
 
 function Gemini:SetRules(Rules)
@@ -56,25 +54,21 @@ function Gemini:SetRules(Rules)
         self:Error("The rules cannot be empty", Rules, "string")
     end
 
-    self.__RULES["Rules"] = Rules
+    ServerRule["Rules"] = Rules
 
     self:Print("Server rules have been set", os.date("%H:%M:%S"))
 end
 
-function Gemini:GetServerOwner()
-    return self.__RULES["Server Owner"]
-end
-
-function Gemini:GetServerName()
-    return self.__RULES["Server Name"]
+function Gemini:GetServerInfo()
+    return ServerRule["ServerInfo"]
 end
 
 function Gemini:GetRules()
-    return self.__RULES["Rules"]
+    return ServerRule["Rules"]
 end
 
 function Gemini:GetAllRules()
-    return self.__RULES
+    return ServerRule
 end
 
 --[[------------------------
@@ -83,7 +77,7 @@ end
 
 function Gemini:BroadcastServerInfo()
     -- Cut the rules to the maximum bandwidth
-    local Compressed = util.Compress(self.__RULES["Rules"])
+    local Compressed = util.Compress(ServerRule["Rules"])
     local UInt = Compressed and #Compressed or 0
 
     if UInt > MaxBandwidth then
@@ -94,8 +88,8 @@ function Gemini:BroadcastServerInfo()
     end
 
     net.Start("Gemini:BroadcastRules")
-        net.WriteString(self.__RULES["Server Name"])
-        net.WriteString(self.__RULES["Server Owner"])
+        net.WriteString(ServerRule["Server Name"])
+        net.WriteString(ServerRule["Server Owner"])
 
         net.WriteUInt(UInt, 16)
         net.WriteData(Compressed, UInt)

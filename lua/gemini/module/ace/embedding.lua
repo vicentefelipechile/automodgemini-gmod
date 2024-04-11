@@ -14,18 +14,27 @@ return [[
         </style>
     </head>
     <body>
-        <script type="text/javascript">%s</script>
-        <script type="text/javascript">%s</script>
-        <script type="text/javascript">%s</script>
-        <script type="text/javascript">%s</script>
-        <script type="text/javascript">%s</script>
+        <script type="text/javascript"> $AceScript$ </script>
+        <script type="text/javascript"> $Extension$ </script>
+        <script type="text/javascript"> $Theme$ </script>
+        <script type="text/javascript"> $Mode$ </script>
+        <script type="text/javascript"> $Snippets$ </script>
+        <script type="text/javascript"> $GmodScript$ </script>
 
-        <div id="editor">%s</div>
+        <div id="editor">$InitialValue$</div>
 
         <script>
-            var editor = ace.edit("editor");
-            editor.setTheme("ace/theme/monokai");
-            editor.session.setMode("ace/mode/markdown");
+            var editor = ace.edit("editor")
+
+            editor.setTheme("ace/theme/monokai")
+            editor.session.setMode("ace/mode/markdown")
+
+            editor.setOptions({
+                readOnly: $ReadOnly$,
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true,
+                enableSnippets: true
+            })
         </script>
     </body>
 </html>

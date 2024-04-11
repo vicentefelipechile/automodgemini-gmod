@@ -3,14 +3,31 @@
 ----------------------------------------------------------------------------]]--
 
 local MODULE = { ["Icon"] = "icon16/page_edit.png" }
+local COMPILED_HTML = COMPILED_HTML or {}
+
+local function ReplaceCoincidences(Text, Replacements)
+    for FromReplace, ToReplace in pairs(Replacements) do
+        Text = string.Replace(Text, "$" .. FromReplace .. "$", ToReplace)
+    end
+
+    return Text
+end
 
 -- https://github.com/WilliamVenner/SQLWorkbench/blob/master/lua/sqlworkbench/menu.lua#L421-L592
 function MODULE:GetAceScript(File)
     return include("gemini/module/ace/" .. File .. ".lua")
 end
 
-function MODULE:CompileHTML(InitialValue)
+function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
     InitialValue = InitialValue or "# Test Script"
+    ReadOnly = (ReadOnly or false) and "true" or "false"
+
+    if UseCache and ( COMPILED_HTML ~= "" ) then
+        return ReplaceCoincidences(COMPILED_HTML, {
+            ["InitialValue"] = InitialValue,
+            ["ReadOnly"] = ReadOnly
+        })
+    end
 
     local Embedding = self:GetAceScript("embedding")
 
@@ -19,12 +36,28 @@ function MODULE:CompileHTML(InitialValue)
     local Theme = self:GetAceScript("theme-monokai.js")
     local Mode = self:GetAceScript("mode-markdown.js")
     local Snippets = self:GetAceScript("snippets-markdown.js")
+    local Gmod = self:GetAceScript("gmod.js")
 
-    return string.format(Embedding, Ace, Extension, Theme, Mode, Snippets, InitialValue)
+    COMPILED_HTML = ReplaceCoincidences(Embedding, {
+        ["AceScript"] = Ace,
+        ["Extension"] = Extension,
+        ["Theme"] = Theme,
+        ["Mode"] = Mode,
+        ["Snippets"] = Snippets,
+        ["GmodScript"] = Gmod
+    })
+
+    return ReplaceCoincidences(COMPILED_HTML, {
+        ["InitialValue"] = InitialValue,
+        ["ReadOnly"] = ReadOnly
+    })
 end
 
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
-    if not Gemini:CanUse("gemini_credits") then return false end
+    if not Gemini:CanUse("gemini_rules") then return false end
+
+    local CanEdit = not Gemini:CanUse("gemini_rules_set")
+    self:CompileHTML(nil, CanEdit)
 
     --[[------------------------
            All the Panels
@@ -43,10 +76,21 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerInfoPanel.TextEditor = vgui.Create( "DHTML", self.ServerInfoPanel )
     self.ServerInfoPanel.TextEditor:Dock( FILL )
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SuppressConsole", function(text)
+
+    -- Main Functions
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
         gui.HideGameUI()
     end)
-    self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML() )
+
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SetClipboardText", function(text)
+        SetClipboardText(text)
+    end)
+
+    self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), CanEdit, true) )
+
+    self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
+    self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
+    self.ServerInfoPanel.ActionPanel:SetTall( 30 )
 
     self.MainSheet:AddSheet( "Server Info", self.ServerInfoPanel, "icon16/information.png" )
 
@@ -56,6 +100,25 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerRulesPanel = vgui.Create( "DPanel", self.MainSheet )
     self.ServerRulesPanel:Dock( FILL )
+
+    self.ServerRulesPanel.TextEditor = vgui.Create( "DHTML", self.ServerRulesPanel )
+    self.ServerRulesPanel.TextEditor:Dock( FILL )
+
+    -- Main Functions
+    self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
+        gui.HideGameUI()
+    end)
+
+    self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SetClipboardText", function(text)
+        SetClipboardText(text)
+    end)
+
+    self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetRules(), CanEdit, true) )
+
+    self.ServerRulesPanel.ActionPanel = vgui.Create( "DPanel", self.ServerRulesPanel )
+    self.ServerRulesPanel.ActionPanel:Dock( BOTTOM )
+    self.ServerRulesPanel.ActionPanel:SetTall( 30 )
+
     self.MainSheet:AddSheet( "Server Rules", self.ServerRulesPanel, "icon16/page_white_text.png" )
 end
 
