@@ -73,7 +73,7 @@ end
 
 local CacheSafety = {}
 function Gemini:GetSafetyConfig(UseCache)
-    if ( UseCache == true and CacheSafety ) then return CacheSafety end
+    if ( UseCache == true and not table.IsEmpty(CacheSafety) ) then return CacheSafety end
 
     local SafetySettings = {}
 
@@ -96,7 +96,7 @@ end
 ------------------------]]--
 
 function Gemini:GetGamemodeContext()
-    return self:GetPhrase("context") .. "\n\n" .. GamemodeModel
+    return self:GetPhrase("context") .. "\n\n" .. CurrentGamemodeContext
 end
 
 function Gemini:GetLogsOfPlayer(Player, Amount)

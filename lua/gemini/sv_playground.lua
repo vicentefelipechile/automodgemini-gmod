@@ -10,7 +10,7 @@ local DefaultNetworkUInt = 16
 local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
 local PlayerUsingPlayground = {}
 
-local RequestInitialLogs = "gemini_playground_requestinitiallogs"
+local AttachContext = "gemini_playground_attachcontext"
 local PlayerTarget = "gemini_playground_playertarget"
 local MaxLogs = "gemini_playground_maxlogs"
 local BetweenLogs = "gemini_playground_betweenlogs"
@@ -121,7 +121,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         }
 
         --[[ Context ]]--
-        local PlayerWantContext = self:GetPlayerInfo(ply, RequestInitialLogs)
+        local PlayerWantContext = self:GetPlayerInfo(ply, AttachContext)
         if PlayerWantContext then
             local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
 

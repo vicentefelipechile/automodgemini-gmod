@@ -25,6 +25,12 @@ local AsynchronousPlayers = {}
 Gemini.LoggerServerID = 1
 
 --[[------------------------
+           Config
+------------------------]]--
+
+Gemini:CreateConfig("MaxLogsRequest", "Logger", Gemini.VERIFICATION_TYPE.number, 500)
+
+--[[------------------------
         SQL Database
 ------------------------]]--
 
@@ -161,8 +167,6 @@ function Gemini:LoggerCheckTable()
     if not ( sql_TableExists("gemini_user") or sql_TableExists("gemini_log") ) then
         Gemini:LoggerCreateTable()
     end
-
-    self:CreateConfig("MaxLogsRequest", "Logger", self.VERIFICATION_TYPE.number, 500)
 end
 
 function Gemini:LoggerSetPlayer(ply, id, target)

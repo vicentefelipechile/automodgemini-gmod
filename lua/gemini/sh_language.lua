@@ -9,7 +9,10 @@ local Language = Language or {}
 ------------------------]]--
 
 if SERVER then
-    Gemini:CreateConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
+    Gemini:CreateConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300, {
+        ["Min"] = 0,
+        ["Max"] = 1000
+    })
 end
 
 --[[------------------------
