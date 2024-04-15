@@ -28,7 +28,7 @@ Gemini.LoggerServerID = 1
         SQL Database
 ------------------------]]--
 
-Gemini.__LOGGER = {
+local LoggerSQL = {
     ["GEMINI_USER"] = [[
         CREATE TABLE IF NOT EXISTS gemini_user (
             geminiuser_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,17 +140,21 @@ Gemini.__LOGGER = {
         SQL Functions
 ------------------------]]--
 
+function Gemini:LoggerGetSQL(SQLSentence)
+    return ( SQLSentence ~= "" ) and LoggerSQL[SQLSentence] or ""
+end
+
 function Gemini:LoggerCreateTable()
     self.DayName = self:GetPhrase("day")
 
-    self.__LOGGER["GETONLYLOGS"] = string.Replace(self.__LOGGER["GETONLYLOGS"], "DAY_NAME", self.DayName)
+    LoggerSQL["GETONLYLOGS"] = string.Replace(LoggerSQL["GETONLYLOGS"], "DAY_NAME", self.DayName)
 
     -- Table of player info
-    sql_Query(self.__LOGGER.GEMINI_USER)
-    sql_Query(self.__LOGGER.GEMINI_USER_SERVER)
+    sql_Query(LoggerSQL.GEMINI_USER)
+    sql_Query(LoggerSQL.GEMINI_USER_SERVER)
 
     -- Table of logs
-    sql_Query(self.__LOGGER.GEMINI_LOG)
+    sql_Query(LoggerSQL.GEMINI_LOG)
 end
 
 function Gemini:LoggerCheckTable()
@@ -158,7 +162,7 @@ function Gemini:LoggerCheckTable()
         Gemini:LoggerCreateTable()
     end
 
-    self:CreateConfig("MaxLogsRequest",        "Logger", self.VERIFICATION_TYPE.number, 500)
+    self:CreateConfig("MaxLogsRequest", "Logger", self.VERIFICATION_TYPE.number, 500)
 end
 
 function Gemini:LoggerSetPlayer(ply, id, target)
@@ -181,16 +185,16 @@ function Gemini:LoggerGetPlayer(ply)
     local SteamID = ply:SteamID()
     local SteamID64 = ply:SteamID64()
 
-    local QueryResult = Formating(self.__LOGGER.GETUSER, SteamID, SteamID64)
+    local QueryResult = Formating(LoggerSQL.GETUSER, SteamID, SteamID64)
 
     if QueryResult ~= nil then
         QueryResult = tonumber(QueryResult)
 
         return QueryResult
     else
-        Formating(self.__LOGGER.INSERTUSER, SteamID, SteamID64)
+        Formating(LoggerSQL.INSERTUSER, SteamID, SteamID64)
 
-        local NewID = tonumber( Formating(self.__LOGGER.GETUSER, SteamID, SteamID64) )
+        local NewID = tonumber( Formating(LoggerSQL.GETUSER, SteamID, SteamID64) )
         return NewID
     end
 end
@@ -207,7 +211,7 @@ function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
     OnlyLogs = OnlyLogs or false
 
     local UserID = isnumber(ply) and ply or Gemini:LoggerGetPlayer(ply)
-    local SQLScript = OnlyLogs and self.__LOGGER.GETONLYLOGS or self.__LOGGER.GETPLAYERLOGS
+    local SQLScript = OnlyLogs and LoggerSQL.GETONLYLOGS or LoggerSQL.GETPLAYERLOGS
 
     local QueryResult = sql_Query( string.format(SQLScript, UserID, UserID, UserID, UserID, Limit) )
 
@@ -219,7 +223,7 @@ function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
 end
 
 function Gemini:LoggerGetLogsLimit(Limit)
-    local QueryResult = sql_Query( string.format(self.__LOGGER.GETALLLOGSLIMIT, Limit) )
+    local QueryResult = sql_Query( string.format(LoggerSQL.GETALLLOGSLIMIT, Limit) )
 
     return QueryResult
 end
@@ -237,7 +241,7 @@ function Gemini:LoggerAddLog(log, ply, ply2, ply3, ply4)
     local LogUser3 = ply3 and Gemini:LoggerGetPlayer(ply3) or nil
     local LogUser4 = ply4 and Gemini:LoggerGetPlayer(ply4) or nil
 
-    Formating(self.__LOGGER.INSERTLOG, LogString, LogUser1, LogUser2, LogUser3, LogUser4)
+    Formating(LoggerSQL.INSERTLOG, LogString, LogUser1, LogUser2, LogUser3, LogUser4)
 
     -- Asynchronous logs
     if #AsynchronousPlayers > 0 then
@@ -277,7 +281,7 @@ function Gemini.LoggerAskLogs(len, ply)
     if IsBetween == true then
         local Min = net.ReadUInt(DefaultNetworkUIntBig)
         local Max = net.ReadUInt(DefaultNetworkUIntBig)
-        Logs = sql_Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
+        Logs = sql_Query( string.format(LoggerSQL.GETALLLOGSRANGE, Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
     else
@@ -344,8 +348,8 @@ end)
 
 function Gemini:LoggerClearLogs()
     sql.Begin()
-    sql_Query(self.__LOGGER.GEMINI_LOG_CLEAR)
-    sql_Query(self.__LOGGER.GEMINI_LOG_CLEAR_POST)
+    sql_Query(LoggerSQL.GEMINI_LOG_CLEAR)
+    sql_Query(LoggerSQL.GEMINI_LOG_CLEAR_POST)
     sql.Commit()
 
     self:Print("Logs cleared successfully.")

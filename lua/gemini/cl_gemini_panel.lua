@@ -5,7 +5,7 @@
 -- This is my best attempt to replicate the frutiger aero style
 -- Source: https://frutiger-aero.neocities.org/
 
-Gemini.__MODULE = {}
+local GeminiModule = GeminiModule or {}
 
 local CachedModules = {}
 function Gemini:ModuleCreate(Name, TableModule)
@@ -19,9 +19,9 @@ function Gemini:ModuleCreate(Name, TableModule)
     TableModule["OnLostFocus"] = TableModule["OnLostFocus"] or Gemini.ReturnNoneFunction
 
     if ( Pos ~= nil ) then
-        Gemini.__MODULE[Pos] = TableModule
+        GeminiModule[Pos] = TableModule
     else
-        Pos = table.insert(Gemini.__MODULE, TableModule)
+        Pos = table.insert(GeminiModule, TableModule)
     end
 
     CachedModules[Name] = Pos
@@ -107,7 +107,7 @@ local GEMINIPANEL = {}
 function GEMINIPANEL:PoblateItems()
     local AtLeastOneTab = false
 
-    for Key, Module in pairs(Gemini.__MODULE) do
+    for Key, Module in pairs(GeminiModule) do
         local Tab = vgui.Create("DPanel", self.Tabs)
         Tab:SetSize(self.Tabs:GetWide(), self.Tabs:GetTall())
         Tab.Paint = SelfPaint

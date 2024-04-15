@@ -3,7 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
-local CustomConfig = "gemini/config/"
+local DefaultNetworkUInt = 16
 
 if SERVER then
     util.AddNetworkString("Gemini:BroadcastRules")
@@ -14,7 +14,7 @@ local ServerRule = ServerRule or {
 Put your name here
 
 # Server Name
-Garry's Mod
+%s
 
 # Extra Info
 - Put extra info about your server, like:
@@ -23,13 +23,33 @@ Garry's Mod
 - Also has a forum on forum.example.com
 
 
-// Warning: This text is purely informative, it only serves so that the artificial intelligence has more context of your server]], GetHostName()),
+// Warning: This text is purely informative
+// it only serves so that the artificial intelligence has more context of your server
+// Remove this text after you have finished editing this file]], GetHostName()),
     ["Rules"] = [[No rules]]
 }
 
 --[[------------------------
        Main Functions
 ------------------------]]--
+
+function Gemini:LoadServerInfo()
+    if CLIENT then return end
+
+    if not file.Exists("gemini/server_rules.txt", "DATA") then
+        self:SaveServerInfo()
+    end
+
+    self:SetRules( file.Read("gemini/server_rules.txt", "DATA") )
+    self:SetServerInfo( file.Read("gemini/server_info.txt", "DATA") )
+end
+
+function Gemini:SaveServerInfo()
+    if CLIENT then return end
+
+    file.Write("gemini/server_rules.txt", ServerRule["Rules"])
+    file.Write("gemini/server_info.txt", ServerRule["ServerInfo"])
+end
 
 function Gemini:SetServerInfo(Info)
     if not isstring(Info) then
@@ -43,6 +63,7 @@ function Gemini:SetServerInfo(Info)
     ServerRule["ServerInfo"] = Info
 
     self:Print("Server info has been set", os.date("%H:%M:%S"))
+    self:SaveServerInfo()
 end
 
 function Gemini:SetRules(Rules)
@@ -57,6 +78,7 @@ function Gemini:SetRules(Rules)
     ServerRule["Rules"] = Rules
 
     self:Print("Server rules have been set", os.date("%H:%M:%S"))
+    self:SaveServerInfo()
 end
 
 function Gemini:GetServerInfo()
@@ -68,8 +90,10 @@ function Gemini:GetRules()
 end
 
 function Gemini:GetAllRules()
-    return ServerRule
+    return table.Copy(ServerRule)
 end
+
+Gemini:LoadServerInfo()
 
 --[[------------------------
       Network Functions
@@ -77,73 +101,43 @@ end
 
 function Gemini:BroadcastServerInfo()
     -- Cut the rules to the maximum bandwidth
-    local Compressed = util.Compress(ServerRule["Rules"])
-    local UInt = Compressed and #Compressed or 0
+    local RulesCompressed = util.Compress(self:GetRules())
+    local RulesUInt = RulesCompressed and #RulesCompressed or 0
 
-    if UInt > MaxBandwidth then
+    local ServerInfoCompressed = util.Compress(self:GetServerInfo())
+    local ServerInfoUInt = ServerInfoCompressed and #ServerInfoCompressed or 0
+
+    if ( RulesUInt > MaxBandwidth ) then
         self:Print("The rules are too big to be broadcasted", os.date("%H:%M:%S"))
         return
-    elseif UInt == 0 then
-        self:Print("Warning: The rules are empty")
+    elseif ( ServerInfoUInt > MaxBandwidth ) then
+        self:Print("The server info is too big to be broadcasted", os.date("%H:%M:%S"))
+        return
     end
 
     net.Start("Gemini:BroadcastRules")
-        net.WriteString(ServerRule["Server Name"])
-        net.WriteString(ServerRule["Server Owner"])
-
-        net.WriteUInt(UInt, 16)
-        net.WriteData(Compressed, UInt)
+        net.WriteUInt(RulesUInt, DefaultNetworkUInt)
+        net.WriteData(RulesCompressed, RulesUInt)
+        net.WriteUInt(ServerInfoUInt, DefaultNetworkUInt)
+        net.WriteData(ServerInfoCompressed, ServerInfoUInt)
     net.Broadcast()
 
     self:Print("Broadcasted server rules", os.date("%H:%M:%S"))
 end
 
 function Gemini.ReceiveServerInfo()
-    local ServerName = net.ReadString()
-    local ServerOwner = net.ReadString()
+    local RulesCompressed = net.ReadData( net.ReadUInt(DefaultNetworkUInt) )
+    local ServerInfoCompressed = net.ReadData( net.ReadUInt(DefaultNetworkUInt) )
 
-    -- Rules are compressed to save bandwidth
-    local UInt = net.ReadUInt(16)
-    local Rules = util.Decompress(net.ReadData(UInt))
+    local Rules = util.Decompress(RulesCompressed)
+    local ServerInfo = util.Decompress(ServerInfoCompressed)
 
-    Gemini.__RULES["Server Name"] = ServerName
-    Gemini.__RULES["Server Owner"] = ServerOwner
-    Gemini.__RULES["Rules"] = Rules
+    Gemini:SetRules(Rules)
+    Gemini:SetServerInfo(ServerInfo)
 
-    Gemini:Print("Received server rules", os.date("%H:%M:%S"))
+    hook.Run("Gemini:ReceivedServerRules", Rules, ServerInfo)
 end
 
 if CLIENT then
     net.Receive("Gemini:BroadcastRules", Gemini.ReceiveServerInfo)
 end
-
---[[------------------------
-     Load Server Config
-------------------------]]--
-
-function Gemini:ReloadRules()
-    local LuaFiles = file.Find(CustomConfig .. "*.lua", "LUA")
-
-    if #LuaFiles == 0 then
-        self:Print("No server owner config found")
-        return
-    end
-
-    for _, LuaFile in ipairs(LuaFiles) do
-        local LuaPath = CustomConfig .. File
-        if SERVER then
-            AddCSLuaFile(LuaPath)
-        end
-        include(LuaPath)
-        self:Print("Loaded Server Owner File: ", LuaPath)
-    end
-end
-
-concommand.Add("gemini_reload_rules", function()
-    if CLIENT then
-        Gemini:Print("You cannot reload the rules from the client")
-        return
-    end
-
-    Gemini:ReloadRules()
-end, nil, "Reload the server owner config")

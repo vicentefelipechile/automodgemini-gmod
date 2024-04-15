@@ -326,7 +326,7 @@ Gemini:LanguageAddPhrase(LANG, "context.playground", [[Lo siguiente son registro
 Gemini:LanguageAddPhrase(LANG, "context.begin", [[Eres un modelo de lenguaje de inteligencia artificial, tu mision principal es ser el juez/espectador de la informacion que exista en el juego, dime ¿Que es lo que sabes de Garry's Mod?]])
 Gemini:LanguageAddPhrase(LANG, "context.post", [[Lo anterior es lo que ocurrio en el juego, evita crear respuestas extensas/largas si el usuario no te lo pide y tampoco utilices caracteres especiales como "*" o "&" en ves de eso usa "-", si tienes la oportunidad de responder con una respuesta corta, hazlo, si el usuario desea mas informacion te lo pedira, mientras tanto solo haz respuestas cortas, si te habla en algun idioma que no sea el español tienes que responderle con el mismo idioma que te haya hablado, ahora debes responder lo que el usuario te indique despues de esta linea (recuerda el idioma)]])
 
-Gemini:LanguageAddPhrase(LANG, "default", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "Gamemode.Default", [[Modo de Juego:
 Ningún Modo de Juego Conocido
 
 Descripcion:
@@ -351,7 +351,7 @@ El comportamiento de los jugadores no esta establecido, por lo que se asumira qu
 Reglas:
 Las unicas reglas conocidas son las reglas establecidas por el servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:LanguageAddPhrase(LANG, "sandbox", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "Gamemode.sandbox", [[Modo de Juego:
 Sandbox
 
 Descripcion:
@@ -376,7 +376,7 @@ El comportamiento de los jugadores cambia dependiendo de la situacion, por ejemp
 Reglas:
 Las reglas del Sandbox son establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:LanguageAddPhrase(LANG, "darkrp", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "Gamemode.darkrp", [[Modo de Juego:
 DarkRP
 
 Descripcion:
@@ -406,7 +406,7 @@ Existen reglas predefinidad por el modo de juego, como por ejemplo:
 - FailRP: Hacer algo que no tiene sentido o que no esta dentro del contexto de que estan en un roleplay, como un policia robando a un civil.
 Y tambien existen reglas establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:LanguageAddPhrase(LANG, "terrortown", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "Gamemode.terrortown", [[Modo de Juego:
 Trouble in T Town
 
 Descripcion:
@@ -416,13 +416,14 @@ Objetivo:
 El objetivo de Trouble in T Town es descubrir quien es el traidor, por lo que los jugadores tienen que trabajar en equipo para descubrir quien es el traidor y matarlo.
 
 Mecanicas Conocidas:
-- Detectives e inocentes
+- Detectives
+- Inocentes
 - Traidores
 - Herramientas para los detectives y traidores
 - Armas para todos
 
 Mapas/Entornos:
-No existe un entorno especifico, ya que los mapas son muy variados pero todos son hechos para adaptarse al modo de juego, por lo que los mapas no estan limitados a un entorno especifico.
+El entorno general del mapa puede variar dependiendo del tema que el creador le haya dado al mapa, pero todos los mapas cumplen la misma funcion, que funcione para el modo de juego, la gran mayoria de mapas poseen trampas y escondites que los traidores pueden usar a su ventajas mientras que otros pocos son estaticos (no tienen trampas o escondites).
 
 Comportamiento de los jugadores:
 El comportamiento de los jugadores depende del rol que tengan, por ejemplo si un jugador es un detective, este se enfocara en buscar al traidor, pero si un jugador es un traidor, este se enfocara en matar a los inocentes o al detective, mientras que los inocentes ayudaran al detective a buscar al traidor.
@@ -430,7 +431,7 @@ El comportamiento de los jugadores depende del rol que tengan, por ejemplo si un
 Reglas:
 Las reglas de Trouble in T Town son establecidas por el servidor o por el administrador del servidor, por lo que se recomienda seguir las reglas establecidas por el servidor o por el administrador del servidor.]])
 
-Gemini:LanguageAddPhrase(LANG, "trashcompactor", [[Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "Gamemode.trashcompactor", [[Modo de Juego:
 Trash Compactor
 
 Descripcion:

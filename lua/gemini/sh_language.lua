@@ -2,7 +2,7 @@
                      Google Gemini Automod - Language Module
 ----------------------------------------------------------------------------]]--
 
-Gemini.__LANG = Gemini.__LANG or {}
+local Language = Language or {}
 
 --[[------------------------
         Configuration
@@ -40,7 +40,7 @@ end)
 ------------------------]]--
 
 function Gemini:LanguageCreate(LanguageTarget)
-    Gemini.__LANG[LanguageTarget] = {}
+    Language[LanguageTarget] = {}
 
     return LanguageTarget
 end
@@ -61,7 +61,7 @@ function Gemini:LanguageOverrideHook(LanguageTarget, TableFunctions)
             self:Error("The function \"" .. HookName .. "\" is not a valid function", HookFunc, "function")
         end
 
-        self.__LANG[LanguageTarget][HookName]["Func"] = HookFunc
+        Language[LanguageTarget][HookName]["Func"] = HookFunc
     end
 end
 
@@ -84,11 +84,11 @@ function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
         self:Error([[The third argument of Gemini:LanguageAddPhrase() is an empty string]], Phrase, "string")
     end
 
-    if not istable(self.__LANG[LanguageTarget]) then
+    if not istable(Language[LanguageTarget]) then
         self:Error([[The language target does not exist]], LanguageTarget, "string")
     end
 
-    self.__LANG[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.ReturnNoneFunction}
+    Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.ReturnNoneFunction}
 end
 
 local LanguageTargetCache = Gemini:GetConfig("Language", "General", true)
@@ -96,7 +96,7 @@ function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
     LanguageTarget = LanguageTarget or LanguageTargetCache
 
     if ( SkipValidation == true ) then
-        return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
+        return Language[LanguageTarget][PhraseName]["Phrase"]
     end
 
     if not isstring(PhraseName) then
@@ -111,18 +111,34 @@ function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
         self:Error([[The second argument of Gemini:GetPhrase() is an empty string]], LanguageTarget, "string")
     end
 
-    if not istable(self.__LANG[LanguageTarget]) then
+    if not istable(Language[LanguageTarget]) then
         self:Error([[The language target does not exist]], LanguageTarget, "string")
     end
 
-    if not istable(self.__LANG[LanguageTarget][PhraseName]) then
+    if not istable(Language[LanguageTarget][PhraseName]) then
         self:Error([[The phrase does not exist in the language target]], PhraseName, "string")
     end
 
-    return self.__LANG[LanguageTarget][PhraseName]["Phrase"]
+    return Language[LanguageTarget][PhraseName]["Phrase"]
 end
 
 Gemini.LanguageGetPhrase = Gemini.GetPhrase
+
+function Gemini:LanguagePhraseExists(PhraseName, LanguageTarget)
+    LanguageTarget = LanguageTarget or LanguageTargetCache
+
+    if not isstring(PhraseName) then return nil
+    elseif (PhraseName == "") then return nil
+    end
+
+    if not isstring(LanguageTarget) then return nil
+    elseif (LanguageTarget == "") then return nil
+    end
+
+    if not istable(Language[LanguageTarget]) then return nil end
+
+    return istable(Language[LanguageTarget][PhraseName])
+end
 
 function Gemini:LanguagePoblate()
     local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
@@ -139,7 +155,7 @@ function Gemini:LanguagePoblate()
     if CLIENT then return end
 
     -- Poblate hook functions
-    for LangName, LangTable in pairs(self.__LANG) do
+    for LangName, LangTable in pairs(Language) do
         for HookName, HookTable in pairs(LangTable) do
             if ( HookTable["Func"] == Gemini.ReturnNoneFunction ) then continue end
 

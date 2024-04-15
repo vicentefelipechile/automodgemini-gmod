@@ -59,7 +59,7 @@ function Gemini:PlaygroundGetLogsFromPly(ply)
     if IsBetween then
         local Min = self:GetPlayerInfo(ply, BetweenLogsMin)
         local Max = self:GetPlayerInfo(ply, BetweenLogsMax)
-        Logs = sql.Query( string.format(Gemini.__LOGGER.GETALLLOGSRANGE, Min, Max, Limit) )
+        Logs = sql.Query( string.format(Gemini:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
     else

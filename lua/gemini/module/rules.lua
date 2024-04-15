@@ -3,7 +3,8 @@
 ----------------------------------------------------------------------------]]--
 
 local MODULE = { ["Icon"] = "icon16/page_edit.png" }
-local COMPILED_HTML = COMPILED_HTML or {}
+local COMPILED_HTML = COMPILED_HTML or ""
+local ReplaceAceEditor = [[ace.edit("editor").setValue("%s")]]
 
 local function ReplaceCoincidences(Text, Replacements)
     for FromReplace, ToReplace in pairs(Replacements) do
@@ -87,6 +88,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     end)
 
     self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), CanEdit, true) )
+    self.ServerInfoPanel.TextEditor.FullyLoaded = true
 
     self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
     self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
@@ -114,6 +116,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     end)
 
     self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetRules(), CanEdit, true) )
+    self.ServerRulesPanel.TextEditor.FullyLoaded = true
 
     self.ServerRulesPanel.ActionPanel = vgui.Create( "DPanel", self.ServerRulesPanel )
     self.ServerRulesPanel.ActionPanel:Dock( BOTTOM )
@@ -124,3 +127,17 @@ end
 
 
 Gemini:ModuleCreate(Gemini:GetPhrase("Rules"), MODULE)
+
+--[[------------------------
+        Asynchronous
+------------------------]]--
+
+hook.Add("Gemini:ReceivedServerRules", "Gemini:RulesPanel", function(Rules, ServerInfo)
+    if IsValid(MODULE.ServerRulesPanel) then
+        MODULE.ServerInfoPanel.TextEditor:Call(string.format(ReplaceAceEditor, ServerInfo))
+    end
+
+    if IsValid(MODULE.ServerRulesPanel) then
+        MODULE.ServerRulesPanel.TextEditor:Call(string.format(ReplaceAceEditor, Rules))
+    end
+end)

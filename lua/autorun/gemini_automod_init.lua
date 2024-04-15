@@ -8,8 +8,8 @@ if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is usi
 
 resource.AddFile("resource/fonts/Frutiger Roman.ttf")
 
+local GeminiCFG = GeminiCFG or {["general"] = {}}
 Gemini = Gemini or {
-    __cfg = {["general"] = {}},
     Version = "1.0",
     Author = "vicentefelipechile",
     Name = "Gemini",
@@ -199,13 +199,13 @@ function Gemini:FromConvar(Name, Category)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if not self.__cfg[Category] then
+    if not GeminiCFG[Category] then
         self:Error([[The category doesn't exist.]], Category, "string")
-    elseif not self.__cfg[Category][Name] then
+    elseif not GeminiCFG[Category][Name] then
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    local Value = self.__cfg[Category][Name][1]:GetString()
+    local Value = GeminiCFG[Category][Name][1]:GetString()
 
     if ( Value == "" ) then
         self:Error([[The convar value is empty.]], Value, "string")
@@ -234,8 +234,8 @@ function Gemini:ToConvar(Name, Category, Value)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if not self.__cfg[Category] then
-        self.__cfg[Category] = {}
+    if not GeminiCFG[Category] then
+        GeminiCFG[Category] = {}
     end
 
     local ValueType = IsColor(Value) and "color" or type(Value)
@@ -305,8 +305,8 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    self.__cfg[Category] = self.__cfg[Category] or {}
-    self.__cfg[Category][Name] = {CreateConVar("gemini_" .. Category .. "_" .. Name, Value, Flags), Verification}
+    GeminiCFG[Category] = GeminiCFG[Category] or {}
+    GeminiCFG[Category][Name] = {CreateConVar("gemini_" .. Category .. "_" .. Name, Value, Flags), Verification}
 end
 
 
@@ -334,11 +334,11 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if not self.__cfg[Category] then
+    if not GeminiCFG[Category] then
         self:Error([[The category doesn't exist.]], Category, "string")
     end
 
-    if not self.__cfg[Category][Name] then
+    if not GeminiCFG[Category][Name] then
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
@@ -366,24 +366,60 @@ function Gemini:SetConfig(Name, Category, Value)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
-    if not self.__cfg[Category] then
+    if not GeminiCFG[Category] then
         self:Error([[The category doesn't exist.]], Category, "string")
     end
 
-    if not self.__cfg[Category][Name] then
+    if not GeminiCFG[Category][Name] then
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    if not self.__cfg[Category][Name][2](Value) then
+    if not GeminiCFG[Category][Name][2](Value) then
         -- self:Error([[The value doesn't match the verification function.]], Value, "any")
         self:Print("The value doesn't match the verification function. Skipping...")
         return
     end
 
     local ConvarValue = self:ToConvar(Name, Category, Value)
-    self.__cfg[Category][Name][1]:SetString( ConvarValue )
+    GeminiCFG[Category][Name][1]:SetString( ConvarValue )
 
     hook.Run("Gemini:ConfigChanged", Name, Category, Value, ConvarValue)
+end
+
+function Gemini:ResetConfig(Name, Category, SkipValidation)
+    if ( SkipValidation == true ) then
+        GeminiCFG[Category][Name][1]:Revert()
+        return
+    end
+
+    if not isstring(Name) then
+        self:Error([[The first argument of Gemini:ResetConfig() must be a string.]], Name, "string")
+    end
+
+    if ( Name == "" ) then
+        self:Error([[The first argument of Gemini:ResetConfig() must not be empty.]], Name, "string")
+    end
+
+    if not isstring(Category) then
+        self:Error([[The second argument of Gemini:ResetConfig() must be a string.]], Category, "string")
+    end
+
+    if ( Category == "" ) then
+        self:Error([[The second argument of Gemini:ResetConfig() must not be empty.]], Category, "string")
+    end
+
+    Category = string.lower( string.gsub(Category, "%W", "") )
+    Name = string.lower( string.gsub(Name, "%W", "") )
+
+    if not GeminiCFG[Category] then
+        self:Error([[The category doesn't exist.]], Category, "string")
+    end
+
+    if not GeminiCFG[Category][Name] then
+        self:Error([[The config doesn't exist.]], Name, "string")
+    end
+
+    GeminiCFG[Category][Name][1]:Revert()
 end
 
 
@@ -494,12 +530,6 @@ end
 
 function Gemini:PostInit()
     local Print = Gemini:GeneratePrint({prefix = ""})
-
-    if isfunction(self.ReloadRules) then
-        self:ReloadRules()
-    else
-        self:Print("The module of Custom Rules has been replaced or removed.")
-    end
 
     Print("==[[==================================")
     Print("         Gemini Automod Loaded")

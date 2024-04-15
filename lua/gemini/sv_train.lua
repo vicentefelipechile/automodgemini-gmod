@@ -8,7 +8,7 @@ local sql_Query = sql.Query
         SQL Database
 ------------------------]]--
 
-Gemini.__TRAIN_SQL = {
+local TrainSQL = {
     ["GEMINI_TRAIN"] = [[
         CREATE TABLE IF NOT EXITS gemini_train (
             train_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,6 +58,10 @@ Gemini.__TRAIN_SQL = {
          Poblate SQL
 ------------------------]]--
 
+function Gemini:TrainGetSQL(SQLSentence)
+    return ( SQLSentence ~= "" ) and TrainSQL[SQLSentence] or ""
+end
+
 function Gemini:TrainPoblate()
-    sql_Query(self.__TRAIN_SQL["GEMINI_TRAIN"])
+    sql_Query(TrainSQL["GEMINI_TRAIN"])
 end

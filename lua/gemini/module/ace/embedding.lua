@@ -33,7 +33,8 @@ return [[
                 readOnly: $ReadOnly$,
                 enableBasicAutocompletion: true,
                 enableLiveAutocompletion: true,
-                enableSnippets: true
+                enableSnippets: true,
+                wrap: true
             })
         </script>
     </body>

@@ -22,36 +22,27 @@ Gemini:CreateConfig("SafetySexuallyExplicit", "Gemini", Gemini.VERIFICATION_TYPE
 Gemini:CreateConfig("SafetyDangerousContent", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
 
 --[[------------------------
-       Gamemode Models
+       Gemini Begin
 ------------------------]]--
 
-Gemini.__MODELS = Gemini.__MODELS or {
-    ["default"] = nil,
-    ["sandbox"] = nil,
-    ["darkrp"] = nil,
-    ["terrortown"] = nil,
-    ["trashcompactor"] = nil
+local CurrentGamemodeContext = ""
+
+local SAFETY_ENUM = {
+    [1] = "BLOCK_LOW_AND_ABOVE",
+    [2] = "BLOCK_MEDIUM_AND_ABOVE",
+    [3] = "BLOCK_ONLY_HIGH"
+}
+
+local SAFETY_TYPE = {
+    ["HARM_CATEGORY_HARASSMENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHarassment", "Gemini") ] end,
+    ["HARM_CATEGORY_HATE_SPEECH"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHateSpeech", "Gemini") ] end,
+    ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
+    ["HARM_CATEGORY_DANGEROUS_CONTENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyDangerousContent", "Gemini") ] end
 }
 
 function Gemini:GeminiPoblate()
-    self.__MODELS["default"] = self:GetPhrase("default")
-    self.__MODELS["sandbox"] = self:GetPhrase("sandbox")
-    self.__MODELS["darkrp"] = self:GetPhrase("darkrp")
-    self.__MODELS["terrortown"] = self:GetPhrase("terrortown")
-    self.__MODELS["trashcompactor"] = self:GetPhrase("trashcompactor")
-
-    self.__SAFETY_ENUM = {
-        [1] = "BLOCK_LOW_AND_ABOVE",
-        [2] = "BLOCK_MEDIUM_AND_ABOVE",
-        [3] = "BLOCK_ONLY_HIGH"
-    }
-
-    self.__SAFETY_TYPE = {
-        ["HARM_CATEGORY_HARASSMENT"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetyHarassment", "Gemini") ] end,
-        ["HARM_CATEGORY_HATE_SPEECH"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetyHateSpeech", "Gemini") ] end,
-        ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
-        ["HARM_CATEGORY_DANGEROUS_CONTENT"] = function() return self.__SAFETY_ENUM[ self:GetConfig("SafetyDangerousContent", "Gemini") ] end
-    }
+    local CurrentGamemode = self:LanguagePhraseExists("Gamemode." .. engine.ActiveGamemode()) and "Gamemode." .. engine.ActiveGamemode() or "Gamemode.default"
+    CurrentGamemodeContext = self:GetPhrase(CurrentGamemode)
 end
 
 
@@ -61,12 +52,11 @@ end
 ------------------------]]--
 
 function Gemini:GenerationResetConfig()
-    self:SetConfig("ModelTarget",   "Gemini", "auto")
-    self:SetConfig("ModelName",     "Gemini", "gemini-1.0-pro")
-    self:SetConfig("Temperature",   "Gemini", 0.9)
-    self:SetConfig("TopP",          "Gemini", 1)
-    self:SetConfig("TopK",          "Gemini", 1)
-    self:SetConfig("MaxTokens",     "Gemini", 2048)
+    self:ResetConfig("ModelName", "Gemini")
+    self:ResetConfig("Temperature", "Gemini")
+    self:ResetConfig("TopP", "Gemini")
+    self:ResetConfig("TopK", "Gemini")
+    self:ResetConfig("MaxTokens", "Gemini")
 
     self:Print("Generation reseted to default settings.")
 end
@@ -82,13 +72,12 @@ function Gemini:GetGenerationConfig()
 end
 
 local CacheSafety = {}
-
 function Gemini:GetSafetyConfig(UseCache)
     if ( UseCache == true and CacheSafety ) then return CacheSafety end
 
     local SafetySettings = {}
 
-    for Category, FuncValue in pairs(self.__SAFETY_TYPE) do
+    for Category, FuncValue in pairs(SAFETY_TYPE) do
         table.insert(SafetySettings, {
             ["category"] = Category,
             ["threshold"] = FuncValue()
@@ -107,15 +96,7 @@ end
 ------------------------]]--
 
 function Gemini:GetGamemodeContext()
-    local ModelTarget = self:GetConfig("ModelTarget", "Gemini")
-
-    if ( ModelTarget == "auto" ) then
-        local GamemodeModel = self.__MODELS[engine.ActiveGamemode()] or self.__MODELS["default"]
-
-        return self:GetPhrase("context") .. "\n\n" .. GamemodeModel
-    else
-        return self:GetPhrase("context") .. "\n\n" .. self.__MODELS[ModelTarget]
-    end
+    return self:GetPhrase("context") .. "\n\n" .. GamemodeModel
 end
 
 function Gemini:GetLogsOfPlayer(Player, Amount)

@@ -1,5 +1,5 @@
 return [==[
-const AceEditor = ace.edit("AceEditor")
+const AceEditor = ace.edit("editor")
 var gmod = gmod || {}
 
 gmod.Copy = () => {
