@@ -12,9 +12,6 @@ local sql_Query = sql.Query
 local sql_QueryValue = sql.QueryValue
 local sql_TableExists = sql.TableExists
 
-local DefaultNetworkUInt = 16
-local DefaultNetworkUIntBig = 32
-
 local function Formating(str, ...)
     local new = string.Trim( string.gsub( string.Replace( str, "\n", "" ), "[%s]+", " " ) )
     return sql_QueryValue( string.format( new, ... ) )
@@ -269,9 +266,9 @@ function Gemini.LoggerAskLogs(len, ply)
 
     local IsPlayground = net.ReadBool()
 
-    local Limit = net.ReadUInt(DefaultNetworkUInt)
+    local Limit = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
     local IsPlayer = net.ReadBool()
-    local PlayerID = net.ReadUInt(DefaultNetworkUInt)
+    local PlayerID = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
     local IsBetween = net.ReadBool()
 
     Limit = math.min(Limit, Gemini:GetConfig("MaxLogsRequest", "Logger"))
@@ -279,8 +276,8 @@ function Gemini.LoggerAskLogs(len, ply)
     local Logs = {}
 
     if IsBetween == true then
-        local Min = net.ReadUInt(DefaultNetworkUIntBig)
-        local Max = net.ReadUInt(DefaultNetworkUIntBig)
+        local Min = net.ReadUInt(Gemini.Util.DefaultNetworkUIntBig)
+        local Max = net.ReadUInt(Gemini.Util.DefaultNetworkUIntBig)
         Logs = sql_Query( string.format(LoggerSQL.GETALLLOGSRANGE, Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
@@ -300,7 +297,7 @@ function Gemini.LoggerAskLogs(len, ply)
     net.Start(NetworkTarget)
         net.WriteBool(true)
         net.WriteString( "Logger.LogsSended" )
-        net.WriteUInt( CompressedSize, DefaultNetworkUIntBig )
+        net.WriteUInt( CompressedSize, Gemini.Util.DefaultNetworkUIntBig )
         net.WriteData( CompressesLogs, CompressedSize )
     net.Send(ply)
 end
@@ -316,7 +313,7 @@ function Gemini:LoggerSendAsynchronousLogs()
     local PlayerID = LastLog["geminilog_user1"]
 
     net.Start("Gemini:ReplicateLog")
-        net.WriteUInt(ID, DefaultNetworkUInt)
+        net.WriteUInt(ID, Gemini.Util.DefaultNetworkUInt)
         net.WriteString(Log)
         net.WriteString(Date)
         net.WriteString(PlayerID)

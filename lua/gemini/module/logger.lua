@@ -5,9 +5,6 @@
 local MODULE = { ["Icon"] = "icon16/page_white_text.png" }
 local BlackColor = COLOR_BLACK
 
-local DefaultNetworkUInt = 16
-local DefaultNetworkUIntBig = 32
-
 --[[------------------------
            Convars
 ------------------------]]--
@@ -30,13 +27,13 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
 
     local Status = net.Start("Gemini:AskLogs")
         net.WriteBool(false) -- IsPlayground
-        net.WriteUInt(Limit, DefaultNetworkUInt)
+        net.WriteUInt(Limit, Gemini.Util.DefaultNetworkUInt)
         net.WriteBool(IsPlayer)
-        net.WriteUInt(Target, DefaultNetworkUInt)
+        net.WriteUInt(Target, Gemini.Util.DefaultNetworkUInt)
         net.WriteBool(Between or false)
         if ( Between ) then
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Logger"), DefaultNetworkUIntBig)
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Logger"), DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Logger"), Gemini.Util.DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Logger"), Gemini.Util.DefaultNetworkUIntBig)
         end
     net.SendToServer()
 
@@ -339,7 +336,7 @@ net.Receive("Gemini:AskLogs", function(len)
     local Logs = {}
 
     if ( Success == true ) then
-        local CompressedSize = net.ReadUInt(DefaultNetworkUIntBig)
+        local CompressedSize = net.ReadUInt(Gemini.Util.DefaultNetworkUIntBig)
         local Data = net.ReadData(CompressedSize)
 
         Logs = util.JSONToTable(util.Decompress(Data))
@@ -351,7 +348,7 @@ end)
 net.Receive("Gemini:ReplicateLog", function(len)
     if ( Gemini:GetConfig("AsyncLogs", "Logger") == false ) then return end
 
-    local ID = net.ReadUInt(DefaultNetworkUInt)
+    local ID = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
     local Log = net.ReadString()
     local Time = net.ReadString()
     local User = net.ReadString()

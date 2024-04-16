@@ -96,7 +96,7 @@ end
 ------------------------]]--
 
 function Gemini:GetGamemodeContext()
-    return self:GetPhrase("context") .. "\n\n" .. GamemodeModel
+    return self:GetPhrase("context") .. "\n\n" .. CurrentGamemodeContext
 end
 
 function Gemini:GetLogsOfPlayer(Player, Amount)

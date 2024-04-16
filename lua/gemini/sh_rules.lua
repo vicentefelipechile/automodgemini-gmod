@@ -2,9 +2,6 @@
                    Google Gemini Automod - Server Owner Config
 ----------------------------------------------------------------------------]]--
 
-local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
-local DefaultNetworkUInt = 16
-
 if SERVER then
     util.AddNetworkString("Gemini:BroadcastRules")
 end
@@ -93,7 +90,9 @@ function Gemini:GetAllRules()
     return table.Copy(ServerRule)
 end
 
-Gemini:LoadServerInfo()
+if SERVER then
+    Gemini:LoadServerInfo()
+end
 
 --[[------------------------
       Network Functions
@@ -107,18 +106,18 @@ function Gemini:BroadcastServerInfo()
     local ServerInfoCompressed = util.Compress(self:GetServerInfo())
     local ServerInfoUInt = ServerInfoCompressed and #ServerInfoCompressed or 0
 
-    if ( RulesUInt > MaxBandwidth ) then
+    if ( RulesUInt > Gemini.Util.MaxBandwidth ) then
         self:Print("The rules are too big to be broadcasted", os.date("%H:%M:%S"))
         return
-    elseif ( ServerInfoUInt > MaxBandwidth ) then
+    elseif ( ServerInfoUInt > Gemini.Util.MaxBandwidth ) then
         self:Print("The server info is too big to be broadcasted", os.date("%H:%M:%S"))
         return
     end
 
     net.Start("Gemini:BroadcastRules")
-        net.WriteUInt(RulesUInt, DefaultNetworkUInt)
+        net.WriteUInt(RulesUInt, Gemini.Util.DefaultNetworkUInt)
         net.WriteData(RulesCompressed, RulesUInt)
-        net.WriteUInt(ServerInfoUInt, DefaultNetworkUInt)
+        net.WriteUInt(ServerInfoUInt, Gemini.Util.DefaultNetworkUInt)
         net.WriteData(ServerInfoCompressed, ServerInfoUInt)
     net.Broadcast()
 
@@ -126,8 +125,8 @@ function Gemini:BroadcastServerInfo()
 end
 
 function Gemini.ReceiveServerInfo()
-    local RulesCompressed = net.ReadData( net.ReadUInt(DefaultNetworkUInt) )
-    local ServerInfoCompressed = net.ReadData( net.ReadUInt(DefaultNetworkUInt) )
+    local RulesCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+    local ServerInfoCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
 
     local Rules = util.Decompress(RulesCompressed)
     local ServerInfo = util.Decompress(ServerInfoCompressed)
@@ -140,4 +139,10 @@ end
 
 if CLIENT then
     net.Receive("Gemini:BroadcastRules", Gemini.ReceiveServerInfo)
+end
+
+if SERVER then
+    hook.Add("PlayerInitialSpawn", "Gemini:BroadcastRules", function(ply)
+        Gemini:BroadcastServerInfo()
+    end)
 end

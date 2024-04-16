@@ -88,7 +88,7 @@ function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
         self:Error([[The language target does not exist]], LanguageTarget, "string")
     end
 
-    Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.ReturnNoneFunction}
+    Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.Util.ReturnNoneFunction}
 end
 
 local LanguageTargetCache = Gemini:GetConfig("Language", "General", true)
@@ -157,7 +157,7 @@ function Gemini:LanguagePoblate()
     -- Poblate hook functions
     for LangName, LangTable in pairs(Language) do
         for HookName, HookTable in pairs(LangTable) do
-            if ( HookTable["Func"] == Gemini.ReturnNoneFunction ) then continue end
+            if ( HookTable["Func"] == Gemini.Util.ReturnNoneFunction ) then continue end
 
             hook.Add(HookName, "GeminiLanguageHook:" .. LangName .. "." .. HookName, function(...)
                 local CurrentLang = self:GetConfig("Language", "General", true)

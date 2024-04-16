@@ -2,19 +2,29 @@
                        Google Gemini Automod - Util Module
 ----------------------------------------------------------------------------]]--
 
+Gemini.Util = Gemini.Util or {}
+
+--[[------------------------
+            Variables
+------------------------]]--
+
+Gemini.Util.MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
+Gemini.Util.DefaultNetworkUInt = 16
+Gemini.Util.DefaultNetworkUIntBig = 32
+
 --[[------------------------
        Main Functions
 ------------------------]]--
 
-function Gemini.ReturnNoneFunction()
+function Gemini.Util.ReturnNoneFunction()
     return
 end
 
-function Gemini.ReturnAnyFunction(...)
+function Gemini.Util.ReturnAnyFunction(...)
     return ...
 end
 
-function Gemini.EmptyFunction()
+function Gemini.Util.EmptyFunction()
     -- Nothing, TADA!
 end
 
@@ -61,7 +71,7 @@ function Gemini:CanUse(ply, permission)
     elseif ( CAMI ~= nil ) then
         if CAMI.ULX_TOKEN then
             -- Ulysses, you really screwed up
-            CanUse = hook.Run("CAMI.PlayerHasAccess", ply, permission, Gemini.ReturnAnyFunction)
+            CanUse = hook.Run("CAMI.PlayerHasAccess", ply, permission, Gemini.Util.ReturnAnyFunction)
         else
             CAMI.PlayerHasAccess(ply, permission, function(HasAccess, Reason)
                 CanUse = HasAccess

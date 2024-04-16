@@ -4,13 +4,9 @@
 
 local MODULE = { ["Icon"] = "icon16/bug.png" }
 local BlackColor = COLOR_BLACK
-local WhiteColor = COLOR_WHITE
 local GrayColor = COLOR_GRAY
 
 local AlphaColor = Color(255, 255, 255, 100)
-
-local DefaultNetworkUInt = 16
-local DefaultNetworkUIntBig = 32
 
 local PanelOffset = 20
 
@@ -28,6 +24,11 @@ local PromptExists = false
 
 local LastRequest = 0
 
+local NewGetContentSize = function(self)
+    surface.SetFont( self:GetFont() )
+    return surface.GetTextSize( self:GetText() )
+end
+
 --[[------------------------
            Convars
 ------------------------]]--
@@ -38,43 +39,6 @@ Gemini:CreateConfig("BetweenLogs", "Playground", Gemini.VERIFICATION_TYPE.bool, 
 Gemini:CreateConfig("BetweenLogsMin", "Playground", Gemini.VERIFICATION_TYPE.number, 5)
 Gemini:CreateConfig("BetweenLogsMax", "Playground", Gemini.VERIFICATION_TYPE.number, 10)
 Gemini:CreateConfig("AttachContext", "Playground", Gemini.VERIFICATION_TYPE.bool, false)
-
---[[------------------------
-        F*ckin DLabel
-------------------------]]--
-
-local NewGetContentSize = function(self)
-    surface.SetFont( self:GetFont() )
-    return surface.GetTextSize( self:GetText() )
-end
-
-local DLABEL_PANEL = {}
-
-function DLABEL_PANEL:Init()
-    self:SetFont("Frutiger:Small")
-    self:SetTextColor(BlackColor)
-end
-
-function DLABEL_PANEL:GetContentSize()
-    surface.SetFont( self:GetFont() )
-    return surface.GetTextSize( self:GetText() )
-end
-
-function DLABEL_PANEL:SizeToContentsY(Offset)
-    local _, h = self:GetContentSize()
-    self:SetTall(h + (Offset or 0))
-end
-
-function DLABEL_PANEL:SizeToContents()
-    local w, h = self:GetContentSize()
-    self:SetSize(w, h)
-end
-
-function DLABEL_PANEL:SetWhiteText()
-    self:SetTextColor(WhiteColor)
-end
-
-vgui.Register("Gemini:DLabel", DLABEL_PANEL, "DLabel")
 
 --[[------------------------
         Prompt Logic
@@ -112,12 +76,12 @@ function MODULE:AddMessagePrompt(Role, Text)
     PromptMessage:SetHeight(70)
     PromptMessage:DockMargin(5, 5, 5, 0)
     PromptMessage:Dock(TOP)
-    PromptMessage.Paint = Gemini.ReturnNoneFunction
+    PromptMessage.Paint = Gemini.Util.ReturnNoneFunction
 
     local PromptAuthorPanel = vgui.Create("DPanel", PromptMessage)
     PromptAuthorPanel:SetSize(24, 24)
     PromptAuthorPanel:Dock(LEFT)
-    PromptAuthorPanel.Paint = Gemini.ReturnNoneFunction
+    PromptAuthorPanel.Paint = Gemini.Util.ReturnNoneFunction
 
     local PromptAutor = vgui.Create("DImage", PromptAuthorPanel)
     PromptAutor:SetSize(16, 16)
@@ -180,13 +144,13 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
 
     local Status = net.Start("Gemini:AskLogs:Playground")
         net.WriteBool(true) -- IsPlayground
-        net.WriteUInt(Limit, DefaultNetworkUInt)
+        net.WriteUInt(Limit, Gemini.Util.DefaultNetworkUInt)
         net.WriteBool(IsPlayer)
-        net.WriteUInt(Target, DefaultNetworkUInt)
+        net.WriteUInt(Target, Gemini.Util.DefaultNetworkUInt)
         net.WriteBool(Between or false)
         if ( Between ) then
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Playground"), DefaultNetworkUIntBig)
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Playground"), DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Playground"), Gemini.Util.DefaultNetworkUIntBig)
+            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Playground"), Gemini.Util.DefaultNetworkUIntBig)
         end
     net.SendToServer()
 
@@ -506,7 +470,7 @@ net.Receive("Gemini:AskLogs:Playground", function(len)
     local Logs = {}
 
     if ( Success == true ) then
-        local CompressedSize = net.ReadUInt(DefaultNetworkUIntBig)
+        local CompressedSize = net.ReadUInt(Gemini.Util.DefaultNetworkUIntBig)
         local Data = net.ReadData(CompressedSize)
 
         Logs = util.JSONToTable(util.Decompress(Data))
@@ -525,7 +489,7 @@ net.Receive("Gemini:PlaygroundSendMessage", function(len)
 end)
 
 net.Receive("Gemini:PlaygroundMakeRequest", function(len)
-    local CompressSize = net.ReadUInt(DefaultNetworkUInt)
+    local CompressSize = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
     local CompressData = net.ReadData(CompressSize)
 
     local Message = util.Decompress(CompressData)

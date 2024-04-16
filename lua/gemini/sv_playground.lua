@@ -6,8 +6,6 @@ util.AddNetworkString("Gemini:PlaygroundSendMessage")
 util.AddNetworkString("Gemini:PlaygroundMakeRequest")
 util.AddNetworkString("Gemini:PlaygroundResetRequest")
 
-local DefaultNetworkUInt = 16
-local MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
 local PlayerUsingPlayground = {}
 
 local RequestInitialLogs = "gemini_playground_requestinitiallogs"
@@ -204,7 +202,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             local Compress = util.Compress( string.Replace(Text, "**", "") )
             local CompressSize = #Compress
 
-            if ( CompressSize > MaxBandwidth ) then
+            if ( CompressSize > Gemini.Util.MaxBandwidth ) then
                 self:Print("The response from Gemini API is too large to send to the client. Size: ", CompressSize, " bytes")
 
                 self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
@@ -212,7 +210,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             end
 
             net.Start("Gemini:PlaygroundMakeRequest")
-                net.WriteUInt(CompressSize, DefaultNetworkUInt)
+                net.WriteUInt(CompressSize, Gemini.Util.DefaultNetworkUInt)
                 net.WriteData(Compress, CompressSize)
             net.Send(ply)
         end,

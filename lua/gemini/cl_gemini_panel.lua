@@ -15,8 +15,8 @@ function Gemini:ModuleCreate(Name, TableModule)
     end
 
     TableModule["__name"] = Name
-    TableModule["OnFocus"] = TableModule["OnFocus"] or Gemini.ReturnNoneFunction
-    TableModule["OnLostFocus"] = TableModule["OnLostFocus"] or Gemini.ReturnNoneFunction
+    TableModule["OnFocus"] = TableModule["OnFocus"] or Gemini.Util.ReturnNoneFunction
+    TableModule["OnLostFocus"] = TableModule["OnLostFocus"] or Gemini.Util.ReturnNoneFunction
 
     if ( Pos ~= nil ) then
         GeminiModule[Pos] = TableModule
@@ -150,11 +150,11 @@ function GEMINIPANEL:PoblateItems()
     end
 
     self.Tabs.OnActiveTabChanged = function(selfTabs, OldTab, NewTab)
-        if isfunction(OldTab.OnLostFocus) and ( OldTab.OnLostFocus ~= Gemini.ReturnNoneFunction ) then
+        if isfunction(OldTab.OnLostFocus) and ( OldTab.OnLostFocus ~= Gemini.Util.ReturnNoneFunction ) then
             OldTab.__MODULE:OnLostFocus(self, self.Tabs)
         end
 
-        if isfunction(OldTab.OnFocus) and ( NewTab.OnFocus ~= Gemini.ReturnNoneFunction ) then
+        if isfunction(OldTab.OnFocus) and ( NewTab.OnFocus ~= Gemini.Util.ReturnNoneFunction ) then
             NewTab.__MODULE:OnFocus(self, self.Tabs)
         end
 
