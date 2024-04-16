@@ -9,6 +9,7 @@ if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is usi
 resource.AddFile("resource/fonts/Frutiger Roman.ttf")
 
 local GeminiCFG = GeminiCFG or {["general"] = {}}
+local GeminiSetting = GeminiSetting or {}
 Gemini = Gemini or {
     Version = "1.0",
     Author = "vicentefelipechile",
@@ -157,7 +158,7 @@ function Gemini:ConvertValue(Value)
     if not isstring(Value) then
         self:Error([[The first argument of Gemini:ConvertValue() must be a string.]], Value, "string")
     elseif ( Value == "" ) then
-        self:Error([[The first argument of Gemini:ConvertValue() must not be empty.]], Value, "string")
+        self:Error([[The first argument of Gemini:ConvertValue() must not be empty, maybe the Convar isn't valid.]], Value, "string")
     end
 
     local ValueType = string.sub(Value, -1)
@@ -205,7 +206,7 @@ function Gemini:FromConvar(Name, Category)
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    local Value = GeminiCFG[Category][Name][1]:GetString()
+    local Value = GeminiCFG[Category][Name]["Convar"]:GetString()
 
     if ( Value == "" ) then
         self:Error([[The convar value is empty.]], Value, "string")
@@ -275,6 +276,7 @@ function Gemini:GetPlayerInfo(Player, ConvarName)
     return self:ConvertValue(InfoValue)
 end
 
+
 function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:CreateConfig() must be a string.]], Name, "string")
@@ -306,7 +308,10 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
     Name = string.lower( string.gsub(Name, "%W", "") )
 
     GeminiCFG[Category] = GeminiCFG[Category] or {}
-    GeminiCFG[Category][Name] = {CreateConVar("gemini_" .. Category .. "_" .. Name, Value, Flags), Verification}
+    GeminiCFG[Category][Name] = {
+        ["Convar"] = CreateConVar("gemini_" .. Category .. "_" .. Name, Value, Flags),
+        ["Verification"] = Verification
+    }
 end
 
 
@@ -346,6 +351,11 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
 end
 
 
+function Gemini:GetAllConfigs()
+    return table.Copy(GeminiCFG)
+end
+
+
 function Gemini:SetConfig(Name, Category, Value)
     if not isstring(Name) then
         self:Error([[The first argument of Gemini:SetConfig() must be a string.]], Name, "string")
@@ -374,21 +384,22 @@ function Gemini:SetConfig(Name, Category, Value)
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    if not GeminiCFG[Category][Name][2](Value) then
+    if not GeminiCFG[Category][Name]["Verification"](Value) then
         -- self:Error([[The value doesn't match the verification function.]], Value, "any")
         self:Print("The value doesn't match the verification function. Skipping...")
         return
     end
 
     local ConvarValue = self:ToConvar(Name, Category, Value)
-    GeminiCFG[Category][Name][1]:SetString( ConvarValue )
+    GeminiCFG[Category][Name]["Convar"]:SetString( ConvarValue )
 
     hook.Run("Gemini:ConfigChanged", Name, Category, Value, ConvarValue)
 end
 
+
 function Gemini:ResetConfig(Name, Category, SkipValidation)
     if ( SkipValidation == true ) then
-        GeminiCFG[Category][Name][1]:Revert()
+        GeminiCFG[Category][Name]["Convar"]:Revert()
         return
     end
 
@@ -419,7 +430,7 @@ function Gemini:ResetConfig(Name, Category, SkipValidation)
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    GeminiCFG[Category][Name][1]:Revert()
+    GeminiCFG[Category][Name]["Convar"]:Revert()
 end
 
 
