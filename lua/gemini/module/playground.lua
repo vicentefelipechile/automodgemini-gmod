@@ -57,7 +57,6 @@ end
 function MODULE:PoblatePrompt()
     if PromptExists then return end
 
-    -- This thing crashed my game XD
     local PromptHistoryCopy = table.Copy(PromptHistory)
     table.Empty(PromptHistory)
 

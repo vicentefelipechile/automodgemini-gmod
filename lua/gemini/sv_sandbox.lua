@@ -35,16 +35,3 @@ hook.Add("PostCleanupMap", function()
         hook.Run("Gemini.Log", Log, ply)
     end
 end)
-
-local GamemodeName = engine.ActiveGamemode()
-hook.Add("PreGamemodeLoaded", function()
-    hook.Run("Gemini.Log", string.format( Gemini:GetPhrase("PreGamemodeLoaded"), GamemodeName ), Gemini.LoggerServerID)
-end)
-
-hook.Add("OnGamemodeLoaded", function()
-    hook.Run("Gemini.Log", string.format( Gemini:GetPhrase("OnGamemodeLoaded"), GamemodeName ), Gemini.LoggerServerID)
-end)
-
-hook.Add("PostGamemodeLoaded", function()
-    hook.Run("Gemini.Log", string.format( Gemini:GetPhrase("PostGamemodeLoaded"), GamemodeName ), Gemini.LoggerServerID)
-end)

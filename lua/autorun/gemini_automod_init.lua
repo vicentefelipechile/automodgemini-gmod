@@ -9,7 +9,6 @@ if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is usi
 resource.AddFile("resource/fonts/Frutiger Roman.ttf")
 
 local GeminiCFG = GeminiCFG or {["general"] = {}}
-local GeminiSetting = GeminiSetting or {}
 Gemini = Gemini or {
     Version = "1.0",
     Author = "vicentefelipechile",

@@ -173,7 +173,7 @@ end
 function GEMINIPANEL:Init()
     self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.6, 500))
     self:MakePopup()
-    self:SetTitle("Google Gemini Automod - Server Owner Config")
+    self:SetTitle( Gemini:GetPhrase("Panel.Title") )
     self:ShowCloseButton(true)
     self:SetDraggable(true)
     self:DockPadding(5, 5, 5, 5)

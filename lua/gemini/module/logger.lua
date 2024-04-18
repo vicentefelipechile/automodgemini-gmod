@@ -26,15 +26,6 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
     IsPlayer = IsPlayer or false
 
     local Status = net.Start("Gemini:AskLogs")
-        net.WriteBool(false) -- IsPlayground
-        net.WriteUInt(Limit, Gemini.Util.DefaultNetworkUInt)
-        net.WriteBool(IsPlayer)
-        net.WriteUInt(Target, Gemini.Util.DefaultNetworkUInt)
-        net.WriteBool(Between or false)
-        if ( Between ) then
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Logger"), Gemini.Util.DefaultNetworkUIntBig)
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Logger"), Gemini.Util.DefaultNetworkUIntBig)
-        end
     net.SendToServer()
 
     if ( Status == true ) then
@@ -45,11 +36,8 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
     end
 end
 
-function MODULE:RetrieveNetwork(Success, Message, Logs)
+function MODULE:RetrieveNetwork(Success, Logs)
     if ( Success == true ) then
-        local TimeLapse = math.Round(CurTime() - self.LAST_REQUEST, 4)
-
-        self:SetMessageLog( string.format( Gemini:GetPhrase(Message), #Logs, TimeLapse ) )
         self:UpdateTable(Logs)
     end
 end
@@ -249,9 +237,9 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self:AskLogs(LogsAmount, PlayerID, PlayerID ~= nil, Between)
 
         if Between or PlayerID then
-            self:SetAsynconousLogs(false)
+            self:SetAsynchronousLogs(false)
         else
-            self:SetAsynconousLogs(true)
+            self:SetAsynchronousLogs(true)
         end
     end
 
@@ -294,11 +282,11 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     AsyncLogs.OnChange = function(_, value)
         Gemini:SetConfig("AsyncLogs", "Logger", value)
 
-        self:SetAsynconousLogs(value)
+        self:SetAsynchronousLogs(value)
     end
 end
 
-function MODULE:SetAsynconousLogs(Active)
+function MODULE:SetAsynchronousLogs(Active)
     if ( Active == true ) then
         net.Start("Gemini:StartAsynchronousLogs")
         net.SendToServer()
@@ -318,12 +306,12 @@ function MODULE:OnFocus()
 
     self:AskLogs(LogsAmount)
     if ( EnableAsync == true ) then
-        self:SetAsynconousLogs(true)
+        self:SetAsynchronousLogs(true)
     end
 end
 
 function MODULE:OnLostFocus()
-    self:SetAsynconousLogs(false)
+    self:SetAsynchronousLogs(false)
 end
 
 --[[------------------------
@@ -342,7 +330,10 @@ net.Receive("Gemini:AskLogs", function(len)
         Logs = util.JSONToTable(util.Decompress(Data))
     end
 
-    MODULE:RetrieveNetwork(Success, Message, Logs)
+    MODULE:RetrieveNetwork(Success, Logs)
+
+    local TimeLapse = math.Round(CurTime() - MODULE.LAST_REQUEST, 4)
+    MODULE:SetMessageLog( string.format( Gemini:GetPhrase(Message), #Logs, TimeLapse ) )
 end)
 
 net.Receive("Gemini:ReplicateLog", function(len)
@@ -354,6 +345,10 @@ net.Receive("Gemini:ReplicateLog", function(len)
     local User = net.ReadString()
 
     MODULE:AddNewLog(ID, Log, Time, User)
+end)
+
+hook.Add("Gemini:SendMessage", "Gemini:Logger.SendMessage", function(Message)
+    MODULE:SetMessageLog(string.format(Message))
 end)
 
 --[[------------------------

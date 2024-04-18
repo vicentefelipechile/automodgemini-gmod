@@ -242,6 +242,7 @@ Gemini:LanguageOverrideHook(LANG, {
      Gemini Menu Phrases
 ------------------------]]--
 
+Gemini:LanguageAddPhrase(LANG, "Panel.Title", "Google Gemini Automod - Panel")
 Gemini:LanguageAddPhrase(LANG, "Credits", "Creditos")
 Gemini:LanguageAddPhrase(LANG, "Config", "Configuración")
 Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")

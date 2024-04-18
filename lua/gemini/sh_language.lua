@@ -8,12 +8,7 @@ local Language = Language or {}
         Configuration
 ------------------------]]--
 
-if SERVER then
-    Gemini:CreateConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300, {
-        ["Min"] = 0,
-        ["Max"] = 1000
-    })
-end
+Gemini:CreateConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number, 300)
 
 --[[------------------------
         NPC Names

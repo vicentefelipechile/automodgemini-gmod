@@ -54,14 +54,19 @@ local TrainSQL = {
     ]]
 }
 
+-- Sanitize SQL
+for SQLName, SQLSentence in pairs(TrainSQL) do
+    SQLSentence = string.Trim( string.gsub( string.Replace( SQLSentence, "\n", "" ), "[%s]+", " " ) )
+end
+
 --[[------------------------
          Poblate SQL
 ------------------------]]--
 
 function Gemini:TrainGetSQL(SQLSentence)
-    return ( SQLSentence ~= "" ) and TrainSQL[SQLSentence] or ""
+    return TrainSQL[SQLSentence] or ""
 end
 
 function Gemini:TrainPoblate()
-    sql_Query(TrainSQL["GEMINI_TRAIN"])
+    sql_Query(self:TrainGetSQL("GEMINI_TRAIN"))
 end

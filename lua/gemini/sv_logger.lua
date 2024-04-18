@@ -2,24 +2,27 @@
                       Google Gemini Automod - Logger Module
 ----------------------------------------------------------------------------]]--
 
-util.AddNetworkString("Gemini:AskLogs")
-util.AddNetworkString("Gemini:AskLogs:Playground")
-util.AddNetworkString("Gemini:ReplicateLog")
-util.AddNetworkString("Gemini:StartAsynchronousLogs")
-util.AddNetworkString("Gemini:StopAsynchronousLogs")
-
 local sql_Query = sql.Query
-local sql_QueryValue = sql.QueryValue
 local sql_TableExists = sql.TableExists
 
-local function Formating(str, ...)
-    local new = string.Trim( string.gsub( string.Replace( str, "\n", "" ), "[%s]+", " " ) )
-    return sql_QueryValue( string.format( new, ... ) )
-end
+local PlayerTarget = "gemini_logger_playertarget"
+local MaxLogs = "gemini_logger_maxlogs"
+local BetweenLogs = "gemini_logger_betweenlogs"
+local BetweenLogsMin = "gemini_logger_betweenlogsmin"
+local BetweenLogsMax = "gemini_logger_betweenlogsmax"
+
+local Formating = string.format
 
 local AsynchronousPlayers = {}
 
-Gemini.LoggerServerID = 1
+--[[------------------------
+        Network Strings
+------------------------]]--
+
+util.AddNetworkString("Gemini:AskLogs")
+util.AddNetworkString("Gemini:ReplicateLog")
+util.AddNetworkString("Gemini:StartAsynchronousLogs")
+util.AddNetworkString("Gemini:StopAsynchronousLogs")
 
 --[[------------------------
            Config
@@ -38,12 +41,6 @@ local LoggerSQL = {
             geminiuser_steamid TEXT NOT NULL,
             geminiuser_steamid64 TEXT NOT NULL UNIQUE
         )
-    ]],
-    ["GEMINI_USER_SERVER"] = [[
-        INSERT INTO
-            gemini_user (geminiuser_steamid, geminiuser_steamid64)
-        VALUES
-            ('SERVER', 'SERVER')
     ]],
     ["GEMINI_LOG"] = [[
         CREATE TABLE IF NOT EXISTS gemini_log (
@@ -139,112 +136,94 @@ local LoggerSQL = {
     ]]
 }
 
+-- Sanitize SQL
+for SQLName, SQLSentence in pairs(LoggerSQL) do
+    SQLSentence = string.Trim( string.gsub( string.Replace( SQLSentence, "\n", "" ), "[%s]+", " " ) )
+end
+
 --[[------------------------
         SQL Functions
 ------------------------]]--
 
 function Gemini:LoggerGetSQL(SQLSentence)
-    return ( SQLSentence ~= "" ) and LoggerSQL[SQLSentence] or ""
+    return LoggerSQL[SQLSentence] or ""
 end
 
 function Gemini:LoggerCreateTable()
-    self.DayName = self:GetPhrase("day")
+    LoggerSQL["GETONLYLOGS"] = string.Replace(self:LoggerGetSQL("GETONLYLOGS"), "DAY_NAME", self.DayName)
 
-    LoggerSQL["GETONLYLOGS"] = string.Replace(LoggerSQL["GETONLYLOGS"], "DAY_NAME", self.DayName)
-
-    -- Table of player info
-    sql_Query(LoggerSQL.GEMINI_USER)
-    sql_Query(LoggerSQL.GEMINI_USER_SERVER)
-
-    -- Table of logs
-    sql_Query(LoggerSQL.GEMINI_LOG)
+    sql_Query(self:LoggerGetSQL("GEMINI_USER"))
+    sql_Query(self:LoggerGetSQL("GEMINI_LOG"))
 end
 
 function Gemini:LoggerCheckTable()
+    self.DayName = self:GetPhrase("day")
+
     if not ( sql_TableExists("gemini_user") or sql_TableExists("gemini_log") ) then
         Gemini:LoggerCreateTable()
     end
 end
 
-function Gemini:LoggerSetPlayer(ply, id, target)
+function Gemini:LoggerPlayerToID(ply)
     if not ( IsValid(ply) and ply:IsPlayer() ) then
-        self:Error([[The first argument of Gemini:LoggerSetPlayer() is not a Player]], PhraseName, "Player")
+        self:Error([[The first argument of Gemini:LoggerPlayerToID() is not a Player]], ply, "Player")
     end
 
-    if not isnumber(id) then
-        self:Error([[The second argument of Gemini:LoggerSetPlayer() is not a number]], PhraseName, "number")
-    end
-end
-
-function Gemini:LoggerGetPlayer(ply)
-    if not ( IsValid(ply) and ply:IsPlayer() ) then
-        self:Error([[The first argument of Gemini:LoggerGetPlayer() is not a Player]], ply, "Player")
-    end
-
-    if ply.__LOGGER_ID then return ply.__LOGGER_ID end
+    if isnumber(ply.__LOGGER_ID) then return ply.__LOGGER_ID end
 
     local SteamID = ply:SteamID()
     local SteamID64 = ply:SteamID64()
 
-    local QueryResult = Formating(LoggerSQL.GETUSER, SteamID, SteamID64)
+    local QueryResult = Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64)
+    local Result = nil
 
     if QueryResult ~= nil then
-        QueryResult = tonumber(QueryResult)
-
-        return QueryResult
+        Result = tonumber(QueryResult)
     else
-        Formating(LoggerSQL.INSERTUSER, SteamID, SteamID64)
-
-        local NewID = tonumber( Formating(LoggerSQL.GETUSER, SteamID, SteamID64) )
-        return NewID
+        Formating(self:LoggerGetSQL("INSERTUSER"), SteamID, SteamID64)
+        Result = tonumber( Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64) )
     end
+
+    if isnumber(Result) then
+        ply.__LOGGER_ID = Result
+    end
+
+    return Result
 end
 
-function Gemini:LoggerGetLogsPlayer(ply, Limit, OnlyLogs)
+function Gemini:LoggerFindPlayerLogs(ply, Limit, OnlyLogs)
     if not ( isnumber(ply) or IsValid(ply) and ply:IsPlayer() ) then
-        self:Error([[The first argument of Gemini:LoggerGetLogsPlayer() is not a Player or number]], PhraseName, "Player or number")
+        self:Error([[The first argument of Gemini:LoggerFindPlayerLogs() is not a Player or number]], PhraseName, "Player or number")
     end
 
     if not isnumber(Limit) then
-        self:Error([[The second argument of Gemini:LoggerGetLogsPlayer() is not a number]], PhraseName, "number")
+        self:Error([[The second argument of Gemini:LoggerFindPlayerLogs() is not a number]], PhraseName, "number")
     end
 
-    OnlyLogs = OnlyLogs or false
+    local UserID = isnumber(ply) and ply or Gemini:LoggerPlayerToID(ply)
 
-    local UserID = isnumber(ply) and ply or Gemini:LoggerGetPlayer(ply)
-    local SQLScript = OnlyLogs and LoggerSQL.GETONLYLOGS or LoggerSQL.GETPLAYERLOGS
-
-    local QueryResult = sql_Query( string.format(SQLScript, UserID, UserID, UserID, UserID, Limit) )
-
-    if ( QueryResult == nil ) then
-        return {}
-    end
-
-    return QueryResult
+    return sql_Query( string.format(
+        OnlyLogs and self:LoggerGetSQL("GETONLYLOGS") or self:LoggerGetSQL("GETPLAYERLOGS"),
+        UserID, UserID, UserID, UserID, Limit)
+    ) or {}
 end
 
 function Gemini:LoggerGetLogsLimit(Limit)
-    local QueryResult = sql_Query( string.format(LoggerSQL.GETALLLOGSLIMIT, Limit) )
-
-    return QueryResult
+    return sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSLIMIT"), Limit) )
 end
 
 --[[------------------------
       Logger Functions
 ------------------------]]--
 
-function Gemini:LoggerAddLog(log, ply, ply2, ply3, ply4)
-    local UserID = ( ply ~= 1 ) and Gemini:LoggerGetPlayer(ply) or Gemini.LoggerServerID
+function Gemini:LoggerAddLog(LogString, LogUser1, LogUser2, LogUser3, LogUser4)
+    LogUser1 = LogUser1 and Gemini:LoggerPlayerToID(LogUser1)
+    LogUser2 = LogUser2 and Gemini:LoggerPlayerToID(LogUser2)
+    LogUser3 = LogUser3 and Gemini:LoggerPlayerToID(LogUser3)
+    LogUser4 = LogUser4 and Gemini:LoggerPlayerToID(LogUser4)
 
-    local LogString = log
-    local LogUser1 = UserID
-    local LogUser2 = ply2 and Gemini:LoggerGetPlayer(ply2) or nil
-    local LogUser3 = ply3 and Gemini:LoggerGetPlayer(ply3) or nil
-    local LogUser4 = ply4 and Gemini:LoggerGetPlayer(ply4) or nil
+    Formating(self:LoggerGetSQL("INSERTLOG"), LogString, LogUser1, LogUser2, LogUser3, LogUser4)
 
-    Formating(LoggerSQL.INSERTLOG, LogString, LogUser1, LogUser2, LogUser3, LogUser4)
-
-    -- Asynchronous logs
     if #AsynchronousPlayers > 0 then
         Gemini:LoggerSendAsynchronousLogs()
     end
@@ -260,53 +239,44 @@ end)
 
 function Gemini.LoggerAskLogs(len, ply)
     if not Gemini:CanUse(ply, "gemini_logger") then
-        net.Start("Gemini:AskLogs")
-            net.WriteBool(false)
-            net.WriteString("Logger.DontAllowed")
-        net.Send(ply)
-
+        Gemini:SendMessage(ply, "Logger.DontAllowed")
         return
     end
 
-    local IsPlayground = net.ReadBool()
-
-    local Limit = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
-    local IsPlayer = net.ReadBool()
-    local PlayerID = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
-    local IsBetween = net.ReadBool()
-
-    Limit = math.min(Limit, Gemini:GetConfig("MaxLogsRequest", "Logger"))
-
+    local IsBetween = Gemini:GetPlayerInfo(ply, BetweenLogs)
+    local Limit = math.min(
+        Gemini:GetConfig("MaxLogsRequest", "Logger"),
+        Gemini:GetPlayerInfo(ply, MaxLogs)
+    )
     local Logs = {}
 
-    if IsBetween == true then
-        local Min = net.ReadUInt(Gemini.Util.DefaultNetworkUIntBig)
-        local Max = net.ReadUInt(Gemini.Util.DefaultNetworkUIntBig)
-        Logs = sql_Query( string.format(LoggerSQL.GETALLLOGSRANGE, Min, Max, Limit) )
+    if IsBetween then
+        local Min = Gemini:GetPlayerInfo(ply, BetweenLogsMin)
+        local Max = Gemini:GetPlayerInfo(ply, BetweenLogsMax)
+        Logs = sql.Query( string.format(Gemini:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
     else
-        if ( IsPlayer == false ) then
+        local PlayerID = Gemini:GetPlayerInfo(ply, PlayerTarget)
+
+        if ( PlayerID == 0 ) then
             Logs = Gemini:LoggerGetLogsLimit(Limit)
         else
-            Logs = Gemini:LoggerGetLogsPlayer(PlayerID, Limit)
+            Logs = Gemini:LoggerFindPlayerLogs(PlayerID, Limit)
         end
     end
 
     local CompressesLogs = util.Compress( util.TableToJSON(Logs) )
     local CompressedSize = #CompressesLogs
 
-    local NetworkTarget = IsPlayground and "Gemini:AskLogs:Playground" or "Gemini:AskLogs"
-
-    net.Start(NetworkTarget)
+    net.Start("Gemini:AskLogs")
         net.WriteBool(true)
-        net.WriteString( "Logger.LogsSended" )
-        net.WriteUInt( CompressedSize, Gemini.Util.DefaultNetworkUIntBig )
-        net.WriteData( CompressesLogs, CompressedSize )
+        net.WriteString("Logger.LogsSended")
+        net.WriteUInt(CompressedSize, Gemini.Util.DefaultNetworkUIntBig)
+        net.WriteData(CompressesLogs, CompressedSize)
     net.Send(ply)
 end
 net.Receive("Gemini:AskLogs", Gemini.LoggerAskLogs)
-net.Receive("Gemini:AskLogs:Playground", Gemini.LoggerAskLogs)
 
 function Gemini:LoggerSendAsynchronousLogs()
     local LastLog = Gemini:LoggerGetLogsLimit(1)[1]
@@ -340,11 +310,11 @@ net.Receive("Gemini:StartAsynchronousLogs", Gemini.LoggerStartAsynchronousLogs)
 net.Receive("Gemini:StopAsynchronousLogs", Gemini.LoggerStopAsynchronousLogs)
 
 hook.Add("PlayerDisconnected", "Gemini:LoggerAsynchronousLogs", function(ply)
-    table.RemoveByValue(AsynchronousPlayers, ply)
+    Gemini.LoggerStopAsynchronousLogs(0, ply)
 end)
 
 --[[------------------------
-    Free Space Functions
+   Miscellaneous Functions
 ------------------------]]--
 
 function Gemini:LoggerClearLogs()

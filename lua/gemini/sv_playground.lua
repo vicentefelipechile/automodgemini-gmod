@@ -5,6 +5,7 @@
 util.AddNetworkString("Gemini:PlaygroundSendMessage")
 util.AddNetworkString("Gemini:PlaygroundMakeRequest")
 util.AddNetworkString("Gemini:PlaygroundResetRequest")
+util.AddNetworkString("Gemini:AskLogs:Playground")
 
 local PlayerUsingPlayground = {}
 
@@ -83,10 +84,6 @@ end
 --[[------------------------
        Playground API
 ------------------------]]--
-
-function Gemini:PlaygroundHandleRequest(ply)
-
-end
 
 function Gemini:PlaygroundMakeRequest(Prompt, ply)
     if not isstring(Prompt) then
@@ -186,9 +183,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             if not IsValid(ply) then
                 self:Print("The player that requested the prompt no longer exists.")
                 return
-            end
-
-            if not istable( PlayerUsingPlayground[ply] ) then
+            elseif not istable( PlayerUsingPlayground[ply] ) then
                 self:Print("The player that requested the prompt is no longer using the playground.")
                 return
             end
@@ -240,10 +235,11 @@ function Gemini.PlaygroundReceivePetition(len, ply)
         Gemini:PlaygroundMakeRequest(Prompt, ply)
     end
 end
-net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
 
 function Gemini.PlaygroundResetRequest(len, ply)
     Gemini:PlaygroundClearHistory(ply)
     Gemini:PlaygroundSendMessage(ply, "Playground.Prompt.Reseted")
 end
+
+net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
 net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlaygroundResetRequest)

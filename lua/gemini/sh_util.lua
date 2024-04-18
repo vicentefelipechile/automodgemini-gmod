@@ -4,8 +4,12 @@
 
 Gemini.Util = Gemini.Util or {}
 
+if SERVER then
+    util.AddNetworkString("Gemini:SendMessage")
+end
+
 --[[------------------------
-            Variables
+          Variables
 ------------------------]]--
 
 Gemini.Util.MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
@@ -42,6 +46,34 @@ function Gemini:LogsToText(logs)
         text = text .. log .. "\n"
     end
     return text
+end
+
+--[[------------------------
+       Send Message
+------------------------]]--
+
+if SERVER then
+    function Gemini:SendMessage(ply, msg)
+        if not IsValid(ply) then
+            self:Error("The first argument of Gemini:SendMessage() must be a player.", ply, "player")
+        end
+
+        if not isstring(msg) then
+            self:Error("The second argument of Gemini:SendMessage() must be a string.", msg, "string")
+        end
+
+        if ( msg == "" ) then
+            self:Error("The second argument of Gemini:SendMessage() must not be empty.", msg, "string")
+        end
+
+        net.Start("Gemini:SendMessage")
+            net.WriteString(msg)
+        net.Send(ply)
+    end
+else
+    net.Receive("Gemini:SendMessage", function()
+        hook.Run("Gemini:SendMessage", net.ReadString())
+    end)
 end
 
 --[[------------------------

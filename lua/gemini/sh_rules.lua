@@ -49,13 +49,8 @@ function Gemini:SaveServerInfo()
 end
 
 function Gemini:SetServerInfo(Info)
-    if not isstring(Info) then
-        self:Error("The server name must be a string", Name, "string")
-    end
-
-    if ( Info == "" ) then
-        self:Error("The server name cannot be empty", Name, "string")
-    end
+    if not isstring(Info) then self:Error("The server name must be a string", Name, "string") end
+    if ( Info == "" ) then self:Error("The server name cannot be empty", Name, "string") end
 
     ServerRule["ServerInfo"] = Info
 
@@ -64,13 +59,8 @@ function Gemini:SetServerInfo(Info)
 end
 
 function Gemini:SetRules(Rules)
-    if not isstring(Rules) then
-        self:Error("The rules must be a string", Rules, "string")
-    end
-
-    if ( Rules == "" ) then
-        self:Error("The rules cannot be empty", Rules, "string")
-    end
+    if not isstring(Rules) then self:Error("The rules must be a string", Rules, "string") end
+    if ( Rules == "" ) then self:Error("The rules cannot be empty", Rules, "string") end
 
     ServerRule["Rules"] = Rules
 
@@ -99,7 +89,6 @@ end
 ------------------------]]--
 
 function Gemini:BroadcastServerInfo()
-    -- Cut the rules to the maximum bandwidth
     local RulesCompressed = util.Compress(self:GetRules())
     local RulesUInt = RulesCompressed and #RulesCompressed or 0
 
@@ -142,7 +131,8 @@ if CLIENT then
 end
 
 if SERVER then
-    hook.Add("PlayerInitialSpawn", "Gemini:BroadcastRules", function(ply)
+    gameevent.Listen("player_activate")
+    hook.Add("player_activate", "Gemini:BroadcastRules", function()
         Gemini:BroadcastServerInfo()
     end)
 end
