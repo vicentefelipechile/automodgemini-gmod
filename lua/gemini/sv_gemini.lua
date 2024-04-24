@@ -51,17 +51,7 @@ end
        Safety Settings
 ------------------------]]--
 
-function Gemini:GenerationResetConfig()
-    self:ResetConfig("ModelName", "Gemini")
-    self:ResetConfig("Temperature", "Gemini")
-    self:ResetConfig("TopP", "Gemini")
-    self:ResetConfig("TopK", "Gemini")
-    self:ResetConfig("MaxTokens", "Gemini")
-
-    self:Print("Generation reseted to default settings.")
-end
-
-function Gemini:GetGenerationConfig()
+function Gemini:GemeniGetGeneration()
     return {
         ["temperature"] = self:GetConfig("Temperature", "Gemini"),
         ["topK"] = self:GetConfig("TopK", "Gemini"),
@@ -72,7 +62,7 @@ function Gemini:GetGenerationConfig()
 end
 
 local CacheSafety = {}
-function Gemini:GetSafetyConfig(UseCache)
+function Gemini:GeminiGetSafety(UseCache)
     if ( UseCache == true and not table.IsEmpty(CacheSafety) ) then return CacheSafety end
 
     local SafetySettings = {}
@@ -95,12 +85,12 @@ end
        Pre-Parameters
 ------------------------]]--
 
-function Gemini:GetGamemodeContext()
+function Gemini:GeminiGetContext()
     return self:GetPhrase("context") .. "\n\n" .. CurrentGamemodeContext
 end
 
-function Gemini:GetLogsOfPlayer(Player, Amount)
-    local Logs = self:LoggerGetLogsPlayer(Player, Amount, true)
+function Gemini:GeminiGetPlayerLogs(Player, Amount)
+    local Logs = self:LoggerFindPlayerLogs(Player, Amount, true)
     local FormatedLogs = ""
 
     for _, SQLTable in ipairs(Logs) do
@@ -115,39 +105,27 @@ end
         AI Structure
 ------------------------]]--
 
---[[
-
-1- Game Context
-2- Pre-Context (Server owner config)
-3- Trained Data
-4- Player-related logs
-5- Post-Context (Server owner config)
-6- Output
-
---]]
-
-function Gemini:CreateBodyStructure(Player, Limit)
+function Gemini:GeminiCreateBodyRequest(Player, Limit)
     --[[ Gemini Structure ]]--
     local GeminiStructure = {
-        ["generationConfig"] = self:GetGenerationConfig(),
-        ["safetySettings"] = self:GetSafetyConfig(true),
+        ["generationConfig"] = self:GemeniGetGeneration(),
+        ["safetySettings"] = self:GeminiGetSafety(true),
         ["contents"] = {}
     }
 
+    local MainPrompt = ""
+
     --[[ Game Context ]]--
-    local GameContext = self:GetGamemodeContext()
+    MainPrompt = MainPrompt .. self:GeminiGetContext() .. "\n\n"
 
     --[[ Pre-Context ]]--
-    local PreContext = self:LoadServerConfig("precontext")
+    MainPrompt = MainPrompt .. self:GetServerInfo() .. "\n" .. self:GetServerRules() .. "\n\n"
 
     --[[ Trained Data ]]--
-    local TrainedData = self:LoggerGetTrainedData() -- this return a key-value table with the trained data
+    local TrainedData = self:TrainGetTrainings()
 
     --[[ Player-related logs ]]--
-    local PlayerLogs = self:GetLogsOfPlayer(Player, Limit)
-
-    --[[ Post-Context ]]--
-    local PostContext = self:LoadServerConfig("postcontext")
+    local PlayerLogs = self:GeminiGetPlayerLogs(Player, Limit)
 
     --[[ Output ]]--
     local Contents = {
@@ -159,84 +137,8 @@ function Gemini:CreateBodyStructure(Player, Limit)
         table.insert(Contents, {["text"] = Train["User"], ["role"] = "user"}) -- Previuosly trained data
         table.insert(Contents, {["text"] = Train["Bot"], ["role"] = "model"}) -- Bot response
     end
-
     table.insert(Contents, {["text"] = PlayerLogs, ["role"] = "user"})
     table.insert(Contents, {["text"] = PostContext, ["role"] = "user"})
 
     return GeminiStructure
-end
-
-
-
---[[------------------------
-        HTTP Request
-------------------------]]--
-
-local function HandleGeminiResponse(Code, BodyResponse, Headers)
-    local DebugEnabled = Gemini:GetConfig("DebugEnabled", "Gemini")
-    Gemini:GetHTTPDescription(Code)
-
-    if ( Code == 200 ) then
-        if DebugEnabled then
-            file.Write("gemini_response.txt", BodyResponse)
-        end
-
-        Gemini:Print("Response from Gemini API: " .. util.JSONToTable(BodyResponse)["candidates"][1]["content"]["parts"][1]["text"])
-    end
-end
-
-function Gemini:MakeRequest(Data)
-    local DebugEnabled = self:GetConfig("DebugEnabled", "Gemini")
-
-    --[[ Body ]]--
-    local GeminiModel = self:GetConfig("ModelName", "Gemini")
-    local GamemodeModel = self:GetGamemodeContext()
-    local GenerationConfig = self:GetGenerationConfig()
-    local SafetyConfig = self:GetSafetyConfig()
-
-    local Parts = {
-        {["text"] = GamemodeModel, ["role"] = "user"}
-    }
-
-    local Body = {
-        ["generationConfig"] = GenerationConfig,
-        ["safetySettings"] = SafetyConfig
-    }
-
-    for _, SubData in ipairs(Data) do
-        table.insert(Parts, {["text"] = SubData["Text"], ["role"] = SubData["Role"] or "user"})
-    end
-
-    --[[ Debug ]]--
-    if DebugEnabled then
-        table.insert(Parts, {["text"] = self:GetConfig("DebugMessage", "Gemini")})
-    end
-
-    Body["contents"] = {{["parts"] = Parts}}
-    local APIKey = self:GetConfig("APIKey", "Gemini")
-
-    --[[ Debug ]]--
-    if DebugEnabled then
-        file.Write("gemini_request.txt", util.TableToJSON(Body, true))
-    end
-
-    --[[ Request ]]--
-    local RequestMade = HTTP({
-        ["url"] = string.format(self.URL, GeminiModel, APIKey),
-        ["method"] = "POST",
-        ["type"] = "application/json",
-        ["body"] = util.TableToJSON(Body),
-        ["success"] = HandleGeminiResponse,
-        ["failed"] = function(Error)
-            self:Print("Failed to make request to Gemini API. Error: ", Error)
-            self:SendMessage(ply, "Failed to make request to Gemini API. Error: " .. Error)
-        end
-    })
-
-    if RequestMade then
-        self:Print("Request made to Gemini API.")
-    else
-        self:Print("Failed to make request to Gemini API.")
-        self:Print("Make sure you make a valid body request.")
-    end
 end

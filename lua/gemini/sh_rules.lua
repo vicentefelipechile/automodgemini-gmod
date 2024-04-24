@@ -4,17 +4,20 @@
 
 if SERVER then
     util.AddNetworkString("Gemini:BroadcastRules")
+    util.AddNetworkString("Gemini:SetServerRules")
+    util.AddNetworkString("Gemini:SetServerInfo")
 end
 
 local ServerRule = ServerRule or {
-    ["ServerInfo"] = string.format([[# Server Owner
+    ["ServerInfo"] = string.format([[# Server Information:
+## Server Owner
 Put your name here
 
-# Server Name
+## Server Name
 %s
 
-# Extra Info
-- Put extra info about your server, like:
+## Extra Info
+Put extra info about your server, like:
 - This is a english server
 - This server has a discord server
 - Also has a forum on forum.example.com
@@ -23,7 +26,8 @@ Put your name here
 // Warning: This text is purely informative
 // it only serves so that the artificial intelligence has more context of your server
 // Remove this text after you have finished editing this file]], GetHostName()),
-    ["Rules"] = [[No rules]]
+    ["Rules"] = [[# Server Rules:
+No rules]]
 }
 
 --[[------------------------
@@ -49,8 +53,13 @@ function Gemini:SaveServerInfo()
 end
 
 function Gemini:SetServerInfo(Info)
-    if not isstring(Info) then self:Error("The server name must be a string", Name, "string") end
-    if ( Info == "" ) then self:Error("The server name cannot be empty", Name, "string") end
+    if not isstring(Info) then
+        self:Error("The server name must be a string", Name, "string")
+    end
+
+    if ( Info == "" ) then
+        self:Error("The server name cannot be empty", Name, "string")
+    end
 
     ServerRule["ServerInfo"] = Info
 
@@ -59,8 +68,13 @@ function Gemini:SetServerInfo(Info)
 end
 
 function Gemini:SetRules(Rules)
-    if not isstring(Rules) then self:Error("The rules must be a string", Rules, "string") end
-    if ( Rules == "" ) then self:Error("The rules cannot be empty", Rules, "string") end
+    if not isstring(Rules) then
+        self:Error("The rules must be a string", Rules, "string")
+    end
+
+    if ( Rules == "" ) then
+        self:Error("The rules cannot be empty", Rules, "string")
+    end
 
     ServerRule["Rules"] = Rules
 
@@ -135,4 +149,81 @@ if SERVER then
     hook.Add("player_activate", "Gemini:BroadcastRules", function()
         Gemini:BroadcastServerInfo()
     end)
+end
+
+--[[------------------------
+       Replicate Rules
+------------------------]]--
+
+function Gemini:SetServerRulesClient(Rules)
+    if SERVER or not self:CanUse("gemini_rules_set") then return end
+
+    if not isstring(Rules) then
+        self:Error("The rules must be a string", Rules, "string")
+    end
+
+    if ( Rules == "" ) then
+        self:Error("The rules cannot be empty", Rules, "string")
+    end
+
+    local RulesCompresed = util.Compress(Rules)
+    local RulesUInt = RulesCompresed and #RulesCompresed or 0
+
+    if ( RulesUInt > Gemini.Util.MaxBandwidth ) then
+        self:Error("The rules are too big to be broadcasted")
+    end
+
+    net.Start("Gemini:SetServerRules")
+        net.WriteUInt(RulesUInt, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(RulesCompresed, RulesUInt)
+    net.SendToServer()
+end
+
+function Gemini:SetServerInfoClient(Info)
+    if SERVER or not self:CanUse("gemini_rules_set") then return end
+
+    if not isstring(Info) then
+        self:Error("The server name must be a string", Info, "string")
+    end
+
+    if ( Info == "" ) then
+        self:Error("The server name cannot be empty", Info, "string")
+    end
+
+    local InfoCompressed = util.Compress(Info)
+    local InfoUInt = InfoCompressed and #InfoCompressed or 0
+
+    if ( InfoUInt > Gemini.Util.MaxBandwidth ) then
+        self:Error("The server name is too big to be broadcasted")
+    end
+
+    net.Start("Gemini:SetServerInfo")
+        net.WriteUInt(InfoUInt, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(InfoCompressed, InfoUInt)
+    net.SendToServer()
+end
+
+
+if SERVER then
+    function Gemini.ReceivedClientRules(len, ply)
+        if not Gemini:CanUse(ply, "gemini_rules_set") then return end
+
+        local RulesCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+        local Rules = util.Decompress(RulesCompressed)
+
+        Gemini:SetRules(Rules)
+        Gemini:BroadcastServerInfo()
+    end
+
+    function Gemini.ReceivedClientInfo(len, ply)
+        if not Gemini:CanUse(ply, "gemini_rules_set") then return end
+
+        local InfoCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+        local Info = util.Decompress(InfoCompressed)
+
+        Gemini:SetServerInfo(Info)
+        Gemini:BroadcastServerInfo()
+    end
+
+    net.Receive("Gemini:SetServerRules", Gemini.ReceivedClientRules)
 end

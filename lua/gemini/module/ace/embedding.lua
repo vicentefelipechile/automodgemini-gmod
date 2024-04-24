@@ -19,16 +19,15 @@ return [[
         <script type="text/javascript"> $Theme$ </script>
         <script type="text/javascript"> $Mode$ </script>
         <script type="text/javascript"> $Snippets$ </script>
-        <script type="text/javascript"> $GmodScript$ </script>
-
+        
         <div id="editor">$InitialValue$</div>
-
+        
         <script>
             var editor = ace.edit("editor")
-
+            
             editor.setTheme("ace/theme/monokai")
             editor.session.setMode("ace/mode/markdown")
-
+            
             editor.setOptions({
                 readOnly: $ReadOnly$,
                 enableBasicAutocompletion: true,
@@ -37,6 +36,8 @@ return [[
                 wrap: true
             })
         </script>
+
+        <script type="text/javascript"> $GmodScript$ </script>
     </body>
 </html>
 ]]

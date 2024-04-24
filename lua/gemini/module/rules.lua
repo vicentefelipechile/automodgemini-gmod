@@ -21,7 +21,7 @@ end
 
 function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
     InitialValue = InitialValue or "# Test Script"
-    ReadOnly = (ReadOnly or false) and "true" or "false"
+    ReadOnly = tostring(ReadOnly)
 
     if UseCache and ( COMPILED_HTML ~= "" ) then
         return ReplaceCoincidences(COMPILED_HTML, {
@@ -57,8 +57,8 @@ end
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     if not Gemini:CanUse("gemini_rules") then return false end
 
-    local CanEdit = not Gemini:CanUse("gemini_rules_set")
-    self:CompileHTML(nil, CanEdit)
+    local CanEdit = Gemini:CanUse("gemini_rules_set")
+    self:CompileHTML(nil, not CanEdit, true)
 
     --[[------------------------
            All the Panels
@@ -87,12 +87,33 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         SetClipboardText(text)
     end)
 
-    self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), CanEdit, true) )
-    self.ServerInfoPanel.TextEditor.FullyLoaded = true
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SaveServerInfoLua", function(text)
+        Gemini:SetServerInfoClient(text)
+    end)
+
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "FullyLoaded", function()
+        self.ServerInfoPanel.TextEditor.FullyLoaded = true
+        print(CanEdit)
+        self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
+    end)
+
+    self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), not CanEdit, true) )
+    self.ServerInfoPanel.TextEditor.FullyLoaded = false
 
     self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
     self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
-    self.ServerInfoPanel.ActionPanel:SetTall( 30 )
+    self.ServerInfoPanel.ActionPanel:SetTall( 36 )
+
+    self.ServerInfoPanel.ActionPanel.SaveButton = vgui.Create( "DButton", self.ServerInfoPanel.ActionPanel )
+    self.ServerInfoPanel.ActionPanel.SaveButton:Dock( LEFT )
+    self.ServerInfoPanel.ActionPanel.SaveButton:DockMargin( 6, 6, 6, 6 )
+    self.ServerInfoPanel.ActionPanel.SaveButton:SetWide( 100 )
+    self.ServerInfoPanel.ActionPanel.SaveButton:SetText( "Save" )
+    self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( false )
+
+    self.ServerInfoPanel.ActionPanel.SaveButton.DoClick = function()
+        self.ServerInfoPanel.TextEditor:Call([[gmod.SaveServerInfoJS()]])
+    end
 
     self.MainSheet:AddSheet( "Server Info", self.ServerInfoPanel, "icon16/information.png" )
 
@@ -115,12 +136,32 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         SetClipboardText(text)
     end)
 
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "FullyLoaded", function()
+        self.ServerRulesPanel.TextEditor.FullyLoaded = true
+        self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
+    end)
+
+    self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SaveServerRulesLua", function(text)
+        Gemini:SetServerRulesClient(text)
+    end)
+
     self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetRules(), CanEdit, true) )
-    self.ServerRulesPanel.TextEditor.FullyLoaded = true
+    self.ServerRulesPanel.TextEditor.FullyLoaded = false
 
     self.ServerRulesPanel.ActionPanel = vgui.Create( "DPanel", self.ServerRulesPanel )
     self.ServerRulesPanel.ActionPanel:Dock( BOTTOM )
     self.ServerRulesPanel.ActionPanel:SetTall( 30 )
+
+    self.ServerRulesPanel.ActionPanel.SaveButton = vgui.Create( "DButton", self.ServerRulesPanel.ActionPanel )
+    self.ServerRulesPanel.ActionPanel.SaveButton:Dock( LEFT )
+    self.ServerRulesPanel.ActionPanel.SaveButton:DockMargin( 6, 6, 6, 6 )
+    self.ServerRulesPanel.ActionPanel.SaveButton:SetWide( 100 )
+    self.ServerRulesPanel.ActionPanel.SaveButton:SetText( "Save" )
+    self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( false )
+
+    self.ServerRulesPanel.ActionPanel.SaveButton.DoClick = function()
+        self.ServerRulesPanel.TextEditor:Call([[gmod.SaveServerRulesJS()]])
+    end
 
     self.MainSheet:AddSheet( "Server Rules", self.ServerRulesPanel, "icon16/page_white_text.png" )
 end

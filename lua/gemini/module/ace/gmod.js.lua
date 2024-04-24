@@ -19,4 +19,16 @@ gmod.Cut = () => {
     AceEditor.session.replace(AceEditor.getSelectionRange(), "")
 }
 
+gmod.SaveServerInfoJS = () => {
+    const Text = AceEditor.getValue()
+
+    gmod.SaveServerInfoLua(Text)
+}
+
+gmod.SaveServerRulesJS = () => {
+    const Text = AceEditor.getValue()
+
+    gmod.SaveServerRulesLua(Text)
+}
+
 ]==]

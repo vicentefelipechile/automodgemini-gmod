@@ -384,7 +384,6 @@ function Gemini:SetConfig(Name, Category, Value)
     end
 
     if not GeminiCFG[Category][Name]["Verification"](Value) then
-        -- self:Error([[The value doesn't match the verification function.]], Value, "any")
         self:Print("The value doesn't match the verification function. Skipping...")
         return
     end
@@ -479,12 +478,6 @@ end
 
 function Gemini:Init()
     file.CreateDir("gemini")
-
-    if isfunction(self.HookPoblate) then
-        self:HookPoblate()
-    else
-        self:Error([[The function "PoblateHooks" has been replaced by another third-party addon!!!]], self.HookPoblate, "function")
-    end
 
     if isfunction(self.LanguagePoblate) then
         self:LanguagePoblate()

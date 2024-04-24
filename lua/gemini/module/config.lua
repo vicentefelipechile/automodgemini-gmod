@@ -4,6 +4,10 @@
 
 local MODULE = { ["Icon"] = "icon16/cog.png" }
 
+--[[------------------------
+       Main Functions
+------------------------]]--
+
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     if not Gemini:CanUse("gemini_credits") then return false end
 
@@ -11,11 +15,9 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.MainConfig:Dock( FILL )
     self.MainConfig:DockMargin( 10, 10, 10, 10 )
 
-    for MainCategory, Setting in pairs( Gemini:GetAllConfigs() ) do
-        local NewCategory = vgui.Create( "DPanel", self.MainConfig )
-        NewCategory:Dock( FILL )
-        self.MainConfig:AddSheet( MainCategory, NewCategory, "icon16/tick.png" )
-    end
+    local GoogleCloud = vgui.Create( "DPanel", self.MainConfig )
+    GoogleCloud:Dock( FILL )
+    self.MainConfig:AddSheet( "Google Cloud", GoogleCloud, "icon16/cog.png" )
 end
 
 

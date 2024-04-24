@@ -193,11 +193,11 @@ end
 
 function Gemini:LoggerFindPlayerLogs(ply, Limit, OnlyLogs)
     if not ( isnumber(ply) or IsValid(ply) and ply:IsPlayer() ) then
-        self:Error([[The first argument of Gemini:LoggerFindPlayerLogs() is not a Player or number]], PhraseName, "Player or number")
+        self:Error([[The first argument of Gemini:LoggerFindPlayerLogs() is not a Player or number]], ply, "Player or number")
     end
 
     if not isnumber(Limit) then
-        self:Error([[The second argument of Gemini:LoggerFindPlayerLogs() is not a number]], PhraseName, "number")
+        self:Error([[The second argument of Gemini:LoggerFindPlayerLogs() is not a number]], Limit, "number")
     end
 
     local UserID = isnumber(ply) and ply or Gemini:LoggerPlayerToID(ply)

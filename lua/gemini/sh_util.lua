@@ -149,11 +149,6 @@ if CAMI then
     })
 
     CAMI.RegisterPrivilege({
-        Name = "gemini_config_set",
-        MinAccess = "superadmin"
-    })
-
-    CAMI.RegisterPrivilege({
         Name = "gemini_rules",
         MinAccess = "user"
     })
@@ -173,7 +168,6 @@ if sam and sam.permission and sam.permissions.add then
     sam.permissions.add("gemini_train", "Gemini", "superadmin")
     sam.permissions.add("gemini_automod", "Gemini", "superadmin")
     sam.permissions.add("gemini_config", "Gemini", "superadmin")
-    sam.permissions.add("gemini_config_set", "Gemini", "superadmin")
     sam.permissions.add("gemini_rules", "Gemini", "user")
     sam.permissions.add("gemini_rules_set", "Gemini", "superadmin")
 end
