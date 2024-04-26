@@ -7,6 +7,8 @@ include("enum_color.lua")
 if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is using the Gemini name.") return end
 
 resource.AddFile("resource/fonts/Frutiger Roman.ttf")
+resource.AddFile("materials/gemini/gcloud.png")
+resource.AddFile("materials/gemini/gcloud_big.png")
 
 local GeminiCFG = GeminiCFG or {["general"] = {}}
 Gemini = Gemini or {

@@ -141,20 +141,12 @@ function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
     Target = Target or 0
     IsPlayer = IsPlayer or false
 
+    self.LAST_REQUEST = CurTime()
+
     local Status = net.Start("Gemini:AskLogs:Playground")
-        net.WriteBool(true) -- IsPlayground
-        net.WriteUInt(Limit, Gemini.Util.DefaultNetworkUInt)
-        net.WriteBool(IsPlayer)
-        net.WriteUInt(Target, Gemini.Util.DefaultNetworkUInt)
-        net.WriteBool(Between or false)
-        if ( Between ) then
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMin", "Playground"), Gemini.Util.DefaultNetworkUIntBig)
-            net.WriteUInt(Gemini:GetConfig("BetweenLogsMax", "Playground"), Gemini.Util.DefaultNetworkUIntBig)
-        end
     net.SendToServer()
 
     if ( Status == true ) then
-        self.LAST_REQUEST = CurTime()
         self:SetMessageLog( Gemini:GetPhrase("Logger.Requesting") )
     else
         self:SetMessageLog( Gemini:GetPhrase("Logger.RequestFailed") )
@@ -175,16 +167,16 @@ function MODULE:UpdateTable(Logs)
         self.TablePanel:Clear()
 
         for k, Data in ipairs(Logs) do
-            self:AddNewLog(Data["geminilog_id"], Data["geminilog_log"], Data["geminilog_time"], Data["geminilog_user1"])
+            self:AddNewLog(Data["geminilog_id"], Data["geminilog_log"])
         end
 
         self.TablePanel:SortByColumn( self.TablePanel.CurrentColumn:GetColumnID(), true )
     end
 end
 
-function MODULE:AddNewLog(ID, Log, Time, User)
+function MODULE:AddNewLog(ID, Log)
     if IsValid(self.TablePanel) then
-        self.TablePanel:AddLine(ID, Log, Time, User):SetSortValue(1, tonumber(ID))
+        self.TablePanel:AddLine(ID, Log):SetSortValue(1, tonumber(ID))
     end
 end
 
@@ -241,12 +233,12 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     PlayerIDInput.OnEnter = function(SubSelf)
         local PlayerID = tonumber(SubSelf:GetValue()) or 0
-        Gemini:SetConfig("PlayerTarget", "Playground",PlayerID)
+        Gemini:SetConfig("PlayerTarget", "Playground", PlayerID)
     end
 
     PlayerIDInput.OnLoseFocus = function(SubSelf)
         local PlayerID = tonumber(SubSelf:GetValue()) or 0
-        Gemini:SetConfig("PlayerTarget", "Playground",PlayerID)
+        Gemini:SetConfig("PlayerTarget", "Playground", PlayerID)
     end
 
     local MaxLogsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -429,6 +421,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     --[[------------------------
             Context Panel
     ------------------------]]--
+
     local PromptX = PromptPanel:GetPos()
     local PromptWide = PromptPanel:GetWide()
 
@@ -436,6 +429,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), OurTab:GetTall() - 92)
     HistoryPanel:SetPos( PromptX + PromptWide + 8, 15 )
     HistoryPanel:SetMultiSelect(false)
+    HistoryPanel:SetHeaderHeight(20)
 
     OutputMSG:SetWide(HistoryPanel:GetWide())
 

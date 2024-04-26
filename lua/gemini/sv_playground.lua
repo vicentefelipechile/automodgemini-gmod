@@ -43,9 +43,7 @@ function Gemini:PlaygroundClearHistory(ply)
 end
 
 function Gemini:PlaygroundGetLogsFromPlayer(ply)
-    local Logs = self:LoggerGetLogsUsingPlayerSettings(ply)
-
-    table.sort(Logs, function(a, b) return a["geminilog_time"] < b["geminilog_time"] end)
+    local Logs = self:LoggerGetLogsUsingPlayerSettings(ply, "playground")
 
     local LogsTable = {}
     for _, LogInfo in ipairs(Logs) do
@@ -81,9 +79,9 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
 
     else
         --[[ Candidate ]]--
-        Candidate = Gemini:GeminiCreateBodyRequest(ply)
+        Candidate = Gemini:GeminiCreateBodyRequest()
 
-        FullPrompt = FullPrompt .. Candidate["contents"][1]["text"]
+        local FullPrompt = Candidate["contents"][1]["text"]
 
         --[[ Context ]]--
         local PlayerWantContext = self:GetPlayerInfo(ply, AttachContext)
@@ -115,10 +113,9 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         ["body"] = Body,
         ["success"] = function(Code, BodyResponse, Headers)
             self:GetHTTPDescription(Code)
+            file.Write("gemini_response.txt", BodyResponse)
 
             if ( Code ~= 200 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.ServerError") return end
-
-            file.Write("gemini_response.txt", BodyResponse)
 
             --[[ Check Response ]]--
             TableBody = util.JSONToTable(BodyResponse)
@@ -205,5 +202,23 @@ function Gemini.PlaygroundResetRequest(len, ply)
     Gemini:PlaygroundSendMessage(ply, "Playground.Prompt.Reseted")
 end
 
+function Gemini.PlaygroundPlayerAskLogs(len, ply)
+    if not Gemini:CanUse(ply, "gemini_playground") then return end
+
+    local Logs = Gemini:LoggerGetLogsUsingPlayerSettings(ply, "playground")
+
+    local LogsCompressed = util.Compress( util.TableToJSON(Logs) )
+    local LogsSize = #LogsCompressed
+
+    net.Start("Gemini:AskLogs:Playground")
+        net.WriteBool(true)
+        net.WriteString("Logger.LogsSended")
+
+        net.WriteUInt(LogsSize, Gemini.Util.DefaultNetworkUIntBig)
+        net.WriteData(LogsCompressed, LogsSize)
+    net.Send(ply)
+end
+
 net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
 net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlaygroundResetRequest)
+net.Receive("Gemini:AskLogs:Playground", Gemini.PlaygroundPlayerAskLogs)

@@ -5,11 +5,11 @@
 local sql_Query = sql.Query
 local sql_TableExists = sql.TableExists
 
-local PlayerTarget = "gemini_logger_playertarget"
-local MaxLogs = "gemini_logger_maxlogs"
-local BetweenLogs = "gemini_logger_betweenlogs"
-local BetweenLogsMin = "gemini_logger_betweenlogsmin"
-local BetweenLogsMax = "gemini_logger_betweenlogsmax"
+local PlayerTarget = "gemini_%s_playertarget"
+local MaxLogs = "gemini_%s_maxlogs"
+local BetweenLogs = "gemini_%s_betweenlogs"
+local BetweenLogsMin = "gemini_%s_betweenlogsmin"
+local BetweenLogsMax = "gemini_%s_betweenlogsmax"
 
 local Formating = function(str, ...)
     return sql_Query( string.format(str, ...) )
@@ -174,11 +174,11 @@ function Gemini:LoggerPlayerToID(ply)
     local SteamID = ply:SteamID()
     local SteamID64 = ply:SteamID64()
 
-    local QueryResult = Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64)[1]["geminiuser_id"]
+    local QueryResult = Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64)
     local Result = nil
 
-    if QueryResult ~= nil then
-        Result = tonumber(QueryResult)
+    if ( QueryResult ~= nil ) then
+        Result = tonumber(QueryResult[1]["geminiuser_id"])
     else
         Formating(self:LoggerGetSQL("INSERTUSER"), SteamID, SteamID64)
         Result = tonumber( Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64) )
@@ -212,22 +212,24 @@ function Gemini:LoggerGetLogsLimit(Limit)
     return sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSLIMIT"), Limit) )
 end
 
-function Gemini:LoggerGetLogsUsingPlayerSettings(ply)
-    local IsBetween = self:GetPlayerInfo(ply, BetweenLogs)
+function Gemini:LoggerGetLogsUsingPlayerSettings(ply, Alternative)
+    Alternative = Alternative or "logger"
+
+    local IsBetween = self:GetPlayerInfo(ply, string.format(BetweenLogs, Alternative))
     local Limit = math.min(
         self:GetConfig("MaxLogsRequest", "Logger"),
-        self:GetPlayerInfo(ply, MaxLogs)
+        self:GetPlayerInfo(ply, string.format(MaxLogs, Alternative))
     )
     local Logs = {}
 
     if IsBetween then
-        local Min = self:GetPlayerInfo(ply, BetweenLogsMin)
-        local Max = self:GetPlayerInfo(ply, BetweenLogsMax)
+        local Min = self:GetPlayerInfo(ply, string.format(BetweenLogsMin, Alternative))
+        local Max = self:GetPlayerInfo(ply, string.format(BetweenLogsMax, Alternative))
         Logs = sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
     else
-        local PlayerID = self:GetPlayerInfo(ply, PlayerTarget)
+        local PlayerID = self:GetPlayerInfo(ply, string.format(PlayerTarget, Alternative))
 
         if ( PlayerID == 0 ) then
             Logs = self:LoggerGetLogsLimit(Limit)
@@ -235,6 +237,8 @@ function Gemini:LoggerGetLogsUsingPlayerSettings(ply)
             Logs = self:LoggerFindPlayerLogs(PlayerID, Limit)
         end
     end
+
+    table.sort(Logs, function(a, b) return a["geminilog_time"] < b["geminilog_time"] end)
 
     return Logs
 end
@@ -270,28 +274,7 @@ function Gemini.LoggerAskLogs(len, ply)
         return
     end
 
-    local IsBetween = Gemini:GetPlayerInfo(ply, BetweenLogs)
-    local Limit = math.min(
-        Gemini:GetConfig("MaxLogsRequest", "Logger"),
-        Gemini:GetPlayerInfo(ply, MaxLogs)
-    )
-    local Logs = {}
-
-    if IsBetween then
-        local Min = Gemini:GetPlayerInfo(ply, BetweenLogsMin)
-        local Max = Gemini:GetPlayerInfo(ply, BetweenLogsMax)
-        Logs = sql.Query( string.format(Gemini:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
-
-        Logs = ( Logs == nil ) and {} or Logs
-    else
-        local PlayerID = Gemini:GetPlayerInfo(ply, PlayerTarget)
-
-        if ( PlayerID == 0 ) then
-            Logs = Gemini:LoggerGetLogsLimit(Limit)
-        else
-            Logs = Gemini:LoggerFindPlayerLogs(PlayerID, Limit)
-        end
-    end
+    local Logs = Gemini:LoggerGetLogsUsingPlayerSettings(ply)
 
     local CompressesLogs = util.Compress( util.TableToJSON(Logs) )
     local CompressedSize = #CompressesLogs

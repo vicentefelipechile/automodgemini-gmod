@@ -127,6 +127,10 @@ function Gemini:BroadcastServerInfo()
     self:Print("Broadcasted server rules", os.date("%H:%M:%S"))
 end
 
+hook.Add("PlayerInitialSpawn", "Gemini:PlayerInitialSpawn", function()
+    Gemini:BroadcastServerInfo()
+end)
+
 function Gemini.ReceiveServerInfo()
     local RulesCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
     local ServerInfoCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )

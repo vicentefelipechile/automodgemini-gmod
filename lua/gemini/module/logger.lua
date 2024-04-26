@@ -98,6 +98,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     TablePanel:SetSize(OurTab:GetWide() - 230, OutputY - 25)
     TablePanel:SetPos(200, 15)
     TablePanel:SetMultiSelect(false)
+    TablePanel:SetHeaderHeight(20)
 
     self.List = {}
     self.List["ID"] = TablePanel:AddColumn("ID", 1)
