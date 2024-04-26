@@ -6,7 +6,7 @@
      Google Cloud Zones
 ------------------------]]--
 
-local GOOGLE = {
+local GCLOUD_ZONES = {
     ["africa-south1"] = "Johannesburg, South Africa",
     ["asia-east1"] = "Changhua County, Taiwan, APAC",
     ["asia-east2"] = "Hong Kong, APAC",
@@ -48,7 +48,7 @@ local GOOGLE = {
 }
 
 local function IsAvailableZone(zone)
-    return GOOGLE[zone] ~= nil
+    return GCLOUD_ZONES[zone] ~= nil
 end
 
 --[[------------------------

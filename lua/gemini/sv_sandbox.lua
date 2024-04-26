@@ -35,3 +35,7 @@ hook.Add("PostCleanupMap", "Gemini:PostCleanupMap", function()
         hook.Run("Gemini.Log", Log, ply)
     end
 end)
+
+hook.Add("PlayerInitialSpawn", "Gemini:PlayerInitialSpawn", function(ply)
+    Gemini:BroadcastServerInfo()
+end)

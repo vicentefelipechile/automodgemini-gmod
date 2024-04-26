@@ -10,7 +10,7 @@ local sql_Query = sql.Query
 
 local TrainSQL = {
     ["GEMINI_TRAIN"] = [[
-        CREATE TABLE IF NOT EXITS gemini_train (
+        CREATE TABLE IF NOT EXISTS gemini_train (
             train_id INTEGER PRIMARY KEY AUTOINCREMENT,
             train_gamemode TEXT NOT NULL DEFAULT 'default',
             train_data TEXT NOT NULL,
@@ -56,7 +56,7 @@ local TrainSQL = {
 
 -- Sanitize SQL
 for SQLName, SQLSentence in pairs(TrainSQL) do
-    SQLSentence = string.Trim( string.gsub( string.Replace( SQLSentence, "\n", "" ), "[%s]+", " " ) )
+    TrainSQL[SQLName] = string.Trim( string.gsub( string.Replace( SQLSentence, "\n", "" ), "[%s]+", " " ) )
 end
 
 --[[------------------------

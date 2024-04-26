@@ -505,7 +505,7 @@ function Gemini:Init()
         end
 
         -- AddCSLua file to all files inside "gemini/module"
-        local LuaCSFiles, LuaSubFolder = file.Find("gemini/module/*.lua", "LUA")
+        local LuaCSFiles, LuaSubFolder = file.Find("gemini/module/*", "LUA")
         for _, File in ipairs(LuaCSFiles) do
             AddCSLuaFile("gemini/module/" .. File)
             self:Print("File \"module/" .. File .. "\" has been send to client.")
@@ -552,6 +552,9 @@ if SERVER then
 
         Gemini:Print("Reloading Gemini Automod...")
         Gemini:PreInit()
+
+        net.Start("Gemini:ReplicateConfig")
+        net.Broadcast()
     end)
 
     net.Receive("Gemini:SetConfig", function(len, ply)

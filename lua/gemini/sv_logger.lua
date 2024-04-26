@@ -3,6 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 local sql_Query = sql.Query
+local sql_QueryValue = sql.QueryValue
 local sql_TableExists = sql.TableExists
 
 local PlayerTarget = "gemini_logger_playertarget"
@@ -11,7 +12,13 @@ local BetweenLogs = "gemini_logger_betweenlogs"
 local BetweenLogsMin = "gemini_logger_betweenlogsmin"
 local BetweenLogsMax = "gemini_logger_betweenlogsmax"
 
-local Formating = string.format
+local Formating = function(str, ...)
+    return sql_Query( string.format(str, ...) )
+end
+
+local FormatingOnlyOne = function(str, ...)
+    return sql_QueryValue( string.format(str, arg) )
+end
 
 local AsynchronousPlayers = {}
 
@@ -138,7 +145,7 @@ local LoggerSQL = {
 
 -- Sanitize SQL
 for SQLName, SQLSentence in pairs(LoggerSQL) do
-    SQLSentence = string.Trim( string.gsub( string.Replace( SQLSentence, "\n", "" ), "[%s]+", " " ) )
+    LoggerSQL[SQLName] = string.Trim( string.gsub( string.Replace( SQLSentence, "\n", "" ), "[%s]+", " " ) )
 end
 
 --[[------------------------
@@ -165,16 +172,14 @@ function Gemini:LoggerCheckTable()
 end
 
 function Gemini:LoggerPlayerToID(ply)
-    if not ( IsValid(ply) and ply:IsPlayer() ) then
-        self:Error([[The first argument of Gemini:LoggerPlayerToID() is not a Player]], ply, "Player")
-    end
+    if not ( IsValid(ply) and ply:IsPlayer() ) then return nil end
 
     if isnumber(ply.__LOGGER_ID) then return ply.__LOGGER_ID end
 
     local SteamID = ply:SteamID()
     local SteamID64 = ply:SteamID64()
 
-    local QueryResult = Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64)
+    local QueryResult = Formating(self:LoggerGetSQL("GETUSER"), SteamID, SteamID64)[1]["geminiuser_id"]
     local Result = nil
 
     if QueryResult ~= nil then
@@ -217,10 +222,10 @@ end
 ------------------------]]--
 
 function Gemini:LoggerAddLog(LogString, LogUser1, LogUser2, LogUser3, LogUser4)
-    LogUser1 = LogUser1 and Gemini:LoggerPlayerToID(LogUser1)
-    LogUser2 = LogUser2 and Gemini:LoggerPlayerToID(LogUser2)
-    LogUser3 = LogUser3 and Gemini:LoggerPlayerToID(LogUser3)
-    LogUser4 = LogUser4 and Gemini:LoggerPlayerToID(LogUser4)
+    LogUser1 = Gemini:LoggerPlayerToID(LogUser1)
+    LogUser2 = Gemini:LoggerPlayerToID(LogUser2)
+    LogUser3 = Gemini:LoggerPlayerToID(LogUser3)
+    LogUser4 = Gemini:LoggerPlayerToID(LogUser4)
 
     Formating(self:LoggerGetSQL("INSERTLOG"), LogString, LogUser1, LogUser2, LogUser3, LogUser4)
 
@@ -232,6 +237,14 @@ end
 hook.Add("Gemini.Log", "Gemini:Log", function(...)
     Gemini:LoggerAddLog(...)
 end)
+
+sql.m_strError = nil -- This is required to invoke __newindex
+
+setmetatable(sql, { __newindex = function( table, k, v )
+	if k == "m_strError" and v then
+		print("[SQL Error] " .. v )
+	end
+end } )
 
 --[[------------------------
       Network Functions

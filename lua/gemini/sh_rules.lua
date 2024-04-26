@@ -144,13 +144,6 @@ if CLIENT then
     net.Receive("Gemini:BroadcastRules", Gemini.ReceiveServerInfo)
 end
 
-if SERVER then
-    gameevent.Listen("player_activate")
-    hook.Add("player_activate", "Gemini:BroadcastRules", function()
-        Gemini:BroadcastServerInfo()
-    end)
-end
-
 --[[------------------------
        Replicate Rules
 ------------------------]]--
@@ -226,4 +219,5 @@ if SERVER then
     end
 
     net.Receive("Gemini:SetServerRules", Gemini.ReceivedClientRules)
+    net.Receive("Gemini:SetServerInfo", Gemini.ReceivedClientInfo)
 end

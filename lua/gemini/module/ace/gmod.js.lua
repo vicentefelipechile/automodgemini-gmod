@@ -31,4 +31,7 @@ gmod.SaveServerRulesJS = () => {
     gmod.SaveServerRulesLua(Text)
 }
 
+gmod.InfoFullyLoaded()
+gmod.RulesFullyLoaded()
+
 ]==]

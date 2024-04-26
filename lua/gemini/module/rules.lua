@@ -91,14 +91,12 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         Gemini:SetServerInfoClient(text)
     end)
 
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "FullyLoaded", function()
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "InfoFullyLoaded", function()
         self.ServerInfoPanel.TextEditor.FullyLoaded = true
-        print(CanEdit)
         self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
     end)
 
     self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), not CanEdit, true) )
-    self.ServerInfoPanel.TextEditor.FullyLoaded = false
 
     self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
     self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
@@ -136,7 +134,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         SetClipboardText(text)
     end)
 
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "FullyLoaded", function()
+    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "RulesFullyLoaded", function()
         self.ServerRulesPanel.TextEditor.FullyLoaded = true
         self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
     end)
@@ -145,8 +143,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         Gemini:SetServerRulesClient(text)
     end)
 
-    self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetRules(), CanEdit, true) )
-    self.ServerRulesPanel.TextEditor.FullyLoaded = false
+    self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetRules(), not CanEdit, true) )
 
     self.ServerRulesPanel.ActionPanel = vgui.Create( "DPanel", self.ServerRulesPanel )
     self.ServerRulesPanel.ActionPanel:Dock( BOTTOM )
