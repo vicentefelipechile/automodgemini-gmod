@@ -105,9 +105,9 @@ end
         AI Structure
 ------------------------]]--
 
-function Gemini:GeminiCreateBodyRequest(Player, Limit)
-    --[[ Gemini Structure ]]--
-    local GeminiStructure = {
+function Gemini:GeminiCreateBodyRequest()
+    --[[ Candidate Structure ]]--
+    local Candidate = {
         ["generationConfig"] = self:GemeniGetGeneration(),
         ["safetySettings"] = self:GeminiGetSafety(true),
         ["contents"] = {}
@@ -116,29 +116,28 @@ function Gemini:GeminiCreateBodyRequest(Player, Limit)
     local MainPrompt = ""
 
     --[[ Game Context ]]--
-    MainPrompt = MainPrompt .. self:GeminiGetContext() .. "\n\n"
+    MainPrompt = MainPrompt .. self:GeminiGetContext() .. "\n"
 
     --[[ Pre-Context ]]--
-    MainPrompt = MainPrompt .. self:GetServerInfo() .. "\n" .. self:GetServerRules() .. "\n\n"
+    MainPrompt = MainPrompt .. self:GetServerInfo() .. "\n\n" .. self:GetRules()
 
     --[[ Trained Data ]]--
-    local TrainedData = self:TrainGetTrainings()
-
-    --[[ Player-related logs ]]--
-    local PlayerLogs = self:GeminiGetPlayerLogs(Player, Limit)
+    -- local TrainedData = self:TrainGetTrainings()
 
     --[[ Output ]]--
     local Contents = {
-        {["text"] = GameContext, ["role"] = "user"},
-        {["text"] = PreContext, ["role"] = "user"}
+        {["text"] = MainPrompt}
     }
 
+    --[[
     for _, Train in ipairs(TrainedData) do
         table.insert(Contents, {["text"] = Train["User"], ["role"] = "user"}) -- Previuosly trained data
         table.insert(Contents, {["text"] = Train["Bot"], ["role"] = "model"}) -- Bot response
     end
-    table.insert(Contents, {["text"] = PlayerLogs, ["role"] = "user"})
-    table.insert(Contents, {["text"] = PostContext, ["role"] = "user"})
+    --]]
 
-    return GeminiStructure
+    --[[ Inserting the contents ]]--
+    Candidate["contents"] = Contents
+
+    return Candidate
 end

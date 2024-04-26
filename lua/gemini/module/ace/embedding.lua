@@ -1,8 +1,8 @@
 return [[
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <title>ACE in Action</title>
+    <head>
+        <title>ACE in Action</title>
         <style type="text/css" media="screen">
             #editor { 
                 position: absolute;
@@ -12,6 +12,8 @@ return [[
                 left: 0;
             }
         </style>
+    
+        <meta charset="utf-8">
     </head>
     <body>
         <script type="text/javascript"> $AceScript$ </script>

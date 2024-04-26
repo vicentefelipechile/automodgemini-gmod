@@ -322,12 +322,12 @@ Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Enviar prompt con co
    Gamemodes Descriptions
 ------------------------]]--
 
-Gemini:LanguageAddPhrase(LANG, "context", [[La información que se muestra a continuacion se trata del modo de juego actual que hay en el servidor de Garry's Mod]])
+Gemini:LanguageAddPhrase(LANG, "context", [[La información que se muestra a continuacion describe el modo de juego actual que el servidor de Garry's Mod esta ejecutando]])
 Gemini:LanguageAddPhrase(LANG, "context.playground", [[Lo siguiente son registros/logs de lo que ocurrio en el juego:]])
 Gemini:LanguageAddPhrase(LANG, "context.begin", [[Eres un modelo de lenguaje de inteligencia artificial, tu mision principal es ser el juez/espectador de la informacion que exista en el juego, dime ¿Que es lo que sabes de Garry's Mod?]])
 Gemini:LanguageAddPhrase(LANG, "context.post", [[Lo anterior es lo que ocurrio en el juego, evita crear respuestas extensas/largas si el usuario no te lo pide y tampoco utilices caracteres especiales como "*" o "&" en ves de eso usa "-", si tienes la oportunidad de responder con una respuesta corta, hazlo, si el usuario desea mas informacion te lo pedira, mientras tanto solo haz respuestas cortas, si te habla en algun idioma que no sea el español tienes que responderle con el mismo idioma que te haya hablado, ahora debes responder lo que el usuario te indique despues de esta linea (recuerda el idioma)]])
 
-Gemini:LanguageAddPhrase(LANG, "Gamemode.Default", [[# Modo de Juego:
+Gemini:LanguageAddPhrase(LANG, "Gamemode.default", [[# Modo de Juego:
 Ningún Modo de Juego Conocido
 
 Descripcion:

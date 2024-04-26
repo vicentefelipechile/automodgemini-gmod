@@ -43,6 +43,8 @@ function Gemini:LoadServerInfo()
 
     self:SetRules( file.Read("gemini/server_rules.txt", "DATA") )
     self:SetServerInfo( file.Read("gemini/server_info.txt", "DATA") )
+
+    self:BroadcastServerInfo()
 end
 
 function Gemini:SaveServerInfo()
@@ -64,7 +66,6 @@ function Gemini:SetServerInfo(Info)
     ServerRule["ServerInfo"] = Info
 
     self:Print("Server info has been set", os.date("%H:%M:%S"))
-    self:SaveServerInfo()
 end
 
 function Gemini:SetRules(Rules)
@@ -79,7 +80,6 @@ function Gemini:SetRules(Rules)
     ServerRule["Rules"] = Rules
 
     self:Print("Server rules have been set", os.date("%H:%M:%S"))
-    self:SaveServerInfo()
 end
 
 function Gemini:GetServerInfo()
@@ -206,6 +206,7 @@ if SERVER then
 
         Gemini:SetRules(Rules)
         Gemini:BroadcastServerInfo()
+        Gemini:SaveServerInfo()
     end
 
     function Gemini.ReceivedClientInfo(len, ply)
@@ -216,6 +217,7 @@ if SERVER then
 
         Gemini:SetServerInfo(Info)
         Gemini:BroadcastServerInfo()
+        Gemini:SaveServerInfo()
     end
 
     net.Receive("Gemini:SetServerRules", Gemini.ReceivedClientRules)

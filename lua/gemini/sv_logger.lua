@@ -3,7 +3,6 @@
 ----------------------------------------------------------------------------]]--
 
 local sql_Query = sql.Query
-local sql_QueryValue = sql.QueryValue
 local sql_TableExists = sql.TableExists
 
 local PlayerTarget = "gemini_logger_playertarget"
@@ -14,10 +13,6 @@ local BetweenLogsMax = "gemini_logger_betweenlogsmax"
 
 local Formating = function(str, ...)
     return sql_Query( string.format(str, ...) )
-end
-
-local FormatingOnlyOne = function(str, ...)
-    return sql_QueryValue( string.format(str, arg) )
 end
 
 local AsynchronousPlayers = {}
@@ -217,6 +212,33 @@ function Gemini:LoggerGetLogsLimit(Limit)
     return sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSLIMIT"), Limit) )
 end
 
+function Gemini:LoggerGetLogsUsingPlayerSettings(ply)
+    local IsBetween = self:GetPlayerInfo(ply, BetweenLogs)
+    local Limit = math.min(
+        self:GetConfig("MaxLogsRequest", "Logger"),
+        self:GetPlayerInfo(ply, MaxLogs)
+    )
+    local Logs = {}
+
+    if IsBetween then
+        local Min = self:GetPlayerInfo(ply, BetweenLogsMin)
+        local Max = self:GetPlayerInfo(ply, BetweenLogsMax)
+        Logs = sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
+
+        Logs = ( Logs == nil ) and {} or Logs
+    else
+        local PlayerID = self:GetPlayerInfo(ply, PlayerTarget)
+
+        if ( PlayerID == 0 ) then
+            Logs = self:LoggerGetLogsLimit(Limit)
+        else
+            Logs = self:LoggerFindPlayerLogs(PlayerID, Limit)
+        end
+    end
+
+    return Logs
+end
+
 --[[------------------------
       Logger Functions
 ------------------------]]--
@@ -237,14 +259,6 @@ end
 hook.Add("Gemini.Log", "Gemini:Log", function(...)
     Gemini:LoggerAddLog(...)
 end)
-
-sql.m_strError = nil -- This is required to invoke __newindex
-
-setmetatable(sql, { __newindex = function( table, k, v )
-	if k == "m_strError" and v then
-		print("[SQL Error] " .. v )
-	end
-end } )
 
 --[[------------------------
       Network Functions

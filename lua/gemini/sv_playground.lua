@@ -10,11 +10,6 @@ util.AddNetworkString("Gemini:AskLogs:Playground")
 local PlayerUsingPlayground = {}
 
 local AttachContext = "gemini_playground_attachcontext"
-local PlayerTarget = "gemini_playground_playertarget"
-local MaxLogs = "gemini_playground_maxlogs"
-local BetweenLogs = "gemini_playground_betweenlogs"
-local BetweenLogsMin = "gemini_playground_betweenlogsmin"
-local BetweenLogsMax = "gemini_playground_betweenlogsmax"
 
 --[[------------------------
        Util Functions
@@ -47,29 +42,8 @@ function Gemini:PlaygroundClearHistory(ply)
     PlayerUsingPlayground[ply] = nil
 end
 
-function Gemini:PlaygroundGetLogsFromPly(ply)
-    local IsBetween = self:GetPlayerInfo(ply, BetweenLogs)
-    local Limit = math.min(
-        self:GetConfig("MaxLogsRequest", "Logger"),
-        self:GetPlayerInfo(ply, MaxLogs)
-    )
-    local Logs = {}
-
-    if IsBetween then
-        local Min = self:GetPlayerInfo(ply, BetweenLogsMin)
-        local Max = self:GetPlayerInfo(ply, BetweenLogsMax)
-        Logs = sql.Query( string.format(Gemini:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
-
-        Logs = ( Logs == nil ) and {} or Logs
-    else
-        local PlayerID = self:GetPlayerInfo(ply, PlayerTarget)
-
-        if ( PlayerID == 0 ) then
-            Logs = self:LoggerGetLogsLimit(Limit)
-        else
-            Logs = self:LoggerGetLogsPlayer(PlayerID, Limit)
-        end
-    end
+function Gemini:PlaygroundGetLogsFromPlayer(ply)
+    local Logs = self:LoggerGetLogsUsingPlayerSettings(ply)
 
     table.sort(Logs, function(a, b) return a["geminilog_time"] < b["geminilog_time"] end)
 
@@ -92,8 +66,8 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         self:Error("The first argument of Gemini:PlaygroundMakeRequest() must not be empty.", Prompt, "string")
     end
 
-    --[[ All Body ]]--
-    local Body = nil
+    --[[ Candidate ]]--
+    local Candidate = nil
     local GeminiModel = self:GetConfig("ModelName", "Gemini")
 
     if PlayerUsingPlayground[ply] then
@@ -103,22 +77,18 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         }
 
         table.insert(PlayerUsingPlayground[ply]["contents"], Part)
-        Body = PlayerUsingPlayground[ply]
+        Candidate = PlayerUsingPlayground[ply]
 
     else
-        --[[ All Body ]]--
-        local FullPrompt = ""
+        --[[ Candidate ]]--
+        Candidate = Gemini:GeminiCreateBodyRequest(ply)
 
-        --[[ Contents ]]--
-        local Contents = {
-            { ["parts"] = {["text"] = self:GetPhrase("context.begin")}, ["role"] = "user"},
-            { ["parts"] = {["text"] = self:GetGamemodeContext()}, ["role"] = "model"}
-        }
+        FullPrompt = FullPrompt .. Candidate["contents"][1]["text"]
 
         --[[ Context ]]--
         local PlayerWantContext = self:GetPlayerInfo(ply, AttachContext)
         if PlayerWantContext then
-            local Context = self:LogsToText( self:PlaygroundGetLogsFromPly(ply) )
+            local Context = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
             FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
         end
@@ -126,20 +96,14 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         --[[ Prompt ]]--
         FullPrompt = FullPrompt .. Prompt
 
-        table.insert(Contents, { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"})
+        Candidate["contents"][1] = { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"}
 
         --[[ Body ]]--
-        Body = {
-            ["generationConfig"] = self:GetGenerationConfig(),
-            ["safetySettings"] = self:GetSafetyConfig(),
-            ["contents"] = Contents
-        }
-
-        PlayerUsingPlayground[ply] = Body
+        PlayerUsingPlayground[ply] = Candidate
     end
 
-    local BodyJSON = util.TableToJSON(Body, true)
-    file.Write("gemini_request.txt", BodyJSON)
+    local Body = util.TableToJSON(Candidate, true)
+    file.Write("gemini_request.txt", Body)
 
     --[[ Request ]]--
     local APIKey = self:GetConfig("APIKey", "Gemini")
@@ -148,7 +112,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         ["url"] = string.format(self.URL, GeminiModel, APIKey),
         ["method"] = "POST",
         ["type"] = "application/json",
-        ["body"] = BodyJSON,
+        ["body"] = Body,
         ["success"] = function(Code, BodyResponse, Headers)
             self:GetHTTPDescription(Code)
 
