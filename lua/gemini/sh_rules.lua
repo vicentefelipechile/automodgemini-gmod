@@ -94,9 +94,9 @@ function Gemini:GetAllRules()
     return table.Copy(ServerRule)
 end
 
-if SERVER then
+hook.Add("Initialize", "Gemini:LoadServerInfo", function()
     Gemini:LoadServerInfo()
-end
+end)
 
 --[[------------------------
       Network Functions
@@ -209,8 +209,8 @@ if SERVER then
         local Rules = util.Decompress(RulesCompressed)
 
         Gemini:SetRules(Rules)
-        Gemini:BroadcastServerInfo()
         Gemini:SaveServerInfo()
+        Gemini:BroadcastServerInfo()
     end
 
     function Gemini.ReceivedClientInfo(len, ply)
@@ -220,8 +220,8 @@ if SERVER then
         local Info = util.Decompress(InfoCompressed)
 
         Gemini:SetServerInfo(Info)
-        Gemini:BroadcastServerInfo()
         Gemini:SaveServerInfo()
+        Gemini:BroadcastServerInfo()
     end
 
     net.Receive("Gemini:SetServerRules", Gemini.ReceivedClientRules)

@@ -2,6 +2,8 @@
                    Google Gemini Automod - Google Cloud Module
 ----------------------------------------------------------------------------]]--
 
+local EndPointString = "https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:streamGenerateContent"
+
 --[[------------------------
      Google Cloud Zones
 ------------------------]]--
@@ -62,8 +64,6 @@ Gemini:CreateConfig("ModelID", "GoogleCloud", Gemini.VERIFICATION_TYPE.string, "
 --[[------------------------
        Main Functions
 ------------------------]]--
-
-local EndPointString = "https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:streamGenerateContent"
 
 function Gemini:CloudGetEndPoint()
     return string.format(

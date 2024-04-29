@@ -44,6 +44,7 @@ end
 
 function Gemini:PlaygroundGetLogsFromPlayer(ply)
     local Logs = self:LoggerGetLogsUsingPlayerSettings(ply, "playground")
+    print(ply, #Logs)
 
     local LogsTable = {}
     for _, LogInfo in ipairs(Logs) do

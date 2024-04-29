@@ -38,19 +38,13 @@ local EmptyFunc = function() end
 local isfunction = isfunction
 local isentity = isentity
 local isnumber = isnumber
-local isangle = isangle
 local istable = istable
-local IsColor = IsColor
 local isbool = isbool
 
 local VERIFICATION_TYPE = {
-    ["function"] = isfunction,
-    ["entity"] = isentity,
     ["string"] = isstring,
     ["number"] = isnumber,
-    ["Angle"] = isangle,
     ["table"] = istable,
-    ["color"] = IsColor,
     ["bool"] = isbool,
     ["range"] = function(v)
         return isnumber(v) and ( v >= 0 ) and ( v <= 1 )
@@ -132,7 +126,9 @@ end
 
 
 local ToConvarConverter = {
-    ["string"] = function(Value) return Value end,
+    ["string"] = function(Value)
+        return Value
+    end,
     ["number"] = function(Value)
         if ( math.floor(Value) == Value ) then
             return tostring(Value) .. "n"
@@ -140,20 +136,27 @@ local ToConvarConverter = {
             return tostring(Value) .. "f"
         end
     end,
-    ["boolean"] = function(Value) return Value and "1b" or "0b" end,
-    ["color"] = function(Value) return Value end,
-    ["Angle"] = function(Value) return Value end,
+    ["boolean"] = function(Value)
+        return ( Value == true ) and "1b" or "0b"
+    end,
 }
 
-local SufixToType = {
-    ["n"] = "number",
-    ["f"] = "number",
-    ["b"] = "boolean",
+local RegexFindType = {
+    ["number"] = "(%d+%.?%d*)[nf]",
+    ["boolean"] = "(%d)b",
 }
 
-local FindAngleConvar = "(.*)P (.*)Y (.*)R"
-local FindColorConvar = "(.*)R (.*)G (.*)B"
-local FindColorAlphaConvar = "(.*)R (.*)G (.*)B (.*)A"
+local FromConvarConverter = {
+    ["number"] = function(Value)
+        return tonumber(Value)
+    end,
+    ["boolean"] = function(Value)
+        return Value == "1b"
+    end,
+    ["string"] = function(Value)
+        return Value
+    end,
+}
 
 function Gemini:ConvertValue(Value)
     if not isstring(Value) then
@@ -162,27 +165,14 @@ function Gemini:ConvertValue(Value)
         self:Error([[The first argument of Gemini:ConvertValue() must not be empty, maybe the Convar isn't valid.]], Value, "string")
     end
 
-    local ValueType = string.sub(Value, -1)
-    if SufixToType[ValueType] then
-        if ( ValueType == "n" or ValueType == "f" ) then
-            Value = tonumber( string.sub(Value, 1, -2) )
-        elseif ValueType == "b" then
-            Value = ( string.sub(Value, 1, -2) == "1" )
-        end
-    else
-        if string.match(Value, FindColorAlphaConvar) then
-            local R, G, B, A = string.match(Value, FindColorAlphaConvar)
-            Value = Color(tonumber(R), tonumber(G), tonumber(B), tonumber(A))
-        elseif string.match(Value, FindColorConvar) then
-            local R, G, B = string.match(Value, FindColorConvar)
-            Value = Color(tonumber(R), tonumber(G), tonumber(B))
-        elseif string.match(Value, FindAngleConvar) then
-            local P, Y, R = string.match(Value, FindAngleConvar)
-            Value = Angle(tonumber(P), tonumber(Y), tonumber(R))
+    local ValueType = "string"
+    for TypeName, Regex in pairs(RegexFindType) do
+        if string.match(Value, Regex) then
+            ValueType = TypeName break
         end
     end
 
-    return Value
+    return FromConvarConverter[ ValueType ](Value)
 end
 
 function Gemini:FromConvar(Name, Category)
@@ -207,13 +197,16 @@ function Gemini:FromConvar(Name, Category)
         self:Error([[The config doesn't exist.]], Name, "string")
     end
 
-    local Value = GeminiCFG[Category][Name]["Convar"]:GetString()
+    local CvarValue = GeminiCFG[Category][Name]["Convar"]:GetString()
 
-    if ( Value == "" ) then
-        self:Error([[The convar value is empty.]], Value, "string")
+    if ( CvarValue == "" ) then
+        self:Error([[The convar value is empty.]], CvarValue, "string")
     end
 
-    return self:ConvertValue(Value)
+    local ValueType = GeminiCFG[Category][Name]["Type"]
+    local Value = FromConvarConverter[ ValueType ](CvarValue)
+
+    return Value
 end
 
 function Gemini:ToConvar(Name, Category, Value)
@@ -240,20 +233,12 @@ function Gemini:ToConvar(Name, Category, Value)
         GeminiCFG[Category] = {}
     end
 
-    local ValueType = IsColor(Value) and "color" or type(Value)
+    local ValueType = type(Value)
     if not ToConvarConverter[ ValueType ] then
-        self:Error([[The value type is not supported.]], Value, "a valid Value")
+        self:Error([[The value type is not supported.]], Value, "a valid Value type")
     end
 
     local ConvertedValue = ToConvarConverter[ ValueType ](Value)
-
-    if IsColor(ConvertedValue) then
-        ConvertedValue = ConvertedValue:ToTable()
-        ConvertedValue = string.format([["%sR %sG %sB %sA"]], ConvertedValue[1], ConvertedValue[2], ConvertedValue[3], ConvertedValue[4])
-    elseif isangle(ConvertedValue) then
-        ConvertedValue = string.format([["%sP %sY %sR"]], ConvertedValue.p, ConvertedValue.y, ConvertedValue.r)
-    end
-
     return ConvertedValue
 end
 
@@ -311,7 +296,8 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
     GeminiCFG[Category] = GeminiCFG[Category] or {}
     GeminiCFG[Category][Name] = {
         ["Convar"] = CreateConVar("gemini_" .. Category .. "_" .. Name, Value, Flags),
-        ["Verification"] = Verification
+        ["Verification"] = Verification,
+        ["Type"] = type(Default)
     }
 end
 
@@ -388,6 +374,10 @@ function Gemini:SetConfig(Name, Category, Value)
     if not GeminiCFG[Category][Name]["Verification"](Value) then
         self:Print("The value doesn't match the verification function. Skipping...")
         return
+    end
+
+    if ( GeminiCFG[Category][Name]["Type"] ~= type(Value) ) then
+        self:Error([[The value type doesn't match the config type.]], Value, "any")
     end
 
     local ConvarValue = self:ToConvar(Name, Category, Value)

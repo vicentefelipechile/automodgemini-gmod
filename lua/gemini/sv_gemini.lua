@@ -2,24 +2,25 @@
                       Google Gemini Automod - Gemini Module
 ----------------------------------------------------------------------------]]--
 
+local function OnlyThreeSafety(value)
+    return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 3 )
+end
+
 --[[------------------------
        Gemini Config
 ------------------------]]--
 
-Gemini:CreateConfig("ModelTarget",   "Gemini", Gemini.VERIFICATION_TYPE.string, "auto")
 Gemini:CreateConfig("ModelName",     "Gemini", Gemini.VERIFICATION_TYPE.string, "gemini-1.0-pro")
 Gemini:CreateConfig("Temperature",   "Gemini", Gemini.VERIFICATION_TYPE.range,  0.9)
 Gemini:CreateConfig("TopP",          "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
 Gemini:CreateConfig("TopK",          "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
 Gemini:CreateConfig("MaxTokens",     "Gemini", Gemini.VERIFICATION_TYPE.number, 2048)
 Gemini:CreateConfig("APIKey",        "Gemini", Gemini.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
-Gemini:CreateConfig("DebugEnabled",  "Gemini", Gemini.VERIFICATION_TYPE.bool,   false)
-Gemini:CreateConfig("DebugMessage",  "Gemini", Gemini.VERIFICATION_TYPE.string, "Make a summary of the logs of the player.")
 
-Gemini:CreateConfig("SafetyHarassment", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
-Gemini:CreateConfig("SafetyHateSpeech", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
-Gemini:CreateConfig("SafetySexuallyExplicit", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
-Gemini:CreateConfig("SafetyDangerousContent", "Gemini", Gemini.VERIFICATION_TYPE.number, 2)
+Gemini:CreateConfig("SafetyHarassment", "Gemini", OnlyThreeSafety, 2)
+Gemini:CreateConfig("SafetyHateSpeech", "Gemini", OnlyThreeSafety, 2)
+Gemini:CreateConfig("SafetySexuallyExplicit", "Gemini", OnlyThreeSafety, 2)
+Gemini:CreateConfig("SafetyDangerousContent", "Gemini", OnlyThreeSafety, 2)
 
 --[[------------------------
        Gemini Begin
@@ -61,10 +62,7 @@ function Gemini:GemeniGetGeneration()
     }
 end
 
-local CacheSafety = {}
-function Gemini:GeminiGetSafety(UseCache)
-    if ( UseCache == true and not table.IsEmpty(CacheSafety) ) then return CacheSafety end
-
+function Gemini:GeminiGetSafety()
     local SafetySettings = {}
 
     for Category, FuncValue in pairs(SAFETY_TYPE) do
@@ -73,8 +71,6 @@ function Gemini:GeminiGetSafety(UseCache)
             ["threshold"] = FuncValue()
         })
     end
-
-    CacheSafety = SafetySettings
 
     return SafetySettings
 end
@@ -141,3 +137,28 @@ function Gemini:GeminiCreateBodyRequest()
 
     return Candidate
 end
+
+--[[------------------------
+       Hook Functions
+------------------------]]--
+
+hook.Add("Gemini:ConfigChanged", "Gemini:ReplicateGemini", function(Name, Category, Value, ConvarValue)
+    if ( Category ~= "Gemini" ) then return end
+    if ( string.lower(Name) == "apikey" ) then return end
+
+    if OnlyThreeSafety(Value) then
+        SetGlobal2Float("Gemini:" .. Name, Value)
+    elseif isnumber(Value) then
+        SetGlobal2Int("Gemini:" .. Name, Value)
+    else
+        SetGlobal2String("Gemini:" .. Name, Value)
+    end
+end)
+
+hook.Add("PostGamemodeLoaded", "Gemini:GeminiSetGlobal", function()
+    SetGlobal2String("Gemini:ModelName", Gemini:GetConfig("ModelName", "Gemini"))
+    SetGlobal2Float("Gemini:Temperature", Gemini:GetConfig("Temperature", "Gemini"))
+    SetGlobal2Float("Gemini:TopP", Gemini:GetConfig("TopP", "Gemini"))
+    SetGlobal2Float("Gemini:TopK", Gemini:GetConfig("TopK", "Gemini"))
+    SetGlobal2Int("Gemini:MaxTokens", Gemini:GetConfig("MaxTokens", "Gemini"))
+end)

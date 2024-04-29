@@ -36,8 +36,8 @@ Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedNPC", [[El jugador "%s" ha creado e
 Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedProp", [[El jugador "%s" ha creado el prop "%s" en las coordenadas %s.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedRagdoll", [[El jugador "%s" ha creado un ragdoll "%s" en las coordenadas %s.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedSENT", [[El jugador "%s" ha creado la entidad "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu de armas.]])
+Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s usando el menu de vehiculos.]])
 Gemini:LanguageAddPhrase(LANG, "OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
 Gemini:LanguageAddPhrase(LANG, "PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
 Gemini:LanguageAddPhrase(LANG, "PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
@@ -209,7 +209,7 @@ Gemini:LanguageOverrideHook(LANG, {
         local EntPos = ent:GetPos()
         return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
     end,
-    ["PlayerSay"] = function(ply, text, IsTeamChat)
+    ["PlayerSay"] = function(ply, text)
         -- Obtener todos los jugadores cercanos a "ply" en un radio de 300 unidades
         local NearbyPlayersPhrase = "nadie"
         local NearToPlayer = Gemini:GetConfig("CloseToPlayer", "Language", true)
@@ -316,7 +316,7 @@ Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.SendedContext", "Mensaje envia
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Received", "Mensaje recibido. (Tardo %s segundos)")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reset", "Reiniciar prompt")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reseted", "El prompt ha sido reiniciado.")
-Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Enviar prompt con contexto")
+Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Adjuntar registros")
 
 --[[------------------------
    Gamemodes Descriptions
