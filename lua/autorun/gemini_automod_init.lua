@@ -6,16 +6,13 @@ include("enum_color.lua")
 
 if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is using the Gemini name.") return end
 
-resource.AddFile("resource/fonts/Frutiger Roman.ttf")
-resource.AddFile("materials/gemini/gcloud.png")
-resource.AddFile("materials/gemini/gcloud_big.png")
-
 local GeminiCFG = GeminiCFG or {["general"] = {}}
 Gemini = Gemini or {
     Version = "1.0",
     Author = "vicentefelipechile",
     Name = "Gemini",
-    URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
+    URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
+    EndPoint = "https://generativelanguage.googleapis.com/v1beta/models"
 }
 
 --[[------------------------
@@ -23,6 +20,10 @@ Gemini = Gemini or {
 ------------------------]]--
 
 if SERVER then
+    resource.AddFile("resource/fonts/Frutiger Roman.ttf")
+    resource.AddFile("materials/gemini/gcloud.png")
+    resource.AddFile("materials/gemini/gcloud_big.png")
+
     util.AddNetworkString("Gemini:ReplicateConfig")
     util.AddNetworkString("Gemini:SetConfig")
     util.AddNetworkString("Gemini:AddConfig")
@@ -125,38 +126,68 @@ function Gemini:Error(Message, Value, Expected)
 end
 
 
-local ToConvarConverter = {
-    ["string"] = function(Value)
-        return Value
-    end,
-    ["number"] = function(Value)
-        if ( math.floor(Value) == Value ) then
-            return tostring(Value) .. "n"
-        else
-            return tostring(Value) .. "f"
-        end
-    end,
-    ["boolean"] = function(Value)
-        return ( Value == true ) and "1b" or "0b"
-    end,
-}
-
 local RegexFindType = {
     ["number"] = "(%d+%.?%d*)[nf]",
     ["boolean"] = "(%d)b",
 }
 
-local FromConvarConverter = {
+local ToConvarConverter = {}
+local FromConvarConverter = {}
+local FromConvarConverterCL = {
+    ["string"] = function(Value)
+        return Value
+    end,
     ["number"] = function(Value)
+        Value = string.match(Value, RegexFindType["number"])
         return tonumber(Value)
     end,
     ["boolean"] = function(Value)
         return Value == "1b"
-    end,
-    ["string"] = function(Value)
-        return Value
-    end,
+    end
 }
+
+if SERVER then
+
+    ToConvarConverter = {
+        ["string"] = function(Value)
+            return Value
+        end,
+        ["number"] = function(Value)
+            return tostring(Value)
+        end,
+        ["boolean"] = function(Value)
+            return ( Value == true ) and 1 or 0
+        end
+    }
+
+    FromConvarConverter = {
+        ["string"] = function(Value)
+            return Value
+        end,
+        ["number"] = function(Value)
+            return tonumber(Value)
+        end,
+        ["boolean"] = function(Value)
+            return Value == "1"
+        end
+    }
+
+elseif CLIENT then
+
+    ToConvarConverter = {
+        ["string"] = function(Value)
+            return Value
+        end,
+        ["number"] = function(Value)
+            return tostring(Value) .. "n"
+        end,
+        ["boolean"] = function(Value)
+            return ( Value == true ) and "1b" or "0b"
+        end
+    }
+
+    FromConvarConverter = FromConvarConverterCL
+end
 
 function Gemini:ConvertValue(Value)
     if not isstring(Value) then
@@ -234,7 +265,7 @@ function Gemini:ToConvar(Name, Category, Value)
     end
 
     local ValueType = type(Value)
-    if not ToConvarConverter[ ValueType ] then
+    if ( ToConvarConverter[ ValueType ] == nil ) then
         self:Error([[The value type is not supported.]], Value, "a valid Value type")
     end
 
@@ -259,7 +290,15 @@ function Gemini:GetPlayerInfo(Player, ConvarName)
     end
 
     local InfoValue = Player:GetInfo(ConvarName)
-    return self:ConvertValue(InfoValue)
+    local InfoType = "string"
+
+    for RegType, Regex in pairs(RegexFindType) do
+        if string.match(InfoValue, Regex) then
+            InfoType = RegType break
+        end
+    end
+
+    return FromConvarConverterCL[ InfoType ](InfoValue)
 end
 
 
@@ -360,28 +399,28 @@ function Gemini:SetConfig(Name, Category, Value)
         self:Error([[The second argument of Gemini:SetConfig() must not be empty.]], Category, "string")
     end
 
-    Category = string.lower( string.gsub(Category, "%W", "") )
-    Name = string.lower( string.gsub(Name, "%W", "") )
+    local FormatCategory = string.lower( string.gsub(Category, "%W", "") )
+    local FormatName = string.lower( string.gsub(Name, "%W", "") )
 
-    if not GeminiCFG[Category] then
-        self:Error([[The category doesn't exist.]], Category, "string")
+    if not GeminiCFG[FormatCategory] then
+        self:Error([[The category doesn't exist.]], FormatCategory, "string")
     end
 
-    if not GeminiCFG[Category][Name] then
-        self:Error([[The config doesn't exist.]], Name, "string")
+    if not GeminiCFG[FormatCategory][FormatName] then
+        self:Error([[The config doesn't exist.]], FormatName, "string")
     end
 
-    if not GeminiCFG[Category][Name]["Verification"](Value) then
+    if not GeminiCFG[FormatCategory][FormatName]["Verification"](Value) then
         self:Print("The value doesn't match the verification function. Skipping...")
         return
     end
 
-    if ( GeminiCFG[Category][Name]["Type"] ~= type(Value) ) then
+    if ( GeminiCFG[FormatCategory][FormatName]["Type"] ~= type(Value) ) then
         self:Error([[The value type doesn't match the config type.]], Value, "any")
     end
 
-    local ConvarValue = self:ToConvar(Name, Category, Value)
-    GeminiCFG[Category][Name]["Convar"]:SetString( ConvarValue )
+    local ConvarValue = self:ToConvar(FormatName, FormatCategory, Value)
+    GeminiCFG[FormatCategory][FormatName]["Convar"]:SetString( ConvarValue )
 
     hook.Run("Gemini:ConfigChanged", Name, Category, Value, ConvarValue)
 end
@@ -437,15 +476,16 @@ function Gemini:PreInit()
 
     if SERVER then
         self:CreateConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, true)
-        self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
     end
 
+    self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
     self:CreateConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
 
     if SERVER then
         AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_rules.lua")     self:Print("File \"gemini/sh_rules.lua\" has been send to client.")
+        AddCSLuaFile("gemini/cl_gemini.lua")    self:Print("File \"gemini/cl_gemini.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_gemini_panel.lua") self:Print("File \"gemini/cl_gemini_panel.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
@@ -463,7 +503,7 @@ function Gemini:PreInit()
 
     include("gemini/sh_rules.lua")              self:Print("File \"gemini/sh_rules.lua\" has been loaded.")
 
-    hook.Run("Gemini.PreInit")
+    hook.Run("Gemini:PreInit")
     Gemini:Init()
 end
 
@@ -512,10 +552,11 @@ function Gemini:Init()
         end
 
     else
-        include("gemini/cl_gemini_panel.lua")      self:Print("File \"gemini/cl_gemini_panel.lua\" has been loaded.")
+        include("gemini/cl_gemini.lua")         self:Print("File \"gemini/cl_gemini.lua\" has been loaded.")
+        include("gemini/cl_gemini_panel.lua")   self:Print("File \"gemini/cl_gemini_panel.lua\" has been loaded.")
     end
 
-    hook.Run("Gemini.Init")
+    hook.Run("Gemini:Init")
     Gemini:PostInit()
 end
 
@@ -528,7 +569,7 @@ function Gemini:PostInit()
     Print("==================================]]==")
     print("")
 
-    hook.Run("Gemini.PostInit")
+    hook.Run("Gemini:PostInit")
 end
 
 Gemini:PreInit()

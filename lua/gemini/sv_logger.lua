@@ -253,11 +253,11 @@ function Gemini:LoggerAddLog(LogString, LogUser1, LogUser2, LogUser3, LogUser4)
     LogUser3 = Gemini:LoggerPlayerToID(LogUser3)
     LogUser4 = Gemini:LoggerPlayerToID(LogUser4)
 
-    Formating(self:LoggerGetSQL("INSERTLOG"), LogString, LogUser1, LogUser2, LogUser3, LogUser4)
-
     if #AsynchronousPlayers > 0 then
         Gemini:LoggerSendAsynchronousLogs()
     end
+
+    Formating(self:LoggerGetSQL("INSERTLOG"), LogString, LogUser1, LogUser2, LogUser3, LogUser4)
 end
 
 hook.Add("Gemini.Log", "Gemini:Log", function(...)

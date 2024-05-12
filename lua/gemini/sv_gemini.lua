@@ -2,15 +2,17 @@
                       Google Gemini Automod - Gemini Module
 ----------------------------------------------------------------------------]]--
 
+util.AddNetworkString("Gemini:SendGeminiModules")
+
 local function OnlyThreeSafety(value)
-    return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 3 )
+    return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 4 )
 end
 
 --[[------------------------
        Gemini Config
 ------------------------]]--
 
-Gemini:CreateConfig("ModelName",     "Gemini", Gemini.VERIFICATION_TYPE.string, "gemini-1.0-pro")
+Gemini:CreateConfig("ModelName",     "Gemini", Gemini.VERIFICATION_TYPE.string, "gemini-1.5-pro-latest")
 Gemini:CreateConfig("Temperature",   "Gemini", Gemini.VERIFICATION_TYPE.range,  0.9)
 Gemini:CreateConfig("TopP",          "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
 Gemini:CreateConfig("TopK",          "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
@@ -22,6 +24,90 @@ Gemini:CreateConfig("SafetyHateSpeech", "Gemini", OnlyThreeSafety, 2)
 Gemini:CreateConfig("SafetySexuallyExplicit", "Gemini", OnlyThreeSafety, 2)
 Gemini:CreateConfig("SafetyDangerousContent", "Gemini", OnlyThreeSafety, 2)
 
+
+
+--[[------------------------
+       Retreive Models
+------------------------]]--
+
+local GeminiModels = GeminiModels or {}
+local function BroadcastGeminiModels(ply)
+    local Models = util.TableToJSON(GeminiModels)
+    local ModelsCompressed = util.Compress(Models)
+    local ModelsSize = #ModelsCompressed
+
+    local NetSend = ( ply == nil ) and net.Broadcast or net.Send
+
+    net.Start("Gemini:SendGeminiModules")
+        net.WriteUInt(ModelsSize, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(ModelsCompressed, ModelsSize)
+    NetSend(ply)
+end
+
+local function RetreiveNewModels()
+    local EndPointUrl = Gemini.EndPoint .. "?key=" .. Gemini:GetConfig("APIKey", "Gemini")
+
+    local SuccessRequest = HTTP({
+        ["url"] = EndPointUrl,
+        ["method"] = "GET",
+        ["success"] = function(Code, Body, Headers)
+            Gemini:GetHTTPDescription(Code)
+
+            file.Write("gemini_models.txt", Body)
+
+            if ( Code ~= 200 ) then return end
+
+            local Response = util.JSONToTable(Body)
+            if ( Response == nil ) then return end
+
+            GeminiModels = Response["models"]
+
+            BroadcastGeminiModels()
+        end,
+        ["failed"] = function(Error)
+            Gemini:Print("Failed to retreive models. Error: " .. Error)
+        end
+    })
+
+    if ( SuccessRequest == false ) then
+        Gemini:Print("Failed to send request to retreive models.")
+    else
+        Gemini:Print("Request successfully sent to retreive models.")
+    end
+end
+
+hook.Add("InitPostEntity", "Gemini:RetreiveModels", function()
+    timer.Simple(8, function()
+        RetreiveNewModels()
+    end)
+
+    hook.Add("Gemini:PostInit", "Gemini:RetreiveModels", function()
+        RetreiveNewModels()
+    end)
+end)
+
+hook.Add("Gemini:ConfigChanged", "Gemini:UpdateModels", function(Name, Category, Value, ConvarValue)
+    if ( Category ~= "Gemini" ) then return end
+    if ( string.lower(Name) ~= "apikey" ) then return end
+
+    RetreiveNewModels()
+end)
+
+hook.Add("Gemini:PlayerFullyConnected", "Gemini:SendGeminiModules", function(Player)
+    BroadcastGeminiModels(Player)
+end)
+
+function Gemini:GeminiGetModels()
+    return table.Copy(GeminiModels)
+end
+
+concommand.Add("gemini_reloadmodels", function(ply)
+    if ( IsValid(ply) and not Gemini:CanUse(ply, "gemini_automod") ) then return end
+
+    RetreiveNewModels()
+end)
+
+
 --[[------------------------
        Gemini Begin
 ------------------------]]--
@@ -29,9 +115,10 @@ Gemini:CreateConfig("SafetyDangerousContent", "Gemini", OnlyThreeSafety, 2)
 local CurrentGamemodeContext = ""
 
 local SAFETY_ENUM = {
-    [1] = "BLOCK_LOW_AND_ABOVE",
-    [2] = "BLOCK_MEDIUM_AND_ABOVE",
-    [3] = "BLOCK_ONLY_HIGH"
+    [1] = "BLOCK_NONE",
+    [2] = "BLOCK_ONLY_HIGH",
+    [3] = "BLOCK_MEDIUM_AND_ABOVE",
+    [4] = "BLOCK_LOW_AND_ABOVE"
 }
 
 local SAFETY_TYPE = {
@@ -146,7 +233,8 @@ hook.Add("Gemini:ConfigChanged", "Gemini:ReplicateGemini", function(Name, Catego
     if ( Category ~= "Gemini" ) then return end
     if ( string.lower(Name) == "apikey" ) then return end
 
-    if OnlyThreeSafety(Value) then
+    local IsSafety = string.StartsWith(Name, "Safety")
+    if ( IsSafety == true ) then
         SetGlobal2Float("Gemini:" .. Name, Value)
     elseif isnumber(Value) then
         SetGlobal2Int("Gemini:" .. Name, Value)

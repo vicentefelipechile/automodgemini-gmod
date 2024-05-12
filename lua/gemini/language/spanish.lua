@@ -210,7 +210,6 @@ Gemini:LanguageOverrideHook(LANG, {
         return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
     end,
     ["PlayerSay"] = function(ply, text)
-        -- Obtener todos los jugadores cercanos a "ply" en un radio de 300 unidades
         local NearbyPlayersPhrase = "nadie"
         local NearToPlayer = Gemini:GetConfig("CloseToPlayer", "Language", true)
 

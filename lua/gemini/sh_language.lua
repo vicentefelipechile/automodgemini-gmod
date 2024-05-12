@@ -89,7 +89,7 @@ function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
     Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.Util.ReturnNoneFunction}
 end
 
-local LanguageTargetCache = Gemini:GetConfig("Language", "General", true)
+local LanguageTargetCache = "Spanish"
 function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
     LanguageTarget = LanguageTarget or LanguageTargetCache
 
@@ -174,9 +174,8 @@ function Gemini:LanguagePoblate()
                 end
 
                 PlayersInvolved = table.GetKeys(PlayersInvolved)
-                local Log = string.format(Phrase, unpack(Args))
-
                 if ( #PlayersInvolved >= 1 ) then
+                    local Log = string.format(Phrase, unpack(Args))
                     hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
                 end
             end)
@@ -188,4 +187,8 @@ hook.Add("Gemini:ConfigChanged", "Gemini:UpdateMainLanguage", function(Name, Cat
     if ( Name == "Language" and Category == "General" ) then
         LanguageTargetCache = Value
     end
+end)
+
+hook.Add("Gemini:PostInit", "Gemini:LanguagePoblate", function()
+    LanguageTargetCache = Gemini:GetConfig("Language", "General", true)
 end)

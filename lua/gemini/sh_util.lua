@@ -6,6 +6,7 @@ Gemini.Util = Gemini.Util or {}
 
 if SERVER then
     util.AddNetworkString("Gemini:SendMessage")
+    util.AddNetworkString("Gemini:PlayerFullyConnected")
 end
 
 --[[------------------------
@@ -46,6 +47,21 @@ function Gemini:LogsToText(logs)
         text = text .. log .. "\n"
     end
     return text
+end
+
+--[[------------------------
+     Player Fully Joined
+------------------------]]--
+
+if SERVER then
+    net.Receive("Gemini:PlayerFullyConnected", function(_, ply)
+        hook.Run("Gemini:PlayerFullyConnected", ply)
+    end)
+else
+    hook.Add("InitPostEntity", "Gemini:PlayerFullyConnected", function()
+        net.Start("Gemini:PlayerFullyConnected")
+        net.SendToServer()
+    end)
 end
 
 --[[------------------------
@@ -145,7 +161,7 @@ if CAMI then
 
     CAMI.RegisterPrivilege({
         Name = "gemini_config",
-        MinAccess = "user"
+        MinAccess = "superadmin"
     })
 
     CAMI.RegisterPrivilege({

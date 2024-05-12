@@ -17,7 +17,7 @@ local AllowedRoles = {
 
 local UserIcon = "icon16/user.png"
 local ModelIcon = "icon16/server.png"
-local ContextIcon = "icon16/application_view_detail.png"
+-- local ContextIcon = "icon16/application_view_detail.png"
 
 local PromptHistory = {}
 local PromptExists = false
@@ -70,50 +70,56 @@ end
 function MODULE:AddMessagePrompt(Role, Text)
     if not IsValid(self.PromptHistory) then return end
     if not AllowedRoles[Role] then return end
+    Text = string.Trim(Text)
+
+    -- BreakLine
+    if ( #PromptHistory ~= 0 ) then
+        local HorizontalLine = vgui.Create("DPanel")
+        HorizontalLine:DockMargin(5, 0, 5, 0)
+        HorizontalLine:Dock(TOP)
+        HorizontalLine:SetTall(1)
+        HorizontalLine.Paint = function(_, w, h)
+            draw.RoundedBox(0, 0, 0, w, h, GrayColor)
+        end
+
+        self.PromptHistory:AddItem(HorizontalLine)
+    end
 
     local PromptMessage = vgui.Create("DPanel")
-    PromptMessage:SetHeight(70)
-    PromptMessage:DockMargin(5, 5, 5, 0)
+    PromptMessage:DockMargin(5, 5, 5, 5)
     PromptMessage:Dock(TOP)
-    PromptMessage.Paint = Gemini.Util.ReturnNoneFunction
+    -- PromptMessage.Paint = Gemini.Util.ReturnNoneFunction
 
-    local PromptAuthorPanel = vgui.Create("DPanel", PromptMessage)
-    PromptAuthorPanel:SetSize(24, 24)
-    PromptAuthorPanel:Dock(LEFT)
-    PromptAuthorPanel.Paint = Gemini.Util.ReturnNoneFunction
-
-    local PromptAutor = vgui.Create("DImage", PromptAuthorPanel)
-    PromptAutor:SetSize(16, 16)
-    PromptAutor:SetImage(Role == "user" and UserIcon or ModelIcon)
-    PromptAutor:SetPos(0, 0)
-
-    local PromptLabel = vgui.Create("DLabel", PromptMessage)
-    PromptLabel.NewGetContentSize = NewGetContentSize
-    PromptLabel:SetText( Text )
-    PromptLabel:SetFont("Frutiger:Small")
-    PromptLabel:Dock(FILL)
-    PromptLabel:SetWrap(true)
-    PromptLabel:SizeToContentsY()
-    PromptLabel:SetTall( PromptLabel:GetTall() * 0.039 + 8 )
-
-    local HasContext = not PromptHistory and ( Role == "user" ) and Gemini:GetConfig("AttachContext", "Playground")
-    if HasContext then
-        local ContextImage = vgui.Create("DImage", PromptMessage)
-        ContextImage:SetSize(12, 12)
-        ContextImage:SetImage(ContextIcon)
-        ContextImage:SetPos(self.PromptHistory:GetWide() - 46, 6)
-        ContextImage:SetImageColor(AlphaColor)
-    end
-
-    PromptMessage:SizeToChildren(false, true)
-
-    local Line = vgui.Create("DPanel", PromptMessage)
-    Line:SetHeight(1)
-    Line:DockMargin(0, 6, 0, 6)
-    Line:Dock(BOTTOM)
-    Line.Paint = function(_, w, h)
+    local PromptLeftPanel = vgui.Create("DPanel", PromptMessage)
+    PromptLeftPanel:Dock(LEFT)
+    PromptLeftPanel:SetWide(20)
+    PromptLeftPanel.Paint = function(_, w, h)
         draw.RoundedBox(0, 0, 0, w, h, GrayColor)
     end
+
+    local PromptIcon = vgui.Create("DImage", PromptLeftPanel)
+    PromptIcon:SetImage( Role == "user" and UserIcon or ModelIcon )
+    PromptIcon:SizeToContents()
+    PromptIcon:SetPos( PromptLeftPanel:GetWide() / 2 - PromptIcon:GetWide() / 2, PromptLeftPanel:GetTall() / 2 - PromptIcon:GetTall() / 2 )
+
+    local PromptRightPanel = vgui.Create("DPanel", PromptMessage)
+    PromptRightPanel:Dock(FILL)
+    PromptRightPanel.Paint = function(_, w, h)
+        draw.RoundedBox(0, 0, 0, w, h, AlphaColor)
+    end
+
+    local PromptText = vgui.Create("DLabel", PromptRightPanel)
+    PromptText.GetContentSize = NewGetContentSize
+    PromptText:SetAutoStretchVertical(true)
+    PromptText:SetWrap(true)
+    PromptText:SetText(Text)
+    PromptText:Dock(FILL)
+    PromptText:DockMargin(5, 5, 5, 5)
+    PromptText:SizeToContentsY()
+    PromptText:SetTextColor(BlackColor)
+
+    PromptRightPanel:SizeToChildren(false, true)
+    PromptMessage:SizeToChildren(false, true)
 
     self.PromptHistory:AddItem(PromptMessage)
 
