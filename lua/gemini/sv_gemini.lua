@@ -3,6 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 util.AddNetworkString("Gemini:SendGeminiModules")
+util.AddNetworkString("Gemini:SetGeminiModel")
 
 local function OnlyThreeSafety(value)
     return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 4 )
@@ -93,7 +94,7 @@ hook.Add("Gemini:ConfigChanged", "Gemini:UpdateModels", function(Name, Category,
     RetreiveNewModels()
 end)
 
-hook.Add("Gemini:PlayerFullyConnected", "Gemini:SendGeminiModules", function(Player)
+hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", function(Player)
     BroadcastGeminiModels(Player)
 end)
 
@@ -106,6 +107,7 @@ concommand.Add("gemini_reloadmodels", function(ply)
 
     RetreiveNewModels()
 end)
+
 
 
 --[[------------------------
@@ -225,6 +227,8 @@ function Gemini:GeminiCreateBodyRequest()
     return Candidate
 end
 
+
+
 --[[------------------------
        Hook Functions
 ------------------------]]--
@@ -243,10 +247,32 @@ hook.Add("Gemini:ConfigChanged", "Gemini:ReplicateGemini", function(Name, Catego
     end
 end)
 
+hook.Add("Gemini:ConfigChanged", "Gemini:APIKeyIsSetted", function(Name, Category, Value, ConvarValue)
+    if ( Category ~= "Gemini" ) then return end
+    if ( string.lower(Name) ~= "apikey" ) then return end
+
+    SetGlobal2Bool("Gemini:APIKeyEnabled", ( Value ~= "YOUR_API_KEY" ))
+end)
+
 hook.Add("PostGamemodeLoaded", "Gemini:GeminiSetGlobal", function()
     SetGlobal2String("Gemini:ModelName", Gemini:GetConfig("ModelName", "Gemini"))
     SetGlobal2Float("Gemini:Temperature", Gemini:GetConfig("Temperature", "Gemini"))
     SetGlobal2Float("Gemini:TopP", Gemini:GetConfig("TopP", "Gemini"))
     SetGlobal2Float("Gemini:TopK", Gemini:GetConfig("TopK", "Gemini"))
     SetGlobal2Int("Gemini:MaxTokens", Gemini:GetConfig("MaxTokens", "Gemini"))
+
+    SetGlobal2Bool("Gemini:APIKeyEnabled", ( Gemini:GetConfig("APIKey", "Gemini") ~= "YOUR_API_KEY" ))
+end)
+
+
+
+--[[------------------------
+           Network
+------------------------]]--
+
+net.Receive("Gemini:SetGeminiModel", function(_, ply)
+    if ( not Gemini:CanUse(ply, "gemini_config_set") ) then return end
+
+    local ModelName = net.ReadString()
+    Gemini:SetConfig("ModelName", "Gemini", ModelName)
 end)

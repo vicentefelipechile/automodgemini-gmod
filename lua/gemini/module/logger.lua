@@ -165,7 +165,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     MaxLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
     MaxLogs:SetPos(10, 84)
     MaxLogs:SetMin(1)
-    MaxLogs:SetMax(200)
+    MaxLogs:SetMax(1000)
     MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Logger") )
 
     MaxLogs.OnValueChanged = function(_, value)

@@ -21,6 +21,8 @@ function Gemini.GeminiReceiveModels()
     local Models = util.JSONToTable( util.Decompress( net.ReadData( ModelsSize ) ) )
     if ( Models == nil ) then return end
 
+    PrintTable( Models )
+
     GeminiModels = Models
 
     hook.Run("Gemini:ModelsReceived", Models)

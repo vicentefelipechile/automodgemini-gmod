@@ -75,7 +75,7 @@ function MODULE:AddMessagePrompt(Role, Text)
     -- BreakLine
     if ( #PromptHistory ~= 0 ) then
         local HorizontalLine = vgui.Create("DPanel")
-        HorizontalLine:DockMargin(5, 0, 5, 0)
+        HorizontalLine:DockMargin(8, 0, 8, 0)
         HorizontalLine:Dock(TOP)
         HorizontalLine:SetTall(1)
         HorizontalLine.Paint = function(_, w, h)
@@ -83,6 +83,14 @@ function MODULE:AddMessagePrompt(Role, Text)
         end
 
         self.PromptHistory:AddItem(HorizontalLine)
+    else
+        -- Pick last item
+        local LastItem = self.PromptHistory:GetCanvas():GetChildren()[1]
+        if IsValid(LastItem) then
+            LastItem.Paint = function(_, w, h)
+                draw.RoundedBox(0, 0, 0, w, h, BlackColor)
+            end
+        end
     end
 
     local PromptMessage = vgui.Create("DPanel")
@@ -110,18 +118,41 @@ function MODULE:AddMessagePrompt(Role, Text)
 
     local PromptText = vgui.Create("DLabel", PromptRightPanel)
     PromptText.GetContentSize = NewGetContentSize
-    PromptText:SetAutoStretchVertical(true)
     PromptText:SetWrap(true)
     PromptText:SetText(Text)
     PromptText:Dock(FILL)
-    PromptText:DockMargin(5, 5, 5, 5)
-    PromptText:SizeToContentsY()
+    PromptText:DockMargin(8, 8, 8, 8)
     PromptText:SetTextColor(BlackColor)
 
-    PromptRightPanel:SizeToChildren(false, true)
-    PromptMessage:SizeToChildren(false, true)
+    timer.Simple(0, function()
+        -- Si el texto supera los 17 caracteres, suma 20px al alto del panel
+        -- What is going on the server?
+        local HowManyLines = math.ceil( PromptText:GetContentSize() / 16 ) * 2.2
+        local HowManyBreaklines = #( string.Explode("\n", Text) )
+        local NewHeight = HowManyLines + ( HowManyBreaklines * 19.2 )
+
+        PromptText:SetTall(NewHeight)
+
+        PromptRightPanel:SizeToChildren(false, true)
+        PromptMessage:SizeToChildren(false, true)
+
+        timer.Simple(0.1, function()
+            if IsValid(PromptMessage) then
+                self.PromptHistory:ScrollToChild(PromptMessage)
+            end
+        end)
+    end)
 
     self.PromptHistory:AddItem(PromptMessage)
+
+    -- HorizontalLine
+    local HorizontalLine = vgui.Create("DPanel")
+    HorizontalLine:DockMargin(5, 0, 5, 0)
+    HorizontalLine:Dock(TOP)
+    HorizontalLine:SetTall(1)
+    HorizontalLine.Paint = Gemini.Util.ReturnNoneFunction
+
+    self.PromptHistory:AddItem(HorizontalLine)
 
     table.insert(PromptHistory, { ["Role"] = Role, ["Text"] = Text })
 end
@@ -258,7 +289,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     MaxLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
     MaxLogs:SetPos(10, 84)
     MaxLogs:SetMin(1)
-    MaxLogs:SetMax(200)
+    MaxLogs:SetMax(1000)
     MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Playground") )
 
     MaxLogs.OnValueChanged = function(_, value)
@@ -393,7 +424,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     PromptTitleLabel:SetPos(PromptTitlePanel:GetWide() / 2 - PromptTitleLabel:GetWide() / 2, 6)
 
     local PromptHistoryPanel = vgui.Create("DScrollPanel", PromptPanel)
-    PromptHistoryPanel:SetSize(PromptPanel:GetWide() - 10, PromptPanel:GetTall() - 75)
+    PromptHistoryPanel:SetSize(PromptPanel:GetWide() - 10, PromptPanel:GetTall() - 83)
     PromptHistoryPanel:SetPos(5, 40)
     PromptHistoryPanel.Paint = function(_, w, h)
         draw.RoundedBox(0, 0, 0, w, h, BlackColor)
@@ -402,14 +433,14 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.PromptHistory = PromptHistoryPanel
 
     local PromptInput = vgui.Create("DTextEntry", PromptPanel)
-    PromptInput:SetSize(PromptPanel:GetWide() - 34, 20)
-    PromptInput:SetPos(5, PromptPanel:GetTall() - 30)
+    PromptInput:SetSize(PromptPanel:GetWide() - 42, 28)
+    PromptInput:SetPos(5, PromptPanel:GetTall() - 38)
     PromptInput:SetFont("Frutiger:Small")
     PromptInput:SetPlaceholderText( Gemini:GetPhrase("Playground.Prompt.Placeholder") )
 
     local PromptInputSend = vgui.Create("DButton", PromptPanel)
-    PromptInputSend:SetSize(20, 20)
-    PromptInputSend:SetPos(PromptPanel:GetWide() - 25, PromptPanel:GetTall() - 30)
+    PromptInputSend:SetSize(28, 28)
+    PromptInputSend:SetPos(PromptPanel:GetWide() - 33, PromptPanel:GetTall() - 38)
     PromptInputSend:SetText(">")
     PromptInputSend.DoClick = function(InputSelf)
         local Text = PromptInput:GetText()
