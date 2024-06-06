@@ -10,10 +10,11 @@ local MODULE = { ["Icon"] = "icon16/cog.png" }
 local GCLOUD_ICON = "materials/gemini/gcloud.png"
 local CONFIG_ICON = "icon16/cog.png"
 
-local HoverColor = Color( 0, 0, 0, 200)
-local NoHoverColor = Color( 41, 41, 41, 200)
-local BackgroundColor = Color( 41, 41, 41, 200)
-local OutlineColor = Color( 80, 80, 80, 200)
+local HoverColor = Color( 0, 0, 0, 200 )
+local NoHoverColor = Color( 41, 41, 41, 200 )
+local BackgroundColor = Color( 45, 45, 45 )
+local OutlineColor = Color( 80, 80, 80, 200 )
+local OutlineColorOpaque = Color( 80, 80, 80 )
 
 local OutlineWidth = 3
 
@@ -32,17 +33,14 @@ local DefaultModelTbl = {
           Functions
 ------------------------]]--
 
-local ButtonPaint = function(self, w, h)
-    if self:IsHovered() then
-        draw.RoundedBox( 0, 0, 0, w, h, HoverColor )
-    else
-        draw.RoundedBox( 0, 0, 0, w, h, NoHoverColor )
-    end
-end
-
-function BackgroundPaint(self, w, h)
+local function BackgroundPaint(self, w, h)
     draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
     draw.RoundedBox( 0, OutlineWidth, OutlineWidth, w - (OutlineWidth * 2), h - (OutlineWidth * 2), BackgroundColor )
+end
+
+local function SmallBackgroundPaint(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+    draw.RoundedBox( 0, 1, 1, w - 2, h - 2, BackgroundColor )
 end
 
 --[[------------------------
@@ -59,7 +57,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.ConfigPanel = vgui.Create( "DColumnSheet", OurTab )
-    self.ConfigPanel.Navigation:SetWide( 160 )
     self.ConfigPanel:Dock( FILL )
     self.ConfigPanel:DockMargin( 10, 10, 10, 10 )
 
@@ -84,7 +81,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.APIKey:DockMargin( 10, 10, 10, 10 )
     self.ConfigPanel.Gemini.APIKey:SetSkin("Gemini:DermaSkin")
 
-    -- If the key is already setted, disable the input and warn the user
     local APIKeyIsSetted = GetGlobal2Bool("Gemini:APIKeyEnabled", true)
     if APIKeyIsSetted then
         self.ConfigPanel.Gemini.APIKey:SetEnabled( false )
@@ -115,6 +111,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.APIKeyExplanation:DockMargin( 10, 0, 10, 10 )
     self.ConfigPanel.Gemini.APIKeyExplanation:SetText( "For security reasons you can't see the API Key, only set it. If you want to see it, too bad." )
 
+
     -- Horizontal Line
     self.ConfigPanel.Gemini.HLine = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.HLine:Dock( TOP )
@@ -124,16 +121,61 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
     end
 
+
+    -- Model Name
     self.ConfigPanel.Gemini.ModelNameTitle = vgui.Create( "DLabel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.ModelNameTitle:Dock( TOP )
     self.ConfigPanel.Gemini.ModelNameTitle:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.ModelNameTitle:SetText( "Model Name" )
+    self.ConfigPanel.Gemini.ModelNameTitle:SetText( "Current AI Model" )
     self.ConfigPanel.Gemini.ModelNameTitle:SetFont("Frutiger:Big")
+
+
+    -- Info Model
+    self.ConfigPanel.Gemini.ModelInfo = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
+    self.ConfigPanel.Gemini.ModelInfo:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo:DockMargin( 10, 15, 10, 10 )
+    self.ConfigPanel.Gemini.ModelInfo:SetTall( 110 )
+    self.ConfigPanel.Gemini.ModelInfo.Paint = function( SubSelf, w, h )
+        draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+    end
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelName = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelName:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelName:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name: ..." )
+    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description: ..." )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens: ... (... words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens: ... (... words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelName = vgui.Create( "DComboBox", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.ModelName:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelName:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.Gemini.ModelName:DockMargin( 10, 0, 10, 10 )
     self.ConfigPanel.Gemini.ModelName:SetSkin("Gemini:DermaSkin")
+
+    self.ConfigPanel.Gemini.ModelName.Paint = SmallBackgroundPaint
+
+    self.ConfigPanel.Gemini.ModelName.OnMenuOpened = function( SubSelf, SubPanel )
+        -- Change background color
+        SubPanel.Paint = function( SubSubSelf, w, h )
+            draw.RoundedBox( 0, 0, 0, w, h, OutlineColorOpaque )
+        end
+    end
 
     local CurrentModelSelected = "models/" .. GetGlobal2String("Gemini:ModelName", "nil")
     local CurrentModelExists = false
@@ -155,41 +197,11 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self.ConfigPanel.Gemini.ModelName:SetValue( "models/" .. CurrentModel["name"] )
     end
 
-
-    -- Info model
-    self.ConfigPanel.Gemini.ModelInfo = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
-    self.ConfigPanel.Gemini.ModelInfo:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelInfo:DockMargin( 10, 0, 10, 10 )
-    self.ConfigPanel.Gemini.ModelInfo:SetTall( 110 )
-    self.ConfigPanel.Gemini.ModelInfo.Paint = function( SubSelf, w, h )
-        draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
-    end
-
-    self.ConfigPanel.Gemini.ModelInfo.ModelName = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
-    self.ConfigPanel.Gemini.ModelInfo.ModelName:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelInfo.ModelName:DockMargin( 10, 5, 10, 0 )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name: " .. CurrentModel["displayName"] )
-    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetFont("HudHintTextLarge")
-
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:DockMargin( 10, 5, 10, 0 )
     self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description: " .. CurrentModel["description"] )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetFont("HudHintTextLarge")
-
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:DockMargin( 10, 5, 10, 0 )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens: " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetFont("HudHintTextLarge")
-
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:DockMargin( 10, 5, 10, 0 )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens: " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetFont("HudHintTextLarge")
 
-    -- update
     self.ConfigPanel.Gemini.ModelName.OnSelect = function( SubSelf, index, value, data )
         CurrentModel = data
 
@@ -210,7 +222,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     -- Empty content
     self.ConfigPanel.Gemini.EmptyContent = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.EmptyContent:Dock( FILL )
-    self.ConfigPanel.Gemini.EmptyContent:DockMargin( 0, 100, 0, 0 )
+    self.ConfigPanel.Gemini.EmptyContent:DockMargin( 0, 140, 0, 0 )
     self.ConfigPanel.Gemini.EmptyContent.Paint = Gemini.Util.ReturnNoneFunction
 
     self.Items["Gemini"] = self.ConfigPanel:AddSheet("Gemini", self.ConfigPanel.Gemini, CONFIG_ICON)
@@ -230,10 +242,22 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
                 Style
     ------------------------]]--
 
+
+    self.ConfigPanel.Navigation:SetWide( 140 )
+    self.ConfigPanel.Navigation:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.Navigation.Paint = BackgroundPaint
+
+    for PanelName, PanelButton in pairs( self.Items ) do
+        PanelButton.Button:SetTall( 32 )
+        PanelButton.Button:DockMargin( 5, 5, 5, 0 )
+    end
+
+    --[[
     for _, v in pairs( self.Items ) do
         v.Button.Paint = ButtonPaint
         v.Button:SetSkin("Gemini:DermaSkin")
     end
+    --]]
 end
 
 

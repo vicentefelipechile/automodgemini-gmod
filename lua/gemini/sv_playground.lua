@@ -115,6 +115,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             self:GetHTTPDescription(Code)
             file.Write("gemini_response.txt", BodyResponse)
 
+            if ( Code == 429 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.RateLimit") return end
             if ( Code ~= 200 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.ServerError") return end
 
             --[[ Check Response ]]--

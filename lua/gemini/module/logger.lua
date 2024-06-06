@@ -6,6 +6,40 @@ local MODULE = { ["Icon"] = "icon16/page_white_text.png" }
 local BlackColor = COLOR_BLACK
 
 --[[------------------------
+       Paint Functions
+------------------------]]--
+
+local BackgroundColor = Color( 45, 45, 45 )
+local OutlineColor = Color( 80, 80, 80, 200 )
+
+local CheckedColor = Color( 94, 94, 94)
+local UncheckedColor = Color( 32, 32, 32)
+
+local HoverColor = Color( 0, 0, 0, 50 )
+local HoverLineColor = Color( 1, 129, 123)
+
+local OutlineWidth = 3
+
+local function BackgroundPaint(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+    draw.RoundedBox( 0, OutlineWidth, OutlineWidth, w - (OutlineWidth * 2), h - (OutlineWidth * 2), BackgroundColor )
+end
+
+local function ButtonBooleanPaint(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, self:GetChecked() and CheckedColor or UncheckedColor )
+    draw.SimpleText( self:GetChecked() and Gemini:GetPhrase("Logger.BetweenLogs.Enabled") or Gemini:GetPhrase("Logger.BetweenLogs.Disabled"), "Frutiger:Small", w / 2, h / 2, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+
+    if self:IsHovered() then
+        draw.RoundedBox( 0, 0, 0, w, h, HoverColor )
+        draw.RoundedBox( 0, 0, h - 2, w, 2, HoverLineColor )
+    end
+end
+
+local function HorizontalPaint(_, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, HoverLineColor )
+end
+
+--[[------------------------
            Convars
 ------------------------]]--
 
@@ -82,151 +116,123 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
            Output Message
     ------------------------]]--
 
-    local OutputMSG = vgui.Create("DTextEntry", OurTab)
-    OutputMSG:SetSize(OurTab:GetWide() - 40, 20)
-    OutputMSG:SetPos(10, OurTab:GetTall() - 68)
-    OutputMSG:SetEditable(false)
+    self.OutputMSG = vgui.Create("DTextEntry", OurTab)
+    self.OutputMSG:SetSize(OurTab:GetWide() - 40, 20)
+    self.OutputMSG:SetPos(10, OurTab:GetTall() - 68)
+    self.OutputMSG:SetEditable(false)
 
-    self.OutputMSG = OutputMSG
-    local OutputY = OutputMSG:GetY()
-
-    --[[------------------------
-             Table Panel
-    ------------------------]]--
-
-    local TablePanel = vgui.Create("DListView", OurTab)
-    TablePanel:SetSize(OurTab:GetWide() - 230, OutputY - 25)
-    TablePanel:SetPos(200, 15)
-    TablePanel:SetMultiSelect(false)
-    TablePanel:SetHeaderHeight(20)
-
-    self.List = {}
-    self.List["ID"] = TablePanel:AddColumn("ID", 1)
-    self.List["Log"] = TablePanel:AddColumn("Log", 2)
-    self.List["Date"] = TablePanel:AddColumn("Date", 3)
-    self.List["PlayerID"] = TablePanel:AddColumn("Player ID", 4)
-
-
-    local WidthLog = TablePanel:GetWide() - ( 52 + 124 + 63 )
-
-    self.List["ID"]:SetWidth( 52 )
-    self.List["Log"]:SetWidth( WidthLog )
-    self.List["Date"]:SetWidth( 128 )
-    self.List["PlayerID"]:SetWidth( 63 )
-
-    self.List["ID"]:SetDescending( true )
-    TablePanel.CurrentColumn = self.List["ID"]
-
-    self.TablePanel = TablePanel
+    local OutputY = self.OutputMSG:GetY()
 
     --[[------------------------
            Settings Panel
     ------------------------]]--
 
-    local SettingsPanel = vgui.Create("DPanel", OurTab)
-    SettingsPanel:SetSize(180, OutputY - 25)
-    SettingsPanel:SetPos(10, 15)
+    self.SettingsPanel = vgui.Create("DScrollPanel", OurTab)
+    self.SettingsPanel:SetSize(195, OutputY - 25)
+    self.SettingsPanel:SetPos(10, 15)
+    self.SettingsPanel.Paint = BackgroundPaint
 
-    local SettingsLabel = vgui.Create("DLabel", SettingsPanel)
-    SettingsLabel:SetText( Gemini:GetPhrase("Logger") )
-    SettingsLabel:SetTextColor(BlackColor)
-    SettingsLabel:SetFont("Frutiger:Normal")
-    SettingsLabel:SizeToContents()
-    SettingsLabel:SetPos(SettingsPanel:GetWide() / 2 - SettingsLabel:GetWide() / 2, 6)
+    self.SettingsPanel.Title = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.Title:SetText( Gemini:GetPhrase("Logger.Settings") )
+    self.SettingsPanel.Title:Dock(TOP)
+    self.SettingsPanel.Title:SetFont("Frutiger:Normal")
+    self.SettingsPanel.Title:SetContentAlignment(5)
+    self.SettingsPanel.Title:DockMargin( 10, 10, 10, 0 )
+    self.SettingsPanel.Title:SetHeight( 16 )
 
-    local PlayerIDInput = vgui.Create("DTextEntry", SettingsPanel)
-    PlayerIDInput:SetSize(SettingsPanel:GetWide() - 20, 20)
-    PlayerIDInput:SetPos(10, 40)
-    PlayerIDInput:SetNumeric(true)
-    PlayerIDInput:SetPlaceholderText( Gemini:GetPhrase("Logger.PlayerID") )
+    self.SettingsPanel.PlayerIDLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.PlayerIDLabel:SetText( Gemini:GetPhrase("Logger.Column.PlayerID") )
+    self.SettingsPanel.PlayerIDLabel:Dock(TOP)
+    self.SettingsPanel.PlayerIDLabel:SetContentAlignment(5)
+    self.SettingsPanel.PlayerIDLabel:DockMargin( 10, 10, 10, 0 )
+
+    self.SettingsPanel.PlayerIDInput = vgui.Create("DTextEntry", self.SettingsPanel)
+    self.SettingsPanel.PlayerIDInput:SetNumeric(true)
+    self.SettingsPanel.PlayerIDInput:SetPlaceholderText( Gemini:GetPhrase("Logger.PlayerID") )
+    self.SettingsPanel.PlayerIDInput:Dock(TOP)
+    self.SettingsPanel.PlayerIDInput:DockMargin( 10, 0, 10, 0 )
 
     if ( Gemini:GetConfig("PlayerTarget", "Logger") ~= 0 ) then
-        PlayerIDInput:SetValue( Gemini:GetConfig("PlayerTarget", "Logger") )
+        self.SettingsPanel.PlayerIDInput:SetValue( Gemini:GetConfig("PlayerTarget", "Logger") )
     end
 
-    PlayerIDInput.OnEnter = function(SubSelf)
-        local PlayerID = tonumber(SubSelf:GetValue()) or 0
+    self.SettingsPanel.PlayerIDInput.OnEnter = function(SubSelf)
+        local PlayerID = SubSelf:GetInt() or 0
         Gemini:SetConfig("PlayerTarget", "Logger", PlayerID)
     end
 
-    PlayerIDInput.OnLoseFocus = function(SubSelf)
-        local PlayerID = tonumber(SubSelf:GetValue()) or 0
+    self.SettingsPanel.PlayerIDInput.OnLoseFocus = function(SubSelf)
+        local PlayerID = SubSelf:GetInt() or 0
         Gemini:SetConfig("PlayerTarget", "Logger", PlayerID)
     end
 
-    local MaxLogsLabel = vgui.Create("DLabel", SettingsPanel)
-    MaxLogsLabel:SetText( Gemini:GetPhrase("Logger.MaxLogs") )
-    MaxLogsLabel:SetTextColor(BlackColor)
-    MaxLogsLabel:SetFont("Frutiger:Small")
-    MaxLogsLabel:SizeToContents()
-    MaxLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - MaxLogsLabel:GetWide() / 2, 70)
+    self.SettingsPanel.MaxLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.MaxLogsLabel:SetText( Gemini:GetPhrase("Logger.MaxLogs") )
+    self.SettingsPanel.MaxLogsLabel:Dock(TOP)
+    self.SettingsPanel.MaxLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.MaxLogsLabel:DockMargin( 10, 10, 10, 0 )
 
-    local MaxLogs = vgui.Create("DNumberWang", SettingsPanel)
-    MaxLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    MaxLogs:SetPos(10, 84)
-    MaxLogs:SetMin(1)
-    MaxLogs:SetMax(1000)
-    MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Logger") )
+    self.SettingsPanel.MaxLogs = vgui.Create("DNumberWang", self.SettingsPanel)
+    self.SettingsPanel.MaxLogs:SetMin(1)
+    self.SettingsPanel.MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Logger") )
+    self.SettingsPanel.MaxLogs:Dock(TOP)
+    self.SettingsPanel.MaxLogs:DockMargin( 10, 0, 10, 0 )
 
-    MaxLogs.OnValueChanged = function(_, value)
+    self.SettingsPanel.MaxLogs.OnValueChanged = function(_, value)
         Gemini:SetConfig("MaxLogs", "Logger", value)
     end
 
-    local BetweenLogsLabel = vgui.Create("DLabel", SettingsPanel)
-    BetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.BetweenLogs") )
-    BetweenLogsLabel:SetTextColor(BlackColor)
-    BetweenLogsLabel:SetFont("Frutiger:Small")
-    BetweenLogsLabel:SizeToContents()
-    BetweenLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - BetweenLogsLabel:GetWide() / 2, 110)
+    self.SettingsPanel.BetweenLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.BetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.BetweenLogs") )
+    self.SettingsPanel.BetweenLogsLabel:Dock(TOP)
+    self.SettingsPanel.BetweenLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.BetweenLogsLabel:DockMargin( 10, 20, 10, 0 )
 
-    local BetweenLogsMin = vgui.Create("DNumberWang", SettingsPanel)
-    BetweenLogsMin:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
-    BetweenLogsMin:SetPos(10, 124)
-    BetweenLogsMin:SetMin(1)
-    BetweenLogsMin:SetMax(1000000)
-    BetweenLogsMin:SetValue( Gemini:GetConfig("BetweenLogsMin", "Logger") )
+    self.SettingsPanel.BetweenLogsInputs = vgui.Create("DPanel", self.SettingsPanel)
+    self.SettingsPanel.BetweenLogsInputs:Dock(TOP)
+    self.SettingsPanel.BetweenLogsInputs:SetHeight( 20 )
+    self.SettingsPanel.BetweenLogsInputs:DockMargin( 10, 0, 10, 0 )
+    self.SettingsPanel.BetweenLogsInputs.Paint = Gemini.Util.EmptyFunction
 
-    local BetweenLogsMax = vgui.Create("DNumberWang", SettingsPanel)
-    BetweenLogsMax:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
-    BetweenLogsMax:SetPos( ( SettingsPanel:GetWide() - 20 ) / 2 + 14, 124)
-    BetweenLogsMax:SetMin(1)
-    BetweenLogsMax:SetMax(1000000)
-    BetweenLogsMax:SetValue( Gemini:GetConfig("BetweenLogsMax", "Logger") )
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin = vgui.Create("DNumberWang", self.SettingsPanel.BetweenLogsInputs)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin:SetMin(1)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin:SetValue( Gemini:GetConfig("BetweenLogsMin", "Logger") )
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin:Dock(LEFT)
 
-    BetweenLogsMin.OnValueChanged = function(_, value)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax = vgui.Create("DNumberWang", self.SettingsPanel.BetweenLogsInputs)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax:SetMin(2)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax:SetValue( Gemini:GetConfig("BetweenLogsMax", "Logger") )
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax:Dock(RIGHT)
+
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin.OnValueChanged = function(_, value)
         Gemini:SetConfig("BetweenLogsMin", "Logger", value)
-
-        if ( BetweenLogsMax:GetValue() < value ) then
-            BetweenLogsMax:SetValue(value)
-        end
     end
 
-    BetweenLogsMax.OnValueChanged = function(_, value)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax.OnValueChanged = function(_, value)
         Gemini:SetConfig("BetweenLogsMax", "Logger", value)
-
-        if ( BetweenLogsMin:GetValue() > value ) then
-            BetweenLogsMin:SetValue(value)
-        end
     end
 
-    local EnableBetweenLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
-    EnableBetweenLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    EnableBetweenLogs:SetPos(10, 150)
-    EnableBetweenLogs:SetText( Gemini:GetPhrase("Logger.EnableBetweenLogs") )
-    EnableBetweenLogs:SetTextColor(BlackColor)
-    EnableBetweenLogs:SetValue( Gemini:GetConfig("BetweenLogs", "Logger") )
+    self.SettingsPanel.EnableBetweenLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.EnableBetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.EnableBetweenLogs") )
+    self.SettingsPanel.EnableBetweenLogsLabel:Dock(TOP)
+    self.SettingsPanel.EnableBetweenLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.EnableBetweenLogsLabel:DockMargin( 10, 5, 10, 0 )
 
-    EnableBetweenLogs.OnChange = function(_, value)
-        Gemini:SetConfig("BetweenLogs", "Logger", value)
-    end
+    self.SettingsPanel.EnableBetweenLogs = vgui.Create("DCheckBox", self.SettingsPanel)
+    self.SettingsPanel.EnableBetweenLogs:SetValue( Gemini:GetConfig("BetweenLogs", "Logger") )
+    self.SettingsPanel.EnableBetweenLogs:Dock(TOP)
+    self.SettingsPanel.EnableBetweenLogs:DockMargin( 10, 0, 10, 0 )
+    self.SettingsPanel.EnableBetweenLogs:SetTall( 20 )
+    self.SettingsPanel.EnableBetweenLogs.Paint = ButtonBooleanPaint
 
-    local AskLogsButton = vgui.Create("DButton", SettingsPanel)
-    AskLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
-    AskLogsButton:SetPos(10, 180)
-    AskLogsButton:SetText( Gemini:GetPhrase("Logger.RequestLogs") )
-    AskLogsButton:SetFont("Frutiger:Small")
+    self.SettingsPanel.AskLogsButton = vgui.Create("DButton", self.SettingsPanel)
+    self.SettingsPanel.AskLogsButton:SetText( Gemini:GetPhrase("Logger.RequestLogs") )
+    self.SettingsPanel.AskLogsButton:SetFont("Frutiger:Small")
+    self.SettingsPanel.AskLogsButton:Dock(TOP)
+    self.SettingsPanel.AskLogsButton:SetTall( 20 )
+    self.SettingsPanel.AskLogsButton:DockMargin( 10, 30, 10, 0 )
 
-    AskLogsButton.DoClick = function()
+    self.SettingsPanel.AskLogsButton.DoClick = function()
         local PlayerID = Gemini:GetConfig("PlayerTarget", "Logger")
 
         PlayerID = ( PlayerID ~= 0 ) and PlayerID or nil
@@ -244,47 +250,115 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         end
     end
 
-    local ClearLogsButton = vgui.Create("DButton", SettingsPanel)
-    ClearLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
-    ClearLogsButton:SetPos(10, 204)
-    ClearLogsButton:SetText( Gemini:GetPhrase("Logger.ClearLogs") )
-    ClearLogsButton:SetFont("Frutiger:Small")
+    self.SettingsPanel.ClearLogsButton = vgui.Create("DButton", self.SettingsPanel)
+    self.SettingsPanel.ClearLogsButton:SetText( Gemini:GetPhrase("Logger.ClearLogs") )
+    self.SettingsPanel.ClearLogsButton:SetFont("Frutiger:Small")
+    self.SettingsPanel.ClearLogsButton:Dock(TOP)
+    self.SettingsPanel.ClearLogsButton:SetTall( 20 )
+    self.SettingsPanel.ClearLogsButton:DockMargin( 10, 5, 10, 0 )
 
-    ClearLogsButton.DoClick = function()
+    self.SettingsPanel.ClearLogsButton.DoClick = function()
         self:UpdateTable({})
         self:SetMessageLog( Gemini:GetPhrase("Logger.ClearedLogs") )
     end
 
-    local InitialLogsLabel = vgui.Create("DLabel", SettingsPanel)
-    InitialLogsLabel:SetText( Gemini:GetPhrase("Logger.InitialLogs") )
-    InitialLogsLabel:SetTextColor(BlackColor)
-    InitialLogsLabel:SetFont("Frutiger:Small")
-    InitialLogsLabel:SizeToContents()
-    InitialLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - InitialLogsLabel:GetWide() / 2, 240)
+    -- Horizontal line
+    self.SettingsPanel.HorizontalLine = vgui.Create("DPanel", self.SettingsPanel)
+    self.SettingsPanel.HorizontalLine:Dock(TOP)
+    self.SettingsPanel.HorizontalLine:SetHeight( 2 )
+    self.SettingsPanel.HorizontalLine:DockMargin( 10, 20, 10, 5 )
+    self.SettingsPanel.HorizontalLine.Paint = HorizontalPaint
 
-    local InitialLogs = vgui.Create("DNumberWang", SettingsPanel)
-    InitialLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    InitialLogs:SetPos(10, 254)
-    InitialLogs:SetMin(1)
-    InitialLogs:SetMax(200)
-    InitialLogs:SetValue( Gemini:GetConfig("RequestInitialLogs", "Logger") )
+    -- More settings
+    self.SettingsPanel.MoreSettings = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.MoreSettings:SetText( Gemini:GetPhrase("Logger.MoreSettings") )
+    self.SettingsPanel.MoreSettings:SetFont("Frutiger:Normal")
+    self.SettingsPanel.MoreSettings:Dock(TOP)
+    self.SettingsPanel.MoreSettings:SetContentAlignment(5)
+    self.SettingsPanel.MoreSettings:DockMargin( 10, 0, 10, 0 )
 
-    InitialLogs.OnValueChanged = function(_, value)
+    self.SettingsPanel.InitialLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.InitialLogsLabel:SetText( Gemini:GetPhrase("Logger.InitialLogs") )
+    self.SettingsPanel.InitialLogsLabel:Dock(TOP)
+    self.SettingsPanel.InitialLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.InitialLogsLabel:DockMargin( 10, 20, 10, 0 )
+
+    self.SettingsPanel.InitialLogs = vgui.Create("DNumberWang", self.SettingsPanel)
+    self.SettingsPanel.InitialLogs:SetMin(1)
+    self.SettingsPanel.InitialLogs:SetValue( Gemini:GetConfig("RequestInitialLogs", "Logger") )
+    self.SettingsPanel.InitialLogs:Dock(TOP)
+    self.SettingsPanel.InitialLogs:DockMargin( 10, 0, 10, 0 )
+
+    self.SettingsPanel.InitialLogs.OnValueChanged = function(_, value)
         Gemini:SetConfig("RequestInitialLogs", "Logger", value)
     end
 
-    local AsyncLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
-    AsyncLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    AsyncLogs:SetPos(10, 280)
-    AsyncLogs:SetText( Gemini:GetPhrase("Logger.AsyncLogs") )
-    AsyncLogs:SetTextColor(BlackColor)
-    AsyncLogs:SetValue( Gemini:GetConfig("AsyncLogs", "Logger") )
+    self.SettingsPanel.AsyncLogsTitle = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.AsyncLogsTitle:SetText( Gemini:GetPhrase("Logger.AsyncLogs") )
+    self.SettingsPanel.AsyncLogsTitle:Dock(TOP)
+    self.SettingsPanel.AsyncLogsTitle:SetContentAlignment(5)
+    self.SettingsPanel.AsyncLogsTitle:DockMargin( 10, 20, 10, 0 )
 
-    AsyncLogs.OnChange = function(_, value)
+    self.SettingsPanel.AsyncLogs = vgui.Create("DCheckBox", self.SettingsPanel)
+    self.SettingsPanel.AsyncLogs:SetValue( Gemini:GetConfig("AsyncLogs", "Logger") )
+    self.SettingsPanel.AsyncLogs:Dock(TOP)
+    self.SettingsPanel.AsyncLogs:DockMargin( 10, 0, 10, 0 )
+    self.SettingsPanel.AsyncLogs:SetTall( 20 )
+    self.SettingsPanel.AsyncLogs.Paint = ButtonBooleanPaint
+
+    self.SettingsPanel.AsyncLogs.OnChange = function(_, value)
         Gemini:SetConfig("AsyncLogs", "Logger", value)
 
         self:SetAsynchronousLogs(value)
     end
+
+    -- Empty space
+    self.SettingsPanel.EmptySpace = vgui.Create("DPanel", self.SettingsPanel)
+    self.SettingsPanel.EmptySpace:Dock(TOP)
+    self.SettingsPanel.EmptySpace:SetHeight( 60 )
+    self.SettingsPanel.EmptySpace.Paint = Gemini.Util.EmptyFunction
+
+    -- Scrollbar
+    self.SettingsPanel.VBar.Paint = Gemini.Util.EmptyFunction
+    self.SettingsPanel.VBar.btnGrip.Paint = function(self, w, h)
+        draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+    end
+    self.SettingsPanel.VBar:SetWide( 14 )
+    self.SettingsPanel.VBar:SetHideButtons(true)
+
+    --[[------------------------
+             Table Panel
+    ------------------------]]--
+
+    local TablePos = self.SettingsPanel:GetWide() + 20
+
+    self.TablePanel = vgui.Create("DListView", OurTab)
+    self.TablePanel:SetSize(OurTab:GetWide() - TablePos - 30, OutputY - 25)
+    self.TablePanel:SetPos(TablePos, 15)
+    self.TablePanel:SetMultiSelect(false)
+    self.TablePanel:SetHeaderHeight(20)
+
+    self.List = {}
+    self.List["ID"] = self.TablePanel:AddColumn("ID", 1)
+    self.List["Log"] = self.TablePanel:AddColumn("Log", 2)
+    self.List["Date"] = self.TablePanel:AddColumn("Date", 3)
+    self.List["PlayerID"] = self.TablePanel:AddColumn("Player ID", 4)
+
+
+    local WidthLog = self.TablePanel:GetWide() - ( 52 + 124 + 63 )
+
+    self.List["ID"]:SetWidth( 52 )
+    self.List["Log"]:SetWidth( WidthLog )
+    self.List["Date"]:SetWidth( 128 )
+    self.List["PlayerID"]:SetWidth( 63 )
+
+    self.List["ID"]:SetName(Gemini:GetPhrase("Logger.Column.ID"))
+    self.List["Log"]:SetName(Gemini:GetPhrase("Logger.Column.Log"))
+    self.List["Date"]:SetName(Gemini:GetPhrase("Logger.Column.Date"))
+    self.List["PlayerID"]:SetName(Gemini:GetPhrase("Logger.Column.PlayerID"))
+
+    self.List["ID"]:SetDescending( true )
+    self.TablePanel.CurrentColumn = self.List["ID"]
 end
 
 function MODULE:SetAsynchronousLogs(Active)

@@ -320,6 +320,8 @@ net.Receive("Gemini:StartAsynchronousLogs", Gemini.LoggerStartAsynchronousLogs)
 net.Receive("Gemini:StopAsynchronousLogs", Gemini.LoggerStopAsynchronousLogs)
 
 hook.Add("PlayerDisconnected", "Gemini:LoggerAsynchronousLogs", function(ply)
+    if not table.HasValue(AsynchronousPlayers, ply) then return end -- i know i know but it's a small table
+
     Gemini.LoggerStopAsynchronousLogs(0, ply)
 end)
 

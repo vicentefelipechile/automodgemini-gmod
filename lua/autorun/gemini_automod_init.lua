@@ -485,6 +485,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_rules.lua")     self:Print("File \"gemini/sh_rules.lua\" has been send to client.")
+        AddCSLuaFile("gemini/cl_derma.lua")     self:Print("File \"gemini/cl_derma.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_gemini.lua")    self:Print("File \"gemini/cl_gemini.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_gemini_panel.lua") self:Print("File \"gemini/cl_gemini_panel.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
@@ -552,6 +553,7 @@ function Gemini:Init()
         end
 
     else
+        include("gemini/cl_derma.lua")          self:Print("File \"gemini/cl_derma.lua\" has been loaded.")
         include("gemini/cl_gemini.lua")         self:Print("File \"gemini/cl_gemini.lua\" has been loaded.")
         include("gemini/cl_gemini_panel.lua")   self:Print("File \"gemini/cl_gemini_panel.lua\" has been loaded.")
     end

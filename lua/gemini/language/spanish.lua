@@ -2,6 +2,43 @@
                          Google Gemini Automod - Spanish
 ----------------------------------------------------------------------------]]--
 
+local LANG = Gemini:LanguageCreate("Spanish")
+
+--[[------------------------
+        Hook Language
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Hook.DoPlayerDeath", [[El jugador "%s" fue asesinado por "%s" en las coordendas %s usando %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawn", [[El jugador "%s" ha respawneado, han pasado %s segundos desde su muerte.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerInitialSpawn", [[El jugador "%s" ha conectado al servidor.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedEffect", [[El jugador "%s" ha creado el efecto "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedNPC", [[El jugador "%s" ha creado el npc "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedProp", [[El jugador "%s" ha creado el prop "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedRagdoll", [[El jugador "%s" ha creado un ragdoll "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedSENT", [[El jugador "%s" ha creado la entidad "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu de armas.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s usando el menu de vehiculos.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
+Gemini:LanguageAddPhrase(LANG, "Hook.OnCrazyPhysics", [[Se ha detectado fisicas locas en la entidad "%s", esta entidad %s dueño%s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerEnteredVehicle", [[El jugador "%s" ha entrado al auto "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerLeaveVehicle", [[El jugador "%s" estuvo en el auto "%s" por %s segundos y ahora se fue del auto en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerOnVehicle", [[El jugador "%s" aun se encuentra en el auto "%s" pero ahora en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.VariableEdited", [[El jugador "%s" edito la entidad "%s" y cambio la variable "%s" a "%s".]])
+Gemini:LanguageAddPhrase(LANG, "Hook.GravGunOnPickedUp", [[El jugador "%s" agarro la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.GravGunOnDropped", [[El jugador "%s" solto la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.OnPhysgunPickup", [[El jugador "%s" agarro la entidad "%s" con la pistola fisica en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PhysgunDrop", [[El jugador "%s" solto la entidad "%s" con la pistola fisica en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.OnNPCKilled", [[El NPC "%s" ha sido asesinado por "%s" en las coordenadas %s.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PreGamemodeLoaded", [[El servidor esta pre-cargando el modo de juego "%s".]])
+Gemini:LanguageAddPhrase(LANG, "Hook.OnGamemodeLoaded", [[El servidor esta cargado el modo de juego "%s".]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PostGamemodeLoaded", [[El servidor ha cargado por completo el modo de juego "%s".]])
+
 --[[------------------------
        Util Functions
 ------------------------]]--
@@ -20,45 +57,6 @@ local function GetEntityName(ent)
         return ent.PrintName or ent:GetClass()
     end
 end
-
-
---[[------------------------
-        Hook Language
-------------------------]]--
-
-local LANG = Gemini:LanguageCreate("Spanish")
-
-Gemini:LanguageAddPhrase(LANG, "DoPlayerDeath", [[El jugador "%s" fue asesinado por "%s" en las coordendas %s usando %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawn", [[El jugador "%s" ha respawneado, han pasado %s segundos desde su muerte.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerInitialSpawn", [[El jugador "%s" ha conectado al servidor.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedEffect", [[El jugador "%s" ha creado el efecto "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedNPC", [[El jugador "%s" ha creado el npc "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedProp", [[El jugador "%s" ha creado el prop "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedRagdoll", [[El jugador "%s" ha creado un ragdoll "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedSENT", [[El jugador "%s" ha creado la entidad "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu de armas.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s usando el menu de vehiculos.]])
-Gemini:LanguageAddPhrase(LANG, "OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
-Gemini:LanguageAddPhrase(LANG, "PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
-Gemini:LanguageAddPhrase(LANG, "OnCrazyPhysics", [[Se ha detectado fisicas locas en la entidad "%s", esta entidad %s dueño%s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerEnteredVehicle", [[El jugador "%s" ha entrado al auto "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerLeaveVehicle", [[El jugador "%s" estuvo en el auto "%s" por %s segundos y ahora se fue del auto en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerOnVehicle", [[El jugador "%s" aun se encuentra en el auto "%s" pero ahora en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "VariableEdited", [[El jugador "%s" edito la entidad "%s" y cambio la variable "%s" a "%s".]])
-Gemini:LanguageAddPhrase(LANG, "GravGunOnPickedUp", [[El jugador "%s" agarro la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "GravGunOnDropped", [[El jugador "%s" solto la entidad "%s" con la pistola antigravedad en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "OnPhysgunPickup", [[El jugador "%s" agarro la entidad "%s" con la pistola fisica en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PhysgunDrop", [[El jugador "%s" solto la entidad "%s" con la pistola fisica en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSay", [[El jugador "%s" dijo "%s" cerca de %s en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerDisconnected", [[El jugador "%s" se fue del servidor.]])
-Gemini:LanguageAddPhrase(LANG, "PlayerSilentDeath", [[El jugador "%s" se murio silenciosamente.]])
-Gemini:LanguageAddPhrase(LANG, "PostCleanupMap", [[El servidor ha limpiado el mapa, todas las entidades/props han sido eliminados.]])
-Gemini:LanguageAddPhrase(LANG, "OnNPCKilled", [[El NPC "%s" ha sido asesinado por "%s" en las coordenadas %s.]])
-Gemini:LanguageAddPhrase(LANG, "PreGamemodeLoaded", [[El servidor esta pre-cargando el modo de juego "%s".]])
-Gemini:LanguageAddPhrase(LANG, "OnGamemodeLoaded", [[El servidor esta cargado el modo de juego "%s".]])
-Gemini:LanguageAddPhrase(LANG, "PostGamemodeLoaded", [[El servidor ha cargado por completo el modo de juego "%s".]])
-
 
 --[[------------------------
             Hooks
@@ -236,7 +234,6 @@ Gemini:LanguageOverrideHook(LANG, {
     end
 })
 
-
 --[[------------------------
      Gemini Menu Phrases
 ------------------------]]--
@@ -244,7 +241,6 @@ Gemini:LanguageOverrideHook(LANG, {
 Gemini:LanguageAddPhrase(LANG, "Panel.Title", "Google Gemini Automod - Panel")
 Gemini:LanguageAddPhrase(LANG, "Credits", "Creditos")
 Gemini:LanguageAddPhrase(LANG, "Config", "Configuración")
-Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
 Gemini:LanguageAddPhrase(LANG, "Rules", "Reglas")
 
 --[[------------------------
@@ -261,17 +257,16 @@ Gemini:LanguageAddPhrase(LANG, "Gemini.Error.TooBig", "El tamaño de la respuest
 Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Blocked", "La peticion fue bloqueada por el Gemini, verifica la configuracion de seguridad.")
 Gemini:LanguageAddPhrase(LANG, "Gemini.Error.Safety", "La peticion fue bloqueada por el sistema de seguridad de Gemini.")
 Gemini:LanguageAddPhrase(LANG, "Gemini.Error.ServerError", "Error en el servidor de Gemini, espera un momento e intenta de nuevo.")
+Gemini:LanguageAddPhrase(LANG, "Gemini.Error.RateLimit", "Se ha alcanzado el limite de peticiones a Gemini, espera un momento e intenta de nuevo.")
 
 --[[-----------------------
     Gemini Enum Phrases
 -----------------------]]--
 
--- Block Reason
 Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.BLOCK_REASON_UNSPECIFIED", "La peticion ha sido bloqueada por una razon no especificada.")
 Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.SAFETY", "La peticion ha sido bloqueada por razones de seguridad.")
 Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.OTHER", "La peticion ha sido bloqueada por una razon desconocida.")
 
--- Finish Reason
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.FINISH_REASON_UNSPECIFIED", "La peticion ha sido finalizada por una razon no especificada.")
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.MAX_TOKENS", "La cantidad maxima de tokens especificada en la peticion ha sido alcanzada.")
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.RECITATION", "La peticion ha sido finalizada por motivos de recitación.")
@@ -284,21 +279,29 @@ Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.OTHER", "La peticion ha sido f
 ------------------------]]--
 
 Gemini:LanguageAddPhrase(LANG, "Logger", "Registros")
+Gemini:LanguageAddPhrase(LANG, "Logger.Settings", "Parametros")
+Gemini:LanguageAddPhrase(LANG, "Logger.MoreSettings", "Configuración extra")
 Gemini:LanguageAddPhrase(LANG, "Logger.DontAllowed", "No tienes permisos para ver los registros.")
 Gemini:LanguageAddPhrase(LANG, "Logger.LogsSended", "Los %s registros han sido recibidos con exito. (Tardo %s segundos)")
 Gemini:LanguageAddPhrase(LANG, "Logger.InitialLogs", "Registros iniciales")
 Gemini:LanguageAddPhrase(LANG, "Logger.PlayerID", "ID del jugador")
-Gemini:LanguageAddPhrase(LANG, "Logger.MaxLogs", "Cantidad maxima de Logs")
-Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs", "Logs entre X e Y")
-Gemini:LanguageAddPhrase(LANG, "Logger.EnableBetweenLogs", "Habilitar Logs entre X e Y")
+Gemini:LanguageAddPhrase(LANG, "Logger.MaxLogs", "Cantidad maxima de registros")
+Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs", "Registros entre X e Y")
+Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs.Enabled", "Activado")
+Gemini:LanguageAddPhrase(LANG, "Logger.BetweenLogs.Disabled", "Desactivado")
+Gemini:LanguageAddPhrase(LANG, "Logger.EnableBetweenLogs", "Obtener registros entre X e Y")
 Gemini:LanguageAddPhrase(LANG, "Logger.Search", "Buscar")
 Gemini:LanguageAddPhrase(LANG, "Logger.Requesting", "Obteniendo registros...")
 Gemini:LanguageAddPhrase(LANG, "Logger.RequestLogs", "Obtener registros")
 Gemini:LanguageAddPhrase(LANG, "Logger.RequestFailed", "No se pudieron obtener los registros.")
 Gemini:LanguageAddPhrase(LANG, "Logger.NoLogs", "No hay registros para mostrar.")
-Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", "Obtener registros asincronos")
+Gemini:LanguageAddPhrase(LANG, "Logger.AsyncLogs", "Obtener registros en tiempo real")
 Gemini:LanguageAddPhrase(LANG, "Logger.ClearLogs", "Limpiar registros")
 Gemini:LanguageAddPhrase(LANG, "Logger.ClearedLogs", "Se han vaciado los registros.")
+Gemini:LanguageAddPhrase(LANG, "Logger.Column.ID", "ID")
+Gemini:LanguageAddPhrase(LANG, "Logger.Column.Log", "Registro")
+Gemini:LanguageAddPhrase(LANG, "Logger.Column.Date", "Fecha")
+Gemini:LanguageAddPhrase(LANG, "Logger.Column.PlayerID", "Jugador ID")
 
 --[[------------------------
    Playground Menu Phrases
@@ -316,6 +319,20 @@ Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Received", "Mensaje recibido. 
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reset", "Reiniciar prompt")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reseted", "El prompt ha sido reiniciado.")
 Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Adjuntar registros")
+
+--[[------------------------
+    Training Menu Phrases
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
+Gemini:LanguageAddPhrase(LANG, "Train.PreviousTraining", "Entrenamientos previos")
+Gemini:LanguageAddPhrase(LANG, "Train.NewTraining", "Nuevo entrenamiento")
+Gemini:LanguageAddPhrase(LANG, "Train.InputPlayer", "Jugador ID")
+Gemini:LanguageAddPhrase(LANG, "Train.InputPlayer.Description", "La ID usada generalmente en los registros para buscar un jugador involucrado en cualquier registro.")
+Gemini:LanguageAddPhrase(LANG, "Train.InputLogStart", "Registro inicial")
+Gemini:LanguageAddPhrase(LANG, "Train.InputLogStart.Desc", "La id del registro inicial (ej: 1004)")
+Gemini:LanguageAddPhrase(LANG, "Train.InputLogEnd", "Registro final")
+Gemini:LanguageAddPhrase(LANG, "Train.InputLogEnd.Desc", "La id del registro final (ej: 1104)")
 
 --[[------------------------
    Gamemodes Descriptions

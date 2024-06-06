@@ -20,7 +20,6 @@ return [[
         <script type="text/javascript"> $Extension$ </script>
         <script type="text/javascript"> $Theme$ </script>
         <script type="text/javascript"> $Mode$ </script>
-        <script type="text/javascript"> $Snippets$ </script>
         
         <div id="editor">$InitialValue$</div>
         
@@ -34,7 +33,6 @@ return [[
                 readOnly: $ReadOnly$,
                 enableBasicAutocompletion: true,
                 enableLiveAutocompletion: true,
-                enableSnippets: true,
                 wrap: true
             })
         </script>

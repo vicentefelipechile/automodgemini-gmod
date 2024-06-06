@@ -125,9 +125,7 @@ function MODULE:AddMessagePrompt(Role, Text)
     PromptText:SetTextColor(BlackColor)
 
     timer.Simple(0, function()
-        -- Si el texto supera los 17 caracteres, suma 20px al alto del panel
-        -- What is going on the server?
-        local HowManyLines = math.ceil( PromptText:GetContentSize() / 16 ) * 2.2
+        local HowManyLines = math.ceil( PromptText:GetContentSize() / 15 ) * 2.2
         local HowManyBreaklines = #( string.Explode("\n", Text) )
         local NewHeight = HowManyLines + ( HowManyBreaklines * 19.2 )
 
@@ -248,7 +246,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     local SettingsPanel = vgui.Create("DPanel", OurTab)
-    SettingsPanel:SetSize(170, OutputY + 4)
+    SettingsPanel:SetSize(180, OutputY + 4)
     SettingsPanel:SetPos(10, 15)
 
     local SettingsLabel = vgui.Create("DLabel", SettingsPanel)
@@ -473,6 +471,9 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.List = {}
     self.List["ID"] = HistoryPanel:AddColumn("ID")
     self.List["Log"] = HistoryPanel:AddColumn("Log")
+
+    self.List["ID"]:SetName(Gemini:GetPhrase("Logger.Column.ID"))
+    self.List["Log"]:SetName(Gemini:GetPhrase("Logger.Column.Log"))
 
     self.List["ID"]:SetWidth( 48 )
     self.List["Log"]:SetWidth( HistoryPanel:GetWide() - 52 )

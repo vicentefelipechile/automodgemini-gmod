@@ -2,6 +2,11 @@
                    Google Gemini Automod - Rules Menu
 ----------------------------------------------------------------------------]]--
 
+local BackgroundColor = Color( 39, 39, 39)
+local BackgroundPaint = function(SubSelf, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, BackgroundColor )
+end
+
 local MODULE = { ["Icon"] = "icon16/page_edit.png" }
 local COMPILED_HTML = COMPILED_HTML or ""
 local ReplaceAceEditor = [[ace.edit("editor").setValue("%s")]]
@@ -36,7 +41,7 @@ function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
     local Extension = self:GetAceScript("ext-language_tools.js")
     local Theme = self:GetAceScript("theme-monokai.js")
     local Mode = self:GetAceScript("mode-markdown.js")
-    local Snippets = self:GetAceScript("snippets-markdown.js")
+    -- local Snippets = self:GetAceScript("snippets-markdown.js")
     local Gmod = self:GetAceScript("gmod.js")
 
     COMPILED_HTML = ReplaceCoincidences(Embedding, {
@@ -44,7 +49,7 @@ function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
         ["Extension"] = Extension,
         ["Theme"] = Theme,
         ["Mode"] = Mode,
-        ["Snippets"] = Snippets,
+    --     ["Snippets"] = Snippets,
         ["GmodScript"] = Gmod
     })
 
@@ -65,6 +70,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.MainSheet = vgui.Create( "DColumnSheet", OurTab )
+    self.MainSheet.Navigation:SetWide( 130 )
     self.MainSheet:Dock( FILL )
     self.MainSheet:DockMargin( 10, 10, 10, 10 )
 
@@ -100,11 +106,12 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
     self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
-    self.ServerInfoPanel.ActionPanel:SetTall( 36 )
+    self.ServerInfoPanel.ActionPanel:SetTall( 40 )
+    self.ServerInfoPanel.ActionPanel.Paint = BackgroundPaint
 
     self.ServerInfoPanel.ActionPanel.SaveButton = vgui.Create( "DButton", self.ServerInfoPanel.ActionPanel )
     self.ServerInfoPanel.ActionPanel.SaveButton:Dock( LEFT )
-    self.ServerInfoPanel.ActionPanel.SaveButton:DockMargin( 6, 6, 6, 6 )
+    self.ServerInfoPanel.ActionPanel.SaveButton:DockMargin( 4, 4, 4, 4 )
     self.ServerInfoPanel.ActionPanel.SaveButton:SetWide( 100 )
     self.ServerInfoPanel.ActionPanel.SaveButton:SetText( "Save" )
     self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( false )
@@ -147,11 +154,12 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerRulesPanel.ActionPanel = vgui.Create( "DPanel", self.ServerRulesPanel )
     self.ServerRulesPanel.ActionPanel:Dock( BOTTOM )
-    self.ServerRulesPanel.ActionPanel:SetTall( 30 )
+    self.ServerRulesPanel.ActionPanel:SetTall( 40 )
+    self.ServerRulesPanel.ActionPanel.Paint = BackgroundPaint
 
     self.ServerRulesPanel.ActionPanel.SaveButton = vgui.Create( "DButton", self.ServerRulesPanel.ActionPanel )
     self.ServerRulesPanel.ActionPanel.SaveButton:Dock( LEFT )
-    self.ServerRulesPanel.ActionPanel.SaveButton:DockMargin( 6, 6, 6, 6 )
+    self.ServerRulesPanel.ActionPanel.SaveButton:DockMargin( 4, 4, 4, 4 )
     self.ServerRulesPanel.ActionPanel.SaveButton:SetWide( 100 )
     self.ServerRulesPanel.ActionPanel.SaveButton:SetText( "Save" )
     self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( false )

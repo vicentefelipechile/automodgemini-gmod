@@ -2,11 +2,13 @@
                       Google Gemini Automod - Train Module
 ----------------------------------------------------------------------------]]--
 
-local sql_Query = sql.Query
+util.AddNetworkString("Gemini:GetTrain")
 
 --[[------------------------
         SQL Database
 ------------------------]]--
+
+local sql_Query = sql.Query
 
 local TrainSQL = {
     ["GEMINI_TRAIN"] = [[
@@ -43,6 +45,16 @@ local TrainSQL = {
         LIMIT
             %s
     ]],
+    ["GETTRAINRANGE"] = [[
+        SELECT
+            train_data,
+            train_result
+        FROM
+            gemini_train
+        WHERE
+            train_id BETWEEN '%s' AND '%s' AND
+            train_gamemode = '%s'
+    ]]
     ["GETALLTRAIN"] = [[
         SELECT
             train_data,

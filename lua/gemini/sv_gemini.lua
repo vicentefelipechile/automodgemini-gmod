@@ -261,7 +261,7 @@ hook.Add("PostGamemodeLoaded", "Gemini:GeminiSetGlobal", function()
     SetGlobal2Float("Gemini:TopK", Gemini:GetConfig("TopK", "Gemini"))
     SetGlobal2Int("Gemini:MaxTokens", Gemini:GetConfig("MaxTokens", "Gemini"))
 
-    SetGlobal2Bool("Gemini:APIKeyEnabled", Gemini:GetConfig("APIKey", "Gemini") ~= "YOUR_API_KEY" )
+    SetGlobal2Bool("Gemini:APIKeyEnabled", Gemini:GetConfig("APIKey", "Gemini") ~= "YOUR_API_KEY")
 end)
 
 

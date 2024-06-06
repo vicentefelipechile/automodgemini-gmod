@@ -19,7 +19,7 @@ local NPCNames = {}
 
 if ( file.Exists(NPCNamesPath, "GAME") ) then
     local FileContent = util.KeyValuesToTable(file.Read(NPCNamesPath, "GAME"))
-    local FileTokens = FileContent["tokens"] or FileContent["Tokens"] or {}
+    local FileTokens = FileContent["tokens"] or {}
 
     for NameClass, NameEntity in pairs(FileTokens) do
         NPCNames[NameClass] = NameEntity
@@ -55,6 +55,8 @@ function Gemini:LanguageOverrideHook(LanguageTarget, TableFunctions)
     end
 
     for HookName, HookFunc in pairs(TableFunctions) do
+        HookName = "Hook." .. HookName
+
         if not isfunction(HookFunc) then
             self:Error("The function \"" .. HookName .. "\" is not a valid function", HookFunc, "function")
         end
@@ -86,7 +88,7 @@ function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
         self:Error([[The language target does not exist]], LanguageTarget, "string")
     end
 
-    Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase, ["Func"] = Gemini.Util.ReturnNoneFunction}
+    Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase}
 end
 
 local LanguageTargetCache = "Spanish"
@@ -114,7 +116,7 @@ function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
     end
 
     if not istable(Language[LanguageTarget][PhraseName]) then
-        self:Error([[The phrase does not exist in the language target]], PhraseName, "string")
+        return PhraseName
     end
 
     return Language[LanguageTarget][PhraseName]["Phrase"]
@@ -155,9 +157,17 @@ function Gemini:LanguagePoblate()
     -- Poblate hook functions
     for LangName, LangTable in pairs(Language) do
         for HookName, HookTable in pairs(LangTable) do
-            if ( HookTable["Func"] == Gemini.Util.ReturnNoneFunction ) then continue end
+            if not isfunction( HookTable["Func"] ) then continue end
 
-            hook.Add(HookName, "GeminiLanguageHook:" .. LangName .. "." .. HookName, function(...)
+            -- Support for dots in the hook name
+            local CacheHookName = string.Explode(".", HookName)
+            local NewHookName = ""
+
+            for i = 2, #CacheHookName do
+                NewHookName = NewHookName .. CacheHookName[i]
+            end
+
+            hook.Add(NewHookName, "GeminiLanguageHook:" .. LangName .. "." .. NewHookName, function(...)
                 local CurrentLang = self:GetConfig("Language", "General", true)
                 if ( CurrentLang ~= LangName ) then return end
 
@@ -168,7 +178,7 @@ function Gemini:LanguagePoblate()
 
                 local PlayersInvolved = {}
                 for _, any in ipairs({...}) do
-                    if ( isentity(any) and IsValid(any) and any:IsPlayer() ) then
+                    if ( isentity(any) and any:IsPlayer() ) then
                         PlayersInvolved[any] = true
                     end
                 end

@@ -171,12 +171,14 @@ function GEMINIPANEL:PoblateItems()
 end
 
 function GEMINIPANEL:Init()
-    self:SetSize(math.max(ScrW() * 0.8, 800), math.max(ScrH() * 0.6, 500))
+    self:SetSize(math.max(ScrW() * 0.78, 800), math.max(ScrH() * 0.64, 500))
     self:MakePopup()
     self:SetTitle( Gemini:GetPhrase("Panel.Title") )
     self:ShowCloseButton(true)
     self:SetDraggable(true)
     self:DockPadding(5, 5, 5, 5)
+
+    self:SetSkin("Gemini:DermaSkin")
 
     self.Tabs = vgui.Create("DPropertySheet", self)
     self.Tabs:SetSize(self:GetWide() - 16, self:GetTall() - (BodyHeight * 2.5 + 8))
