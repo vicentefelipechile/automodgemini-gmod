@@ -48,14 +48,6 @@ function Gemini:ReloadDermaSkin()
     -- DPanel
     GeminiDermaSkin.colMenuBG = text_dark
 
-    PrintTable( GeminiDermaSkin )
-
-    -- Combobox
-    GeminiDermaSkin.PaintComboBox = function(DermaSkin, SubSelf, w, h)
-        -- draw.RoundedBox( 0, 0, 0, w, h, PanelBackgroundColor )
-        -- draw.RoundedBox( 0, 0, h - 2, w, 2, ColorCyan )
-    end
-
     derma.DefineSkin("Gemini:DermaSkin", "Gemini Derma Skin", GeminiDermaSkin)
 end
 

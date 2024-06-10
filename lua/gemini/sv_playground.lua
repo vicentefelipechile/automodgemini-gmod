@@ -89,6 +89,8 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             local Context = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
             FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
+        else
+            FullPrompt = FullPrompt .. "\n\n" .. self:GetPhrase("context.playground.nocontext") .. "\n\n"
         end
 
         --[[ Prompt ]]--
@@ -134,8 +136,13 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
             local Candidates = TableBody["candidates"]
 
             if not Candidates[1]["content"] then
-                self:Print("The response from Gemini API is invalid. The content is missing.")
-                self:PlaygroundSendMessage(ply, "Gemini.Error.FailedRequest")
+                local MessageError = "Gemini.Error.FailedRequest"
+                if Candidates[1]["finishReason"] then
+                    MessageError = "Enum.FinishReason." .. Candidates[1]["finishReason"]
+                end
+
+                self:Print(self:GetPhrase(MessageError))
+                self:PlaygroundSendMessage(ply, MessageError)
 
                 Gemini:PlaygroundClearHistory(ply)
                 return

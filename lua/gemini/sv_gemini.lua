@@ -71,9 +71,9 @@ local function RetreiveNewModels()
     })
 
     if ( SuccessRequest == false ) then
-        Gemini:Print("Failed to send request to retreive models.")
+        Gemini:Print("Failed to retreive models. HTTP Request failed.")
     else
-        Gemini:Print("Request successfully sent to retreive models.")
+        Gemini:Print("Retreiving models...")
     end
 end
 

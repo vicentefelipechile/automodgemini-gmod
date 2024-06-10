@@ -10,8 +10,6 @@ local MODULE = { ["Icon"] = "icon16/cog.png" }
 local GCLOUD_ICON = "materials/gemini/gcloud.png"
 local CONFIG_ICON = "icon16/cog.png"
 
-local HoverColor = Color( 0, 0, 0, 200 )
-local NoHoverColor = Color( 41, 41, 41, 200 )
 local BackgroundColor = Color( 45, 45, 45 )
 local OutlineColor = Color( 80, 80, 80, 200 )
 local OutlineColorOpaque = Color( 80, 80, 80 )
@@ -58,7 +56,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ConfigPanel = vgui.Create( "DColumnSheet", OurTab )
     self.ConfigPanel:Dock( FILL )
-    self.ConfigPanel:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel:DockMargin( 5, 5, 5, 5 )
 
     --[[------------------------
                Gemini
@@ -134,7 +132,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelInfo = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.ModelInfo:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo:DockMargin( 10, 15, 10, 10 )
-    self.ConfigPanel.Gemini.ModelInfo:SetTall( 110 )
+    self.ConfigPanel.Gemini.ModelInfo:SetTall( 240 )
     self.ConfigPanel.Gemini.ModelInfo.Paint = function( SubSelf, w, h )
         draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
     end
@@ -142,26 +140,52 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelInfo.ModelName = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name: ..." )
+    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name:" )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:SetFont("HudHintTextLarge")
 
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:Dock( TOP )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description: ..." )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetFont("HudHintTextLarge")
+    self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetText( "> ..." )
+    self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens: ... (... words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens:" )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> ... (... words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens: ... (... words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens:" )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:DockMargin( 10, 5, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> ... (... words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:DockMargin( 10, 10, 10, 0 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description:" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:Dock( TOP )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:DockMargin( 10, 5, 10, 0)
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetText( "..." )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetFont("HudHintTextLarge")
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetTall( 30 )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetWrap(true)
 
     self.ConfigPanel.Gemini.ModelName = vgui.Create( "DComboBox", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.ModelName:Dock( TOP )
@@ -194,21 +218,21 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         CurrentModel = DefaultModelTbl
         self.ConfigPanel.Gemini.ModelName:SetValue( CurrentModel["displayName"] )
     else
-        self.ConfigPanel.Gemini.ModelName:SetValue( "models/" .. CurrentModel["name"] )
+        self.ConfigPanel.Gemini.ModelName:SetValue( CurrentModel["name"] )
     end
 
-    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name: " .. CurrentModel["displayName"] )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description: " .. CurrentModel["description"] )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens: " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens: " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetText( "> " .. CurrentModel["displayName"] )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetText( CurrentModel["description"] )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
 
     self.ConfigPanel.Gemini.ModelName.OnSelect = function( SubSelf, index, value, data )
         CurrentModel = data
 
-        self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name: " .. CurrentModel["displayName"] )
-        self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description: " .. CurrentModel["description"] )
-        self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens: " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
-        self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens: " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
+        self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetText( "> " .. CurrentModel["displayName"] )
+        self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetText( CurrentModel["description"] )
+        self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
+        self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
 
         if Gemini:CanUse("gemini_config_set") then
             local ModelName = string.Replace( CurrentModel["name"], "models/", "" )

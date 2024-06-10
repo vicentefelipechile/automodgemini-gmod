@@ -267,12 +267,12 @@ Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.BLOCK_REASON_UNSPECIFIED", "La 
 Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.SAFETY", "La peticion ha sido bloqueada por razones de seguridad.")
 Gemini:LanguageAddPhrase(LANG, "Enum.BlockReason.OTHER", "La peticion ha sido bloqueada por una razon desconocida.")
 
-Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.FINISH_REASON_UNSPECIFIED", "La peticion ha sido finalizada por una razon no especificada.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.FINISH_REASON_UNSPECIFIED", "La peticion ha sido bloqueada por una razon no especificada.")
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.MAX_TOKENS", "La cantidad maxima de tokens especificada en la peticion ha sido alcanzada.")
-Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.RECITATION", "La peticion ha sido finalizada por motivos de recitación.")
-Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.SAFETY", "La peticion ha sido finalizada por razones de seguridad.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.RECITATION", "La peticion ha sido bloqueada por motivos de recitación.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.SAFETY", "La peticion ha sido bloqueada por los filtros seguridad.")
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.STOP", "Punto de parada natural del modelo o secuencia de parada proporcionada.")
-Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.OTHER", "La peticion ha sido finalizada por una razon desconocida.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.OTHER", "La peticion ha sido bloqueada por una razon desconocida.")
 
 --[[------------------------
      Logger Menu Phrases
@@ -325,7 +325,7 @@ Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Adjuntar registros")
 ------------------------]]--
 
 Gemini:LanguageAddPhrase(LANG, "Train", "Entrenamiento")
-Gemini:LanguageAddPhrase(LANG, "Train.PreviousTraining", "Entrenamientos previos")
+Gemini:LanguageAddPhrase(LANG, "Train.PreviousTraining", "Entrenamientos anteriores")
 Gemini:LanguageAddPhrase(LANG, "Train.NewTraining", "Nuevo entrenamiento")
 Gemini:LanguageAddPhrase(LANG, "Train.InputPlayer", "Jugador ID")
 Gemini:LanguageAddPhrase(LANG, "Train.InputPlayer.Description", "La ID usada generalmente en los registros para buscar un jugador involucrado en cualquier registro.")
@@ -339,9 +339,10 @@ Gemini:LanguageAddPhrase(LANG, "Train.InputLogEnd.Desc", "La id del registro fin
 ------------------------]]--
 
 Gemini:LanguageAddPhrase(LANG, "context", [[La información que se muestra a continuacion describe el modo de juego actual que el servidor de Garry's Mod esta ejecutando]])
-Gemini:LanguageAddPhrase(LANG, "context.playground", [[Lo siguiente son registros/logs de lo que ocurrio en el juego:]])
 Gemini:LanguageAddPhrase(LANG, "context.begin", [[Eres un modelo de lenguaje de inteligencia artificial, tu mision principal es ser el juez/espectador de la informacion que exista en el juego, dime ¿Que es lo que sabes de Garry's Mod?]])
 Gemini:LanguageAddPhrase(LANG, "context.post", [[Lo anterior es lo que ocurrio en el juego, evita crear respuestas extensas/largas si el usuario no te lo pide y tampoco utilices caracteres especiales como "*" o "&" en ves de eso usa "-", si tienes la oportunidad de responder con una respuesta corta, hazlo, si el usuario desea mas informacion te lo pedira, mientras tanto solo haz respuestas cortas, si te habla en algun idioma que no sea el español tienes que responderle con el mismo idioma que te haya hablado, ahora debes responder lo que el usuario te indique despues de esta linea (recuerda el idioma)]])
+Gemini:LanguageAddPhrase(LANG, "context.playground", [[Lo siguiente son registros/logs de lo que ocurrio en el juego:]])
+Gemini:LanguageAddPhrase(LANG, "context.playground.nocontext", [[A continuacion esta el mensaje del usuario, respondele como puedas a su mensaje de la manera mas corta y precisa posible, evita respuestas largas y extensas, si el usuario desea mas informacion te lo pedira, mientras tanto solo haz respuestas cortas, si te habla en algun idioma que no sea el español tienes que responderle con el mismo idioma que te haya hablado, ahora debes responder lo que el usuario te indique despues de esta linea (recuerda el idioma)]])
 
 Gemini:LanguageAddPhrase(LANG, "Gamemode.default", [[# Modo de Juego:
 Ningún Modo de Juego Conocido

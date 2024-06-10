@@ -3,7 +3,6 @@
 ----------------------------------------------------------------------------]]--
 
 local MODULE = { ["Icon"] = "icon16/page_white_text.png" }
-local BlackColor = COLOR_BLACK
 
 --[[------------------------
        Paint Functions
@@ -39,6 +38,14 @@ local function HorizontalPaint(_, w, h)
     draw.RoundedBox( 0, 0, 0, w, h, HoverLineColor )
 end
 
+local ScrollbarPaint = function(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+
+    if self:IsHovered() then
+        draw.RoundedBox( 0, 0, 0, w, h, HoverLineColor )
+    end
+end
+
 --[[------------------------
            Convars
 ------------------------]]--
@@ -55,11 +62,12 @@ Gemini:CreateConfig("BetweenLogsMax", "Logger", Gemini.VERIFICATION_TYPE.number,
            Logger
 ------------------------]]--
 
-function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
+function MODULE:AskLogs(Limit, Target, IsPlayer, InitialLogs)
     Target = Target or 0
     IsPlayer = IsPlayer or false
 
     local Status = net.Start("Gemini:AskLogs")
+        net.WriteBool(InitialLogs ~= nil)
     net.SendToServer()
 
     if ( Status == true ) then
@@ -239,9 +247,8 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
         local LogsMax = Gemini:GetConfig("MaxLogs", "Logger")
         local LogsAmount = math.min(LogsMax, 200)
-        local Between = Gemini:GetConfig("BetweenLogs", "Logger")
 
-        self:AskLogs(LogsAmount, PlayerID, PlayerID ~= nil, Between)
+        self:AskLogs(LogsAmount, PlayerID, PlayerID ~= nil)
 
         if Between or PlayerID then
             self:SetAsynchronousLogs(false)
@@ -320,9 +327,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     -- Scrollbar
     self.SettingsPanel.VBar.Paint = Gemini.Util.EmptyFunction
-    self.SettingsPanel.VBar.btnGrip.Paint = function(self, w, h)
-        draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
-    end
+    self.SettingsPanel.VBar.btnGrip.Paint = ScrollbarPaint
     self.SettingsPanel.VBar:SetWide( 14 )
     self.SettingsPanel.VBar:SetHideButtons(true)
 
@@ -379,7 +384,7 @@ function MODULE:OnFocus()
     if ( LogsAmount < 1 ) then return end
     LogsAmount = math.min(LogsAmount, LogsMax)
 
-    self:AskLogs(LogsAmount)
+    self:AskLogs(LogsAmount, nil, nil, true)
     if ( EnableAsync == true ) then
         self:SetAsynchronousLogs(true)
     end

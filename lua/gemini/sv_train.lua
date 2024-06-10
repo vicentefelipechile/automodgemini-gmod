@@ -54,7 +54,7 @@ local TrainSQL = {
         WHERE
             train_id BETWEEN '%s' AND '%s' AND
             train_gamemode = '%s'
-    ]]
+    ]],
     ["GETALLTRAIN"] = [[
         SELECT
             train_data,

@@ -253,11 +253,11 @@ function Gemini:LoggerAddLog(LogString, LogUser1, LogUser2, LogUser3, LogUser4)
     LogUser3 = Gemini:LoggerPlayerToID(LogUser3)
     LogUser4 = Gemini:LoggerPlayerToID(LogUser4)
 
+    Formating(self:LoggerGetSQL("INSERTLOG"), LogString, LogUser1, LogUser2, LogUser3, LogUser4)
+
     if #AsynchronousPlayers > 0 then
         Gemini:LoggerSendAsynchronousLogs()
     end
-
-    Formating(self:LoggerGetSQL("INSERTLOG"), LogString, LogUser1, LogUser2, LogUser3, LogUser4)
 end
 
 hook.Add("Gemini.Log", "Gemini:Log", function(...)
@@ -274,7 +274,14 @@ function Gemini.LoggerAskLogs(len, ply)
         return
     end
 
-    local Logs = Gemini:LoggerGetLogsUsingPlayerSettings(ply)
+    local InitialLogs = net.ReadBool()
+
+    local Logs = {}
+    if InitialLogs then
+        Logs = Gemini:LoggerGetLogsLimit(Gemini:GetPlayerInfo(ply, "gemini_logger_requestinitiallogs"))
+    else
+        Logs = Gemini:LoggerGetLogsUsingPlayerSettings(ply)
+    end
 
     local CompressesLogs = util.Compress( util.TableToJSON(Logs) )
     local CompressedSize = #CompressesLogs

@@ -30,6 +30,36 @@ local NewGetContentSize = function(self)
 end
 
 --[[------------------------
+       Paint Functions
+------------------------]]--
+
+local BackgroundColor = Color( 45, 45, 45 )
+local OutlineColor = Color( 80, 80, 80, 200 )
+
+local CheckedColor = Color( 94, 94, 94)
+local UncheckedColor = Color( 32, 32, 32)
+
+local HoverColor = Color( 0, 0, 0, 50 )
+local HoverLineColor = Color( 1, 129, 123)
+
+local OutlineWidth = 3
+
+local function BackgroundPaint(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+    draw.RoundedBox( 0, OutlineWidth, OutlineWidth, w - (OutlineWidth * 2), h - (OutlineWidth * 2), BackgroundColor )
+end
+
+local function ButtonBooleanPaint(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, self:GetChecked() and CheckedColor or UncheckedColor )
+    draw.SimpleText( self:GetChecked() and Gemini:GetPhrase("Logger.BetweenLogs.Enabled") or Gemini:GetPhrase("Logger.BetweenLogs.Disabled"), "Frutiger:Small", w / 2, h / 2, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+
+    if self:IsHovered() then
+        draw.RoundedBox( 0, 0, 0, w, h, HoverColor )
+        draw.RoundedBox( 0, 0, h - 2, w, 2, HoverLineColor )
+    end
+end
+
+--[[------------------------
            Convars
 ------------------------]]--
 
@@ -46,7 +76,7 @@ Gemini:CreateConfig("AttachContext", "Playground", Gemini.VERIFICATION_TYPE.bool
 
 function MODULE:ResetPrompt()
     table.Empty(PromptHistory)
-    self.PromptHistory:Clear()
+    self.PromptPanel.PromptHistory:Clear()
 
     if not Gemini:CanUse("gemini_playground") then return end
 
@@ -68,7 +98,7 @@ function MODULE:PoblatePrompt()
 end
 
 function MODULE:AddMessagePrompt(Role, Text)
-    if not IsValid(self.PromptHistory) then return end
+    if not IsValid(self.PromptPanel.PromptHistory) then return end
     if not AllowedRoles[Role] then return end
     Text = string.Trim(Text)
 
@@ -82,10 +112,10 @@ function MODULE:AddMessagePrompt(Role, Text)
             draw.RoundedBox(0, 0, 0, w, h, GrayColor)
         end
 
-        self.PromptHistory:AddItem(HorizontalLine)
+        self.PromptPanel.PromptHistory:AddItem(HorizontalLine)
     else
         -- Pick last item
-        local LastItem = self.PromptHistory:GetCanvas():GetChildren()[1]
+        local LastItem = self.PromptPanel.PromptHistory:GetCanvas():GetChildren()[1]
         if IsValid(LastItem) then
             LastItem.Paint = function(_, w, h)
                 draw.RoundedBox(0, 0, 0, w, h, BlackColor)
@@ -136,12 +166,12 @@ function MODULE:AddMessagePrompt(Role, Text)
 
         timer.Simple(0.1, function()
             if IsValid(PromptMessage) then
-                self.PromptHistory:ScrollToChild(PromptMessage)
+                self.PromptPanel.PromptHistory:ScrollToChild(PromptMessage)
             end
         end)
     end)
 
-    self.PromptHistory:AddItem(PromptMessage)
+    self.PromptPanel.PromptHistory:AddItem(PromptMessage)
 
     -- HorizontalLine
     local HorizontalLine = vgui.Create("DPanel")
@@ -150,7 +180,7 @@ function MODULE:AddMessagePrompt(Role, Text)
     HorizontalLine:SetTall(1)
     HorizontalLine.Paint = Gemini.Util.ReturnNoneFunction
 
-    self.PromptHistory:AddItem(HorizontalLine)
+    self.PromptPanel.PromptHistory:AddItem(HorizontalLine)
 
     table.insert(PromptHistory, { ["Role"] = Role, ["Text"] = Text })
 end
@@ -164,7 +194,7 @@ function MODULE:SendMessagePrompt(Text)
         LastRequest = CurTime()
         self:SetMessageLog( Gemini:GetPhrase("Playground.Prompt.Sended") )
 
-        self.PromptInputSend:SetDisabled(true)
+        self.PromptPanel.Input:SetDisabled(true)
     end
 end
 
@@ -232,217 +262,187 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
            Output Message
     ------------------------]]--
 
-    local OutputMSG = vgui.Create("DTextEntry", OurTab)
-    OutputMSG:SetSize(OurTab:GetWide() - 68, 20)
-    OutputMSG:SetPos(518, OurTab:GetTall() - 68)
-    OutputMSG:SetEditable(false)
+    self.OutputMSG = vgui.Create("DTextEntry", OurTab)
+    self.OutputMSG:SetSize(OurTab:GetWide() - 68, 20)
+    self.OutputMSG:SetPos(518, OurTab:GetTall() - 68)
+    self.OutputMSG:SetEditable(false)
 
-    self.OutputMSG = OutputMSG
-
-    local _, OutputY = OutputMSG:GetPos()
+    local OutputY = self.OutputMSG:GetY()
 
     --[[------------------------
            Settings Panel
     ------------------------]]--
 
-    local SettingsPanel = vgui.Create("DPanel", OurTab)
-    SettingsPanel:SetSize(180, OutputY + 4)
-    SettingsPanel:SetPos(10, 15)
+    self.SettingsPanel = vgui.Create("DScrollPanel", OurTab)
+    self.SettingsPanel:SetSize(195, OutputY + 4)
+    self.SettingsPanel:SetPos(10, 15)
+    self.SettingsPanel.Paint = BackgroundPaint
 
-    local SettingsLabel = vgui.Create("DLabel", SettingsPanel)
-    SettingsLabel:SetText( Gemini:GetPhrase("Config") )
-    SettingsLabel:SetTextColor(BlackColor)
-    SettingsLabel:SetFont("Frutiger:Normal")
-    SettingsLabel:SizeToContents()
-    SettingsLabel:SetPos(SettingsPanel:GetWide() / 2 - SettingsLabel:GetWide() / 2, 6)
+    self.SettingsPanel.Title = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.Title:SetText( Gemini:GetPhrase("Logger.Settings") )
+    self.SettingsPanel.Title:Dock(TOP)
+    self.SettingsPanel.Title:SetFont("Frutiger:Normal")
+    self.SettingsPanel.Title:SetContentAlignment(5)
+    self.SettingsPanel.Title:DockMargin( 10, 10, 10, 0 )
+    self.SettingsPanel.Title:SetHeight( 16 )
 
-    local PlayerIDInput = vgui.Create("DTextEntry", SettingsPanel)
-    PlayerIDInput:SetSize(SettingsPanel:GetWide() - 20, 20)
-    PlayerIDInput:SetPos(10, 40)
-    PlayerIDInput:SetNumeric(true)
-    PlayerIDInput:SetPlaceholderText( Gemini:GetPhrase("Logger.PlayerID") )
+    self.SettingsPanel.PlayerIDLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.PlayerIDLabel:SetText( Gemini:GetPhrase("Logger.Column.PlayerID") )
+    self.SettingsPanel.PlayerIDLabel:Dock(TOP)
+    self.SettingsPanel.PlayerIDLabel:SetContentAlignment(5)
+    self.SettingsPanel.PlayerIDLabel:DockMargin( 10, 10, 10, 0 )
+
+    self.SettingsPanel.PlayerIDInput = vgui.Create("DTextEntry", self.SettingsPanel)
+    self.SettingsPanel.PlayerIDInput:SetNumeric(true)
+    self.SettingsPanel.PlayerIDInput:SetPlaceholderText( Gemini:GetPhrase("Logger.PlayerID") )
+    self.SettingsPanel.PlayerIDInput:Dock(TOP)
+    self.SettingsPanel.PlayerIDInput:DockMargin( 10, 0, 10, 0 )
 
     if ( Gemini:GetConfig("PlayerTarget", "Playground") ~= 0 ) then
-        PlayerIDInput:SetValue( Gemini:GetConfig("PlayerTarget", "Playground") )
+        self.SettingsPanel.PlayerIDInput:SetValue( Gemini:GetConfig("PlayerTarget", "Playground") )
     end
 
-    PlayerIDInput.OnEnter = function(SubSelf)
-        local PlayerID = tonumber(SubSelf:GetValue()) or 0
+    self.SettingsPanel.PlayerIDInput.OnEnter = function(SubSelf)
+        local PlayerID = SubSelf:GetInt() or 0
         Gemini:SetConfig("PlayerTarget", "Playground", PlayerID)
     end
 
-    PlayerIDInput.OnLoseFocus = function(SubSelf)
-        local PlayerID = tonumber(SubSelf:GetValue()) or 0
+    self.SettingsPanel.PlayerIDInput.OnLoseFocus = function(SubSelf)
+        local PlayerID = SubSelf:GetInt() or 0
         Gemini:SetConfig("PlayerTarget", "Playground", PlayerID)
     end
 
-    local MaxLogsLabel = vgui.Create("DLabel", SettingsPanel)
-    MaxLogsLabel:SetText( Gemini:GetPhrase("Logger.MaxLogs") )
-    MaxLogsLabel:SetTextColor(BlackColor)
-    MaxLogsLabel:SetFont("Frutiger:Small")
-    MaxLogsLabel:SizeToContents()
-    MaxLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - MaxLogsLabel:GetWide() / 2, 70)
+    self.SettingsPanel.MaxLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.MaxLogsLabel:SetText( Gemini:GetPhrase("Logger.MaxLogs") )
+    self.SettingsPanel.MaxLogsLabel:Dock(TOP)
+    self.SettingsPanel.MaxLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.MaxLogsLabel:DockMargin( 10, 10, 10, 0 )
 
-    local MaxLogs = vgui.Create("DNumberWang", SettingsPanel)
-    MaxLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    MaxLogs:SetPos(10, 84)
-    MaxLogs:SetMin(1)
-    MaxLogs:SetMax(1000)
-    MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Playground") )
+    self.SettingsPanel.MaxLogs = vgui.Create("DNumberWang", self.SettingsPanel)
+    self.SettingsPanel.MaxLogs:SetMin(1)
+    self.SettingsPanel.MaxLogs:SetValue( Gemini:GetConfig("MaxLogs", "Playground") )
+    self.SettingsPanel.MaxLogs:Dock(TOP)
+    self.SettingsPanel.MaxLogs:DockMargin( 10, 0, 10, 0 )
 
-    MaxLogs.OnValueChanged = function(_, value)
+    self.SettingsPanel.MaxLogs.OnValueChanged = function(_, value)
         Gemini:SetConfig("MaxLogs", "Playground", value)
     end
 
-    local BetweenLogsLabel = vgui.Create("DLabel", SettingsPanel)
-    BetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.BetweenLogs") )
-    BetweenLogsLabel:SetTextColor(BlackColor)
-    BetweenLogsLabel:SetFont("Frutiger:Small")
-    BetweenLogsLabel:SizeToContents()
-    BetweenLogsLabel:SetPos(SettingsPanel:GetWide() / 2 - BetweenLogsLabel:GetWide() / 2, 110)
+    self.SettingsPanel.BetweenLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.BetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.BetweenLogs") )
+    self.SettingsPanel.BetweenLogsLabel:Dock(TOP)
+    self.SettingsPanel.BetweenLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.BetweenLogsLabel:DockMargin( 10, 20, 10, 0 )
 
-    local BetweenLogsMin = vgui.Create("DNumberWang", SettingsPanel)
-    BetweenLogsMin:SetUpdateOnType(false)
-    BetweenLogsMin:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
-    BetweenLogsMin:SetPos(10, 124)
-    BetweenLogsMin:SetMin(1)
-    BetweenLogsMin:SetMax(1000000)
-    BetweenLogsMin:SetValue( Gemini:GetConfig("BetweenLogsMin", "Playground") )
+    self.SettingsPanel.BetweenLogsInputs = vgui.Create("DPanel", self.SettingsPanel)
+    self.SettingsPanel.BetweenLogsInputs:Dock(TOP)
+    self.SettingsPanel.BetweenLogsInputs:SetHeight( 20 )
+    self.SettingsPanel.BetweenLogsInputs:DockMargin( 10, 0, 10, 0 )
+    self.SettingsPanel.BetweenLogsInputs.Paint = Gemini.Util.EmptyFunction
 
-    local BetweenLogsMax = vgui.Create("DNumberWang", SettingsPanel)
-    BetweenLogsMax:SetUpdateOnType(false)
-    BetweenLogsMax:SetSize( ( SettingsPanel:GetWide() - 20 ) / 2 - 4, 20)
-    BetweenLogsMax:SetPos( ( SettingsPanel:GetWide() - 20 ) / 2 + 14, 124)
-    BetweenLogsMax:SetMin(1)
-    BetweenLogsMax:SetMax(1000000)
-    BetweenLogsMax:SetValue( Gemini:GetConfig("BetweenLogsMax", "Playground") )
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin = vgui.Create("DNumberWang", self.SettingsPanel.BetweenLogsInputs)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin:SetMin(1)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin:SetValue( Gemini:GetConfig("BetweenLogsMin", "Playground") )
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin:Dock(LEFT)
 
-    BetweenLogsMin.OnValueChanged = function(_, value)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax = vgui.Create("DNumberWang", self.SettingsPanel.BetweenLogsInputs)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax:SetMin(2)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax:SetValue( Gemini:GetConfig("BetweenLogsMax", "Playground") )
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax:Dock(RIGHT)
+
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMin.OnValueChanged = function(_, value)
         Gemini:SetConfig("BetweenLogsMin", "Playground", value)
-
-        if ( BetweenLogsMax:GetValue() < value ) then
-            BetweenLogsMax:SetValue(value)
-        end
     end
 
-    BetweenLogsMax.OnValueChanged = function(_, value)
+    self.SettingsPanel.BetweenLogsInputs.BetweenLogsMax.OnValueChanged = function(_, value)
         Gemini:SetConfig("BetweenLogsMax", "Playground", value)
-
-        if ( BetweenLogsMin:GetValue() > value ) then
-            BetweenLogsMin:SetValue(value)
-        end
     end
 
-    local EnableBetweenLogs = vgui.Create("DCheckBoxLabel", SettingsPanel)
-    EnableBetweenLogs:SetSize(SettingsPanel:GetWide() - 20, 20)
-    EnableBetweenLogs:SetPos(10, 150)
-    EnableBetweenLogs:SetText( Gemini:GetPhrase("Logger.EnableBetweenLogs") )
-    EnableBetweenLogs:SetTextColor(BlackColor)
-    EnableBetweenLogs:SetValue( Gemini:GetConfig("BetweenLogs", "Playground") )
+    self.SettingsPanel.EnableBetweenLogsLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.EnableBetweenLogsLabel:SetText( Gemini:GetPhrase("Logger.EnableBetweenLogs") )
+    self.SettingsPanel.EnableBetweenLogsLabel:Dock(TOP)
+    self.SettingsPanel.EnableBetweenLogsLabel:SetContentAlignment(5)
+    self.SettingsPanel.EnableBetweenLogsLabel:DockMargin( 10, 5, 10, 0 )
 
-    EnableBetweenLogs.OnChange = function(_, value)
+    self.SettingsPanel.EnableBetweenLogs = vgui.Create("DCheckBox", self.SettingsPanel)
+    self.SettingsPanel.EnableBetweenLogs:SetValue( Gemini:GetConfig("BetweenLogs", "Playground") )
+    self.SettingsPanel.EnableBetweenLogs:Dock(TOP)
+    self.SettingsPanel.EnableBetweenLogs:DockMargin( 10, 0, 10, 0 )
+    self.SettingsPanel.EnableBetweenLogs:SetTall( 20 )
+    self.SettingsPanel.EnableBetweenLogs.Paint = ButtonBooleanPaint
+
+    self.SettingsPanel.EnableBetweenLogs.OnChange = function(_, value)
         Gemini:SetConfig("BetweenLogs", "Playground", value)
     end
 
-    self.IsBetweenLogs = EnableBetweenLogs
+    self.SettingsPanel.AttachContextLabel = vgui.Create("DLabel", self.SettingsPanel)
+    self.SettingsPanel.AttachContextLabel:SetText( Gemini:GetPhrase("Playground.AttachContext") )
+    self.SettingsPanel.AttachContextLabel:Dock(TOP)
+    self.SettingsPanel.AttachContextLabel:SetContentAlignment(5)
+    self.SettingsPanel.AttachContextLabel:DockMargin( 10, 15, 10, 0 )
 
-    local AskLogsButton = vgui.Create("DButton", SettingsPanel)
-    AskLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
-    AskLogsButton:SetPos(10, 180)
-    AskLogsButton:SetText( Gemini:GetPhrase("Logger.RequestLogs") )
-    AskLogsButton:SetFont("Frutiger:Small")
+    self.SettingsPanel.AttachContext = vgui.Create("DCheckBox", self.SettingsPanel)
+    self.SettingsPanel.AttachContext:SetValue( Gemini:GetConfig("AttachContext", "Playground") )
+    self.SettingsPanel.AttachContext:Dock(TOP)
+    self.SettingsPanel.AttachContext:DockMargin( 10, 0, 10, 0 )
+    self.SettingsPanel.AttachContext:SetTall( 20 )
+    self.SettingsPanel.AttachContext.Paint = ButtonBooleanPaint
 
-    AskLogsButton.DoClick = function()
-        local PlayerID = Gemini:GetConfig("PlayerTarget", "Playground")
-
-        PlayerID = ( PlayerID ~= 0 ) and PlayerID or nil
-
-        local LogsMax = Gemini:GetConfig("MaxLogs", "Playground")
-        local LogsAmount = math.min(LogsMax, 200)
-        local Between = Gemini:GetConfig("BetweenLogs", "Playground")
-
-        self:AskLogs(LogsAmount, PlayerID, PlayerID ~= nil, Between)
-    end
-
-    local ClearLogsButton = vgui.Create("DButton", SettingsPanel)
-    ClearLogsButton:SetSize(SettingsPanel:GetWide() - 20, 20)
-    ClearLogsButton:SetPos(10, 204)
-    ClearLogsButton:SetText( Gemini:GetPhrase("Logger.ClearLogs") )
-    ClearLogsButton:SetFont("Frutiger:Small")
-
-    ClearLogsButton.DoClick = function()
-        self:UpdateTable({})
-        self:SetMessageLog( Gemini:GetPhrase("Logger.ClearedLogs") )
-    end
-
-    local AttachContextCheckbox = vgui.Create("DCheckBoxLabel", SettingsPanel)
-    AttachContextCheckbox:SetSize(SettingsPanel:GetWide() - 20, 20)
-    AttachContextCheckbox:SetPos(10, 250)
-    AttachContextCheckbox:SetText( Gemini:GetPhrase("Playground.AttachContext") )
-    AttachContextCheckbox:SetTextColor(BlackColor)
-    AttachContextCheckbox:SetValue( Gemini:GetConfig("AttachContext", "Playground") )
-
-    AttachContextCheckbox.OnChange = function(_, value)
+    self.SettingsPanel.AttachContext.OnChange = function(_, value)
         Gemini:SetConfig("AttachContext", "Playground", value)
     end
 
-    self.HasContext = AttachContextCheckbox
+    self.SettingsPanel.ResetPromptButton = vgui.Create("DButton", self.SettingsPanel)
+    self.SettingsPanel.ResetPromptButton:SetText( Gemini:GetPhrase("Playground.Prompt.Reset") )
+    self.SettingsPanel.ResetPromptButton:Dock(TOP)
+    self.SettingsPanel.ResetPromptButton:DockMargin( 10, 10, 10, 10 )
 
-
-    local ResetPromptButton = vgui.Create("DButton", SettingsPanel)
-    ResetPromptButton:SetSize(SettingsPanel:GetWide() - 20, 20)
-    ResetPromptButton:SetPos(10, 280)
-    ResetPromptButton:SetText( Gemini:GetPhrase("Playground.Prompt.Reset") )
-    ResetPromptButton:SetFont("Frutiger:Small")
-
-    ResetPromptButton.DoClick = function()
+    self.SettingsPanel.ResetPromptButton.DoClick = function()
         self:ResetPrompt()
-        self.PromptInputSend:SetDisabled(false)
+        self.PromptPanel.Input:SetDisabled(false)
     end
 
     --[[------------------------
-            Prompt Panel
+           Prompt Panel
     ------------------------]]--
 
-    local PromptPanel = vgui.Create("DPanel", OurTab)
-    PromptPanel:SetSize(320, OutputY + 4)
-    PromptPanel:SetPos( SettingsPanel:GetWide() + PanelOffset, 15 )
+    self.PromptPanel = vgui.Create("DPanel", OurTab)
+    self.PromptPanel:SetSize(320, OutputY + 4)
+    self.PromptPanel:SetPos( self.SettingsPanel:GetWide() + PanelOffset, 15 )
+    self.PromptPanel.Paint = BackgroundPaint
 
-    local PromptTitlePanel = vgui.Create("DPanel", PromptPanel)
-    PromptTitlePanel:SetSize(PromptPanel:GetWide() - 10, 30)
-    PromptTitlePanel:SetPos(5, 5)
-    PromptTitlePanel.Paint = function(_, w, h)
-        draw.RoundedBox(0, 0, 0, w, h, BlackColor)
-    end
+    self.PromptPanel.Title = vgui.Create("DLabel", self.PromptPanel)
+    self.PromptPanel.Title:SetText( Gemini:GetPhrase("Playground.Prompt") )
+    self.PromptPanel.Title:Dock(TOP)
+    self.PromptPanel.Title:SetFont("Frutiger:Normal")
+    self.PromptPanel.Title:SetContentAlignment(5)
+    self.PromptPanel.Title:DockMargin( 10, 10, 10, 0 )
 
-    local PromptTitleLabel = vgui.Create("DLabel", PromptTitlePanel)
-    PromptTitleLabel:SetText( Gemini:GetPhrase("Playground.Prompt") )
-    PromptTitleLabel:SetFont("Frutiger:Normal")
-    PromptTitleLabel:SizeToContents()
-    PromptTitleLabel:SetPos(PromptTitlePanel:GetWide() / 2 - PromptTitleLabel:GetWide() / 2, 6)
+    self.PromptPanel.PromptHistory = vgui.Create("DScrollPanel", self.PromptPanel)
+    self.PromptPanel.PromptHistory:Dock(FILL)
+    self.PromptPanel.PromptHistory:DockMargin( 10, 10, 10, 4 )
+    self.PromptPanel.PromptHistory.Paint = BackgroundPaint
 
-    local PromptHistoryPanel = vgui.Create("DScrollPanel", PromptPanel)
-    PromptHistoryPanel:SetSize(PromptPanel:GetWide() - 10, PromptPanel:GetTall() - 83)
-    PromptHistoryPanel:SetPos(5, 40)
-    PromptHistoryPanel.Paint = function(_, w, h)
-        draw.RoundedBox(0, 0, 0, w, h, BlackColor)
-    end
+    self.PromptPanel.Prompt = vgui.Create("DPanel", self.PromptPanel)
+    self.PromptPanel.Prompt:Dock(BOTTOM)
+    self.PromptPanel.Prompt:SetTall( 30 )
+    self.PromptPanel.Prompt:DockMargin( 10, 4, 10, 10 )
+    self.PromptPanel.Prompt.Paint = Gemini.Util.EmptyFunction
 
-    self.PromptHistory = PromptHistoryPanel
+    self.PromptPanel.Send = vgui.Create("DButton", self.PromptPanel.Prompt)
+    self.PromptPanel.Send:SetText(">")
+    self.PromptPanel.Send:Dock(RIGHT)
+    self.PromptPanel.Send:DockMargin( 10, 0, 0, 0 )
+    self.PromptPanel.Send:SetTall( 30 )
+    self.PromptPanel.Send:SetWide( 30 )
 
-    local PromptInput = vgui.Create("DTextEntry", PromptPanel)
-    PromptInput:SetSize(PromptPanel:GetWide() - 42, 28)
-    PromptInput:SetPos(5, PromptPanel:GetTall() - 38)
-    PromptInput:SetFont("Frutiger:Small")
-    PromptInput:SetPlaceholderText( Gemini:GetPhrase("Playground.Prompt.Placeholder") )
+    self.PromptPanel.Input = vgui.Create("DTextEntry", self.PromptPanel.Prompt)
+    self.PromptPanel.Input:SetPlaceholderText( Gemini:GetPhrase("Playground.Prompt.Placeholder") )
+    self.PromptPanel.Input:Dock(FILL)
 
-    local PromptInputSend = vgui.Create("DButton", PromptPanel)
-    PromptInputSend:SetSize(28, 28)
-    PromptInputSend:SetPos(PromptPanel:GetWide() - 33, PromptPanel:GetTall() - 38)
-    PromptInputSend:SetText(">")
-    PromptInputSend.DoClick = function(InputSelf)
-        local Text = PromptInput:GetText()
-        PromptInput:SetText("")
+    self.PromptPanel.Send.DoClick = function(InputSelf)
+        local Text = self.PromptPanel.Input:GetText()
+        self.PromptPanel.Input:SetText("")
 
         Text = string.Trim(Text)
         if Text == "" then return end
@@ -451,36 +451,33 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self:SendMessagePrompt(Text)
     end
 
-    self.PromptInputSend = PromptInputSend
-
     --[[------------------------
-            Context Panel
+           Context Panel
     ------------------------]]--
 
-    local PromptX = PromptPanel:GetPos()
-    local PromptWide = PromptPanel:GetWide()
+    self.HistoryPanel = vgui.Create("DListView", OurTab)
+    self.HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( self.PromptPanel:GetX() + self.PromptPanel:GetWide() + 8 ), OurTab:GetTall() - 92)
+    self.HistoryPanel:SetPos( self.PromptPanel:GetX() + self.PromptPanel:GetWide() + 8, 15 )
+    self.HistoryPanel:SetMultiSelect(false)
+    self.HistoryPanel:SetHeaderHeight(20)
 
-    local HistoryPanel = vgui.Create("DListView", OurTab)
-    HistoryPanel:SetSize(( OurTab:GetWide() - 28 ) - ( PromptX + PromptWide + 8 ), OurTab:GetTall() - 92)
-    HistoryPanel:SetPos( PromptX + PromptWide + 8, 15 )
-    HistoryPanel:SetMultiSelect(false)
-    HistoryPanel:SetHeaderHeight(20)
-
-    OutputMSG:SetWide(HistoryPanel:GetWide())
+    self.OutputMSG:SetWide(self.HistoryPanel:GetWide())
 
     self.List = {}
-    self.List["ID"] = HistoryPanel:AddColumn("ID")
-    self.List["Log"] = HistoryPanel:AddColumn("Log")
+
+    self.List["ID"] = self.HistoryPanel:AddColumn("ID")
+    self.List["Log"] = self.HistoryPanel:AddColumn("Log")
 
     self.List["ID"]:SetName(Gemini:GetPhrase("Logger.Column.ID"))
     self.List["Log"]:SetName(Gemini:GetPhrase("Logger.Column.Log"))
 
     self.List["ID"]:SetWidth( 48 )
-    self.List["Log"]:SetWidth( HistoryPanel:GetWide() - 52 )
+    self.List["Log"]:SetWidth( self.HistoryPanel:GetWide() - 52 )
 
-    HistoryPanel.CurrentColumn = self.List["ID"]
+    self.HistoryPanel.CurrentColumn = self.List["ID"]
 
-    self.TablePanel = HistoryPanel
+    local NewPostOutputX = self.SettingsPanel:GetWide() + self.PromptPanel:GetWide() + PanelOffset + 8
+    self.OutputMSG:SetX(NewPostOutputX)
 end
 
 function MODULE:OnFocus()
@@ -527,8 +524,8 @@ net.Receive("Gemini:PlaygroundMakeRequest", function(len)
     MODULE:AddMessagePrompt("model", Message)
 
     MODULE:SetMessageLog( string.format( Gemini:GetPhrase("Playground.Prompt.Received"), math.Round(CurTime() - LastRequest , 2) ) )
-    if IsValid(MODULE.PromptInputSend) then
-        MODULE.PromptInputSend:SetDisabled(false)
+    if IsValid(MODULE.PromptPanel.Input) then
+        MODULE.PromptPanel.Input:SetDisabled(false)
     end
 end)
 

@@ -76,8 +76,8 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.TrainingMenu = vgui.Create("DScrollPanel", OurTab)
-    self.TrainingMenu:SetSize(400, OurTab:GetTall() - 110)
-    self.TrainingMenu:SetPos(220, 35)
+    self.TrainingMenu:SetSize(400, OurTab:GetTall() - 85)
+    self.TrainingMenu:SetPos(220, 10)
     self.TrainingMenu.Paint = BorderBackgroundPaint
 
     self.TrainingMenu.InputPlayerTitle = vgui.Create("DLabel", self.TrainingMenu)
