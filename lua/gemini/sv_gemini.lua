@@ -239,7 +239,7 @@ hook.Add("Gemini:ConfigChanged", "Gemini:ReplicateGemini", function(Name, Catego
 
     local IsSafety = string.StartsWith(Name, "Safety")
     if ( IsSafety == true ) then
-        SetGlobal2Float("Gemini:" .. Name, Value)
+        SetGlobal2Int("Gemini:" .. Name, Value)
     elseif isnumber(Value) then
         SetGlobal2Int("Gemini:" .. Name, Value)
     else

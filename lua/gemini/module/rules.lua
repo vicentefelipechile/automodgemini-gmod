@@ -41,7 +41,6 @@ function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
     local Extension = self:GetAceScript("ext-language_tools.js")
     local Theme = self:GetAceScript("theme-monokai.js")
     local Mode = self:GetAceScript("mode-markdown.js")
-    -- local Snippets = self:GetAceScript("snippets-markdown.js")
     local Gmod = self:GetAceScript("gmod.js")
 
     COMPILED_HTML = ReplaceCoincidences(Embedding, {
@@ -49,7 +48,6 @@ function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
         ["Extension"] = Extension,
         ["Theme"] = Theme,
         ["Mode"] = Mode,
-    --     ["Snippets"] = Snippets,
         ["GmodScript"] = Gmod
     })
 

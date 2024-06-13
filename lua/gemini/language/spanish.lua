@@ -19,7 +19,7 @@ Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedSENT", [[El jugador "%s" ha cr
 Gemini:LanguageAddPhrase(LANG, "Hook.PlayerGiveSWEP", [[El jugador "%s" se ha sacado el arma "%s" del menu de armas.]])
 Gemini:LanguageAddPhrase(LANG, "Hook.PlayerSpawnedVehicle", [[El jugador "%s" ha colocado un auto "%s" en las coordenadas %s usando el menu de vehiculos.]])
 Gemini:LanguageAddPhrase(LANG, "Hook.OnDamagedByExplosion", [[El jugador "%s" ha recibido %s de daño por una explosion provocada por "%s".]])
-Gemini:LanguageAddPhrase(LANG, "Hook.PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora tiene %s de vida.]])
+Gemini:LanguageAddPhrase(LANG, "Hook.PlayerHurt", [[El jugador "%s" ha recibido %s de daño por "%s" y ahora %s]])
 Gemini:LanguageAddPhrase(LANG, "Hook.PlayerChangedTeam", [[El jugador "%s" ha cambiado de equipo/trabajo a "%s" (antes era "%s").]])
 Gemini:LanguageAddPhrase(LANG, "Hook.OnCrazyPhysics", [[Se ha detectado fisicas locas en la entidad "%s", esta entidad %s dueño%s.]])
 Gemini:LanguageAddPhrase(LANG, "Hook.PlayerEnteredVehicle", [[El jugador "%s" ha entrado al auto "%s" en las coordenadas %s.]])
@@ -155,11 +155,14 @@ Gemini:LanguageOverrideHook(LANG, {
     ["OnDamagedByExplosion"] = function(ply, dmg)
         local Responsable = dmg:GetAttacker() == ply and "el mismo" or GetEntityName(dmg:GetAttacker())
 
-        return {ply:Name(), math.Round(dmg:GetDamage(), 2), Responsable}
+        return {ply:Name(), math.Round(dmg:GetDamage(), 0), Responsable}
     end,
     ["PlayerHurt"] = function(ply, attacker, remaininghealth, damagetaken)
         local AttackerName = ( attacker == ply ) and "el mismo" or GetEntityName(attacker)
-        return {ply:Name(), math.Round(damagetaken, 2), AttackerName, remaininghealth}
+        local IsDead = remaininghealth <= 0
+        local Result = IsDead and ( "esta muerto (" .. remaininghealth .. " de vida)" ) or ( "tiene " .. remaininghealth .. " de vida" )
+
+        return {ply:Name(), math.Round(damagetaken, 0), AttackerName, Result}
     end,
     ["PlayerChangedTeam"] = function(ply, newteam, oldteam)
         return {ply:Name(), team.GetName(newteam), team.GetName(oldteam)}
@@ -238,10 +241,21 @@ Gemini:LanguageOverrideHook(LANG, {
      Gemini Menu Phrases
 ------------------------]]--
 
-Gemini:LanguageAddPhrase(LANG, "Panel.Title", "Google Gemini Automod - Panel")
+Gemini:LanguageAddPhrase(LANG, "Panel.Title", "Gemini Automod - Panel")
 Gemini:LanguageAddPhrase(LANG, "Credits", "Creditos")
 Gemini:LanguageAddPhrase(LANG, "Config", "Configuración")
 Gemini:LanguageAddPhrase(LANG, "Rules", "Reglas")
+
+--[[------------------------
+     Config Menu Phrases
+------------------------]]--
+
+Gemini:LanguageAddPhrase(LANG, "Config.Title", "Configuración")
+Gemini:LanguageAddPhrase(LANG, "Config.Default.DisplayName", "Sin modelo seleccionado")
+Gemini:LanguageAddPhrase(LANG, "Config.Default.Description", "El modelo actual no esta seleccionado, por favor selecciona un modelo.")
+-- This field is disabled, because the API Key is already setted. To enable it, click on the checkbox below to allow edit.
+Gemini:LanguageAddPhrase(LANG, "Config.APIKey", "Clave API")
+
 
 --[[------------------------
     Gemini Error Phrases
@@ -272,7 +286,12 @@ Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.MAX_TOKENS", "La cantidad maxi
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.RECITATION", "La peticion ha sido bloqueada por motivos de recitación.")
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.SAFETY", "La peticion ha sido bloqueada por los filtros seguridad.")
 Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.STOP", "Punto de parada natural del modelo o secuencia de parada proporcionada.")
-Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.OTHER", "La peticion ha sido bloqueada por una razon desconocida.")
+Gemini:LanguageAddPhrase(LANG, "Enum.FinishReason.OTHER", "La peticion ha sido bloqueada por razones desconocidas.")
+
+Gemini:LanguageAddPhrase(LANG, "Enum.Safety.BLOCK_NONE", "Mostrar siempre el contenido.")
+Gemini:LanguageAddPhrase(LANG, "Enum.Safety.BLOCK_ONLY_HIGH", "Bloquear cuando haya alto riesgo de que el contenido sea inapropiado.")
+Gemini:LanguageAddPhrase(LANG, "Enum.Safety.BLOCK_MEDIUM_AND_ABOVE", "Bloquear cuando haya mediano y alto riesgo de que el contenido sea inapropiado.")
+Gemini:LanguageAddPhrase(LANG, "Enum.Safety.BLOCK_LOW_AND_ABOVE", "Bloquear cuando haya bajo, mediano y alto riesgo de que el contenido sea inapropiado.")
 
 --[[------------------------
      Logger Menu Phrases
@@ -302,13 +321,19 @@ Gemini:LanguageAddPhrase(LANG, "Logger.Column.ID", "ID")
 Gemini:LanguageAddPhrase(LANG, "Logger.Column.Log", "Registro")
 Gemini:LanguageAddPhrase(LANG, "Logger.Column.Date", "Fecha")
 Gemini:LanguageAddPhrase(LANG, "Logger.Column.PlayerID", "Jugador ID")
+Gemini:LanguageAddPhrase(LANG, "Logger.CopyWholeLog", "Copiar todo el registro")
+Gemini:LanguageAddPhrase(LANG, "Logger.CopyLog", "Copiar registro")
+Gemini:LanguageAddPhrase(LANG, "Logger.CopyDate", "Copiar fecha")
+Gemini:LanguageAddPhrase(LANG, "Logger.CopyPlayerID", "Copiar ID del jugador")
+Gemini:LanguageAddPhrase(LANG, "Logger.CopyAllLogs", "Copiar todos los registros")
+Gemini:LanguageAddPhrase(LANG, "Logger.CopyEqualID", "Obtener ID equivalente")
 
 --[[------------------------
    Playground Menu Phrases
 ------------------------]]--
 
-Gemini:LanguageAddPhrase(LANG, "Playground", "Zona de Pruebas")
-Gemini:LanguageAddPhrase(LANG, "Playground.Prompt", "Prompt")
+Gemini:LanguageAddPhrase(LANG, "Playground", "Chatbox")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt", "Chatbox")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Desc", "Escribe un texto/contexto para mostrar en el menu.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Error", "El texto/contexto no puede estar vacio.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Placeholder", "Explica con tus palabras que...")
@@ -316,9 +341,9 @@ Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Context", "Este mensaje fue en
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Sended", "Mensaje enviado.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.SendedContext", "Mensaje enviado con contexto.")
 Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Received", "Mensaje recibido. (Tardo %s segundos)")
-Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reset", "Reiniciar prompt")
-Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reseted", "El prompt ha sido reiniciado.")
-Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Adjuntar registros")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reset", "Reiniciar Chat")
+Gemini:LanguageAddPhrase(LANG, "Playground.Prompt.Reseted", "El Chat se ha reiniciado.")
+Gemini:LanguageAddPhrase(LANG, "Playground.AttachContext", "Adjuntar registros en el chat")
 
 --[[------------------------
     Training Menu Phrases

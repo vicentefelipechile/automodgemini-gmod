@@ -59,6 +59,14 @@ local function ButtonBooleanPaint(self, w, h)
     end
 end
 
+local ScrollbarPaint = function(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+
+    if self:IsHovered() then
+        draw.RoundedBox( 0, 0, 0, w, h, HoverLineColor )
+    end
+end
+
 --[[------------------------
            Convars
 ------------------------]]--
@@ -202,10 +210,7 @@ end
            Logger
 ------------------------]]--
 
-function MODULE:AskLogs(Limit, Target, IsPlayer, Between)
-    Target = Target or 0
-    IsPlayer = IsPlayer or false
-
+function MODULE:AskLogs()
     self.LAST_REQUEST = CurTime()
 
     local Status = net.Start("Gemini:AskLogs:Playground")
@@ -228,20 +233,20 @@ function MODULE:RetrieveNetwork(Success, Message, Logs)
 end
 
 function MODULE:UpdateTable(Logs)
-    if IsValid(self.TablePanel) then
-        self.TablePanel:Clear()
+    if IsValid(self.HistoryPanel) then
+        self.HistoryPanel:Clear()
 
         for k, Data in ipairs(Logs) do
             self:AddNewLog(Data["geminilog_id"], Data["geminilog_log"])
         end
 
-        self.TablePanel:SortByColumn( self.TablePanel.CurrentColumn:GetColumnID(), true )
+        self.HistoryPanel:SortByColumn( self.HistoryPanel.CurrentColumn:GetColumnID(), true )
     end
 end
 
 function MODULE:AddNewLog(ID, Log)
-    if IsValid(self.TablePanel) then
-        self.TablePanel:AddLine(ID, Log):SetSortValue(1, tonumber(ID))
+    if IsValid(self.HistoryPanel) then
+        self.HistoryPanel:AddLine(ID, Log):SetSortValue(1, tonumber(ID))
     end
 end
 
@@ -375,6 +380,25 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         Gemini:SetConfig("BetweenLogs", "Playground", value)
     end
 
+    self.SettingsPanel.AskLogsButton = vgui.Create("DButton", self.SettingsPanel)
+    self.SettingsPanel.AskLogsButton:SetText( Gemini:GetPhrase("Logger.RequestLogs") )
+    self.SettingsPanel.AskLogsButton:Dock(TOP)
+    self.SettingsPanel.AskLogsButton:DockMargin( 10, 20, 10, 2 )
+
+    self.SettingsPanel.AskLogsButton.DoClick = function()
+        self:AskLogs()
+    end
+
+    self.SettingsPanel.ClearLogsButton = vgui.Create("DButton", self.SettingsPanel)
+    self.SettingsPanel.ClearLogsButton:SetText( Gemini:GetPhrase("Logger.ClearLogs") )
+    self.SettingsPanel.ClearLogsButton:Dock(TOP)
+    self.SettingsPanel.ClearLogsButton:DockMargin( 10, 2, 10, 10 )
+
+    self.SettingsPanel.ClearLogsButton.DoClick = function()
+        self:UpdateTable({})
+        self:SetMessageLog( Gemini:GetPhrase("Logger.ClearedLogs") )
+    end
+
     self.SettingsPanel.AttachContextLabel = vgui.Create("DLabel", self.SettingsPanel)
     self.SettingsPanel.AttachContextLabel:SetText( Gemini:GetPhrase("Playground.AttachContext") )
     self.SettingsPanel.AttachContextLabel:Dock(TOP)
@@ -401,6 +425,18 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self:ResetPrompt()
         self.PromptPanel.Input:SetDisabled(false)
     end
+
+    -- Empty space
+    self.SettingsPanel.EmptySpace = vgui.Create("DPanel", self.SettingsPanel)
+    self.SettingsPanel.EmptySpace:Dock(TOP)
+    self.SettingsPanel.EmptySpace:SetHeight( 60 )
+    self.SettingsPanel.EmptySpace.Paint = Gemini.Util.EmptyFunction
+
+    -- Scrollbar
+    self.SettingsPanel.VBar.Paint = Gemini.Util.EmptyFunction
+    self.SettingsPanel.VBar.btnGrip.Paint = ScrollbarPaint
+    self.SettingsPanel.VBar:SetWide( 14 )
+    self.SettingsPanel.VBar:SetHideButtons(true)
 
     --[[------------------------
            Prompt Panel

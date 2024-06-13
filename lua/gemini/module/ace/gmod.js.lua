@@ -31,7 +31,13 @@ gmod.SaveServerRulesJS = () => {
     gmod.SaveServerRulesLua(Text)
 }
 
-gmod.InfoFullyLoaded()
-gmod.RulesFullyLoaded()
+// Check if the function exists
+if (typeof gmod.InfoFullyLoaded === "function") {
+    gmod.InfoFullyLoaded()
+}
+
+if (typeof gmod.RulesFullyLoaded === "function") {
+    gmod.RulesFullyLoaded()
+}
 
 ]==]

@@ -3,6 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 local MODULE = { ["Icon"] = "icon16/page_white_text.png" }
+local STRING_REPLACE = "[%s] %s - %s (%s)"
 
 --[[------------------------
        Paint Functions
@@ -110,6 +111,9 @@ function MODULE:UpdateTable(Logs)
         -- Sort by ID
         self.TablePanel:SortByColumn( self.TablePanel.CurrentColumn:GetColumnID(), true )
         self.TablePanel.CurrentColumn:SetDescending(false)
+
+        local TimeLapse = math.Round(CurTime() - MODULE.LAST_REQUEST, 4)
+        MODULE:SetMessageLog( string.format( Gemini:GetPhrase("Logger.LogsSended"), #Logs, TimeLapse ) )
     end
 end
 
@@ -136,7 +140,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.SettingsPanel = vgui.Create("DScrollPanel", OurTab)
-    self.SettingsPanel:SetSize(195, OutputY - 25)
+    self.SettingsPanel:SetSize(195, OutputY + 4)
     self.SettingsPanel:SetPos(10, 15)
     self.SettingsPanel.Paint = BackgroundPaint
 
@@ -331,6 +335,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.SettingsPanel.VBar:SetWide( 14 )
     self.SettingsPanel.VBar:SetHideButtons(true)
 
+    local SettingsPanelWidth = self.SettingsPanel:GetWide()
+    self.OutputMSG:SetWide(OurTab:GetWide() - SettingsPanelWidth - 50)
+    self.OutputMSG:SetX(SettingsPanelWidth + 20)
+
     --[[------------------------
              Table Panel
     ------------------------]]--
@@ -340,8 +348,53 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TablePanel = vgui.Create("DListView", OurTab)
     self.TablePanel:SetSize(OurTab:GetWide() - TablePos - 30, OutputY - 25)
     self.TablePanel:SetPos(TablePos, 15)
-    self.TablePanel:SetMultiSelect(false)
+    -- self.TablePanel:SetMultiSelect(false)
     self.TablePanel:SetHeaderHeight(20)
+
+    self.TablePanel.OnRowRightClick = function(SubSelf, LineID, Line)
+        local Menu = DermaMenu()
+
+        Menu:AddOption(Gemini:GetPhrase("Logger.CopyWholeLog"), function()
+            SetClipboardText( string.format(STRING_REPLACE, Line:GetColumnText(1), Line:GetColumnText(3), Line:GetColumnText(2), Line:GetColumnText(4)) )
+        end)
+
+        Menu:AddOption(Gemini:GetPhrase("Logger.CopyLog"), function()
+            SetClipboardText(Line:GetColumnText(2))
+        end)
+
+        Menu:AddOption(Gemini:GetPhrase("Logger.CopyDate"), function()
+            SetClipboardText(Line:GetColumnText(3))
+        end)
+
+        Menu:AddOption(Gemini:GetPhrase("Logger.CopyPlayerID"), function()
+            SetClipboardText(Line:GetColumnText(4))
+        end)
+
+        local CacheSelected = SubSelf:GetSelected()
+        if #CacheSelected > 1 then
+            Menu:AddSpacer()
+
+            Menu:AddOption(Gemini:GetPhrase("Logger.CopyAllLogs"), function()
+                local Text = ""
+
+                for _, SubLine in ipairs(CacheSelected) do
+                    Text = Text .. string.format(STRING_REPLACE, SubLine:GetColumnText(1), SubLine:GetColumnText(3), SubLine:GetColumnText(2), SubLine:GetColumnText(4)) .. "\n"
+                end
+
+                SetClipboardText(Text)
+            end)
+
+            Menu:AddOption(Gemini:GetPhrase("Logger.CopyEqualID"), function()
+                local EqualID = CacheSelected[#CacheSelected]:GetColumnText(1) .. "-" .. CacheSelected[1]:GetColumnText(1)
+                SetClipboardText(EqualID)
+            end)
+        end
+
+        Menu:Open()
+    end
+
+    -- Scrollbar
+    self.TablePanel:SetSkin("Gemini:DermaSkin")
 
     self.List = {}
     self.List["ID"] = self.TablePanel:AddColumn("ID", 1)
@@ -400,7 +453,6 @@ end
 
 net.Receive("Gemini:AskLogs", function(len)
     local Success = net.ReadBool()
-    local Message = net.ReadString()
     local Logs = {}
 
     if ( Success == true ) then
@@ -411,9 +463,6 @@ net.Receive("Gemini:AskLogs", function(len)
     end
 
     MODULE:RetrieveNetwork(Success, Logs)
-
-    local TimeLapse = math.Round(CurTime() - MODULE.LAST_REQUEST, 4)
-    MODULE:SetMessageLog( string.format( Gemini:GetPhrase(Message), #Logs, TimeLapse ) )
 end)
 
 net.Receive("Gemini:ReplicateLog", function(len)

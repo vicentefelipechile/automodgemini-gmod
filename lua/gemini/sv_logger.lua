@@ -288,7 +288,6 @@ function Gemini.LoggerAskLogs(len, ply)
 
     net.Start("Gemini:AskLogs")
         net.WriteBool(true)
-        net.WriteString("Logger.LogsSended")
         net.WriteUInt(CompressedSize, Gemini.Util.DefaultNetworkUIntBig)
         net.WriteData(CompressesLogs, CompressedSize)
     net.Send(ply)
