@@ -81,20 +81,15 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         --[[ Candidate ]]--
         Candidate = Gemini:GeminiCreateBodyRequest()
 
-        local FullPrompt = Candidate["contents"][1]["text"]
-
         --[[ Context ]]--
         local PlayerWantContext = self:GetPlayerInfo(ply, AttachContext)
         if PlayerWantContext then
-            local Context = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
+            local Logs = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
-            FullPrompt = FullPrompt .. self:GetPhrase("context.playground") .. "\n\n" .. Context .. "\n\n" .. self:GetPhrase("context.post") .. "\n\n"
+            Candidate = Gemini:GeminiCreateBodyRequest(Prompt, Logs)
         else
-            FullPrompt = FullPrompt .. "\n\n" .. self:GetPhrase("context.playground.nocontext") .. "\n\n"
+            Candidate = Gemini:GeminiCreateBodyRequest(Prompt)
         end
-
-        --[[ Prompt ]]--
-        FullPrompt = FullPrompt .. Prompt
 
         Candidate["contents"][1] = { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"}
 

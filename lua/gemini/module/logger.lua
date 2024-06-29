@@ -348,26 +348,31 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TablePanel = vgui.Create("DListView", OurTab)
     self.TablePanel:SetSize(OurTab:GetWide() - TablePos - 30, OutputY - 25)
     self.TablePanel:SetPos(TablePos, 15)
-    -- self.TablePanel:SetMultiSelect(false)
     self.TablePanel:SetHeaderHeight(20)
 
     self.TablePanel.OnRowRightClick = function(SubSelf, LineID, Line)
         local Menu = DermaMenu()
+        Menu.Paint = BackgroundPaint
+        Menu:SetSkin("Gemini:DermaSkin")
 
         Menu:AddOption(Gemini:GetPhrase("Logger.CopyWholeLog"), function()
             SetClipboardText( string.format(STRING_REPLACE, Line:GetColumnText(1), Line:GetColumnText(3), Line:GetColumnText(2), Line:GetColumnText(4)) )
+            self:SetMessageLog( Gemini:GetPhrase("Logger.CopiedLog") )
         end)
 
         Menu:AddOption(Gemini:GetPhrase("Logger.CopyLog"), function()
             SetClipboardText(Line:GetColumnText(2))
+            self:SetMessageLog( Gemini:GetPhrase("Logger.CopiedLog") )
         end)
 
         Menu:AddOption(Gemini:GetPhrase("Logger.CopyDate"), function()
             SetClipboardText(Line:GetColumnText(3))
+            self:SetMessageLog( Gemini:GetPhrase("Logger.CopiedDate") )
         end)
 
         Menu:AddOption(Gemini:GetPhrase("Logger.CopyPlayerID"), function()
             SetClipboardText(Line:GetColumnText(4))
+            self:SetMessageLog( Gemini:GetPhrase("Logger.CopiedPlayerID") )
         end)
 
         local CacheSelected = SubSelf:GetSelected()
@@ -382,11 +387,24 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
                 end
 
                 SetClipboardText(Text)
+                self:SetMessageLog( Gemini:GetPhrase("Logger.CopyAllLogs") )
             end)
 
             Menu:AddOption(Gemini:GetPhrase("Logger.CopyEqualID"), function()
                 local EqualID = CacheSelected[#CacheSelected]:GetColumnText(1) .. "-" .. CacheSelected[1]:GetColumnText(1)
                 SetClipboardText(EqualID)
+                self:SetMessageLog( Gemini:GetPhrase("Logger.CopiedEqualID") )
+            end)
+
+            Menu:AddOption(Gemini:GetPhrase("Logger.CopyDataToTrain"), function()
+                -- Format PlayerID:MinLog:MaxLog
+                local MinLog = math.min(CacheSelected[#CacheSelected]:GetColumnText(1), CacheSelected[1]:GetColumnText(1))
+                local MaxLog = math.max(CacheSelected[#CacheSelected]:GetColumnText(1), CacheSelected[1]:GetColumnText(1))
+
+                local Data = CacheSelected[#CacheSelected]:GetColumnText(4) .. ":" .. MinLog .. ":" .. MaxLog
+                SetClipboardText(Data)
+                SetGlobalString("Gemini:TrainData", Data)
+                self:SetMessageLog( Gemini:GetPhrase("Logger.CopiedDataToTrain") )
             end)
         end
 

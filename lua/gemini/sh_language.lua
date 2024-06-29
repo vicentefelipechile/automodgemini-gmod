@@ -2,7 +2,7 @@
                      Google Gemini Automod - Language Module
 ----------------------------------------------------------------------------]]--
 
-local Language = Language or {}
+local CurrentLanguage = {}
 
 --[[------------------------
         Configuration
@@ -14,89 +14,59 @@ Gemini:CreateConfig("CloseToPlayer", "Language", Gemini.VERIFICATION_TYPE.number
         NPC Names
 ------------------------]]--
 
-local NPCNamesPath = "resource/language/npc-ents_english.txt"
-local NPCNames = {}
+if SERVER then
+    local NPCNamesPath = "resource/language/npc-ents_english.txt"
+    local NPCNames = {}
 
-if ( file.Exists(NPCNamesPath, "GAME") ) then
-    local FileContent = util.KeyValuesToTable(file.Read(NPCNamesPath, "GAME"))
-    local FileTokens = FileContent["tokens"] or {}
+    if ( file.Exists(NPCNamesPath, "GAME") ) then
+        local FileContent = util.KeyValuesToTable(file.Read(NPCNamesPath, "GAME"))
+        local FileTokens = FileContent["tokens"] or {}
 
-    for NameClass, NameEntity in pairs(FileTokens) do
-        NPCNames[NameClass] = NameEntity
+        for NameClass, NameEntity in pairs(FileTokens) do
+            NPCNames[NameClass] = NameEntity
+        end
     end
+
+    hook.Add("GetDeathNoticeEntityName", "GeminiLanguageHook:General.GetDeathNoticeEntityName", function(ent)
+        local EntityClass = ent:GetClass()
+        if ( NPCNames[EntityClass] ) then
+            return NPCNames[EntityClass]
+        end
+    end)
 end
-
-hook.Add("GetDeathNoticeEntityName", "GeminiLanguageHook:General.GetDeathNoticeEntityName", function(ent)
-    local EntityClass = ent:GetClass()
-    if ( NPCNames[EntityClass] ) then
-        return NPCNames[EntityClass]
-    end
-end)
 
 --[[------------------------
        Language Module
 ------------------------]]--
 
+local LANG_MODULE = {}
+do
+    if SERVER then
+        AddCSLuaFile("gemini/language/module.lua")
+    end
+    LANG_MODULE = include("gemini/language/module.lua")
+end
+
+function Gemini:CurrentLanguage()
+    return CurrentLanguage
+end
+
 function Gemini:LanguageCreate(LanguageTarget)
-    Language[LanguageTarget] = {}
-
-    return LanguageTarget
-end
-
-function Gemini:LanguageOverrideHook(LanguageTarget, TableFunctions)
     if not isstring(LanguageTarget) then
-        self:Error([[The first argument of Gemini:LanguageOverrideHook() is not a string]], LanguageTarget, "string")
+        self:Error([[The first argument of Gemini:LanguageCreate() is not a string.]], LanguageTarget, "string")
     elseif (LanguageTarget == "") then
-        self:Error([[The first argument of Gemini:LanguageOverrideHook() is an empty string]], LanguageTarget, "string")
+        self:Error([[The first argument of Gemini:LanguageCreate() is an empty string.]], LanguageTarget, "string")
     end
 
-    if not istable(TableFunctions) then
-        self:Error([[The second argument of Gemini:LanguageOverrideHook() is not a table]], TableFunctions, "table[function]")
-    end
+    CurrentLanguage = table.Copy(LANG_MODULE)
+    CurrentLanguage.Name = LanguageTarget
 
-    for HookName, HookFunc in pairs(TableFunctions) do
-        HookName = "Hook." .. HookName
-
-        if not isfunction(HookFunc) then
-            self:Error("The function \"" .. HookName .. "\" is not a valid function", HookFunc, "function")
-        end
-
-        Language[LanguageTarget][HookName]["Func"] = HookFunc
-    end
+    return CurrentLanguage
 end
 
-function Gemini:LanguageAddPhrase(LanguageTarget, PhraseName, Phrase)
-    if not isstring(LanguageTarget) then
-        self:Error([[The first argument of Gemini:LanguageAddPhrase() is not a string]], LanguageTarget, "string")
-    elseif (LanguageTarget == "") then
-        self:Error([[The first argument of Gemini:LanguageAddPhrase() is an empty string]], LanguageTarget, "string")
-    end
-
-    if not isstring(PhraseName) then
-        self:Error([[The second argument of Gemini:LanguageAddPhrase() is not a string]], PhraseName, "string")
-    elseif (PhraseName == "") then
-        self:Error([[The second argument of Gemini:LanguageAddPhrase() is an empty string]], PhraseName, "string")
-    end
-
-    if not isstring(Phrase) then
-        self:Error([[The third argument of Gemini:LanguageAddPhrase() is not a string]], Phrase, "string")
-    elseif (Phrase == "") then
-        self:Error([[The third argument of Gemini:LanguageAddPhrase() is an empty string]], Phrase, "string")
-    end
-
-    if not istable(Language[LanguageTarget]) then
-        self:Error([[The language target does not exist]], LanguageTarget, "string")
-    end
-
-    Language[LanguageTarget][PhraseName] = {["Phrase"] = Phrase}
-end
-
-local LanguageTargetCache = "Spanish"
-function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
-    LanguageTarget = LanguageTarget or LanguageTargetCache
-
+function Gemini:GetPhrase(PhraseName, SkipValidation)
     if ( SkipValidation == true ) then
-        return Language[LanguageTarget][PhraseName]["Phrase"]
+        return CurrentLanguage:GetPhrase(PhraseName)
     end
 
     if not isstring(PhraseName) then
@@ -105,100 +75,52 @@ function Gemini:GetPhrase(PhraseName, LanguageTarget, SkipValidation)
         self:Error([[The first argument of Gemini:GetPhrase() is an empty string]], PhraseName, "string")
     end
 
-    if not isstring(LanguageTarget) then
-        self:Error([[The second argument of Gemini:GetPhrase() is not a string]], LanguageTarget, "string")
-    elseif (LanguageTarget == "") then
-        self:Error([[The second argument of Gemini:GetPhrase() is an empty string]], LanguageTarget, "string")
-    end
-
-    if not istable(Language[LanguageTarget]) then
-        self:Error([[The language target does not exist]], LanguageTarget, "string")
-    end
-
-    if not istable(Language[LanguageTarget][PhraseName]) then
-        return PhraseName
-    end
-
-    return Language[LanguageTarget][PhraseName]["Phrase"]
+    return CurrentLanguage:GetPhrase(PhraseName)
 end
 
-Gemini.LanguageGetPhrase = Gemini.GetPhrase
-
-function Gemini:LanguagePhraseExists(PhraseName, LanguageTarget)
-    LanguageTarget = LanguageTarget or LanguageTargetCache
-
-    if not isstring(PhraseName) then return nil
-    elseif (PhraseName == "") then return nil
+function Gemini:LanguagePhraseExists(PhraseName)
+    if not isstring(PhraseName) then
+        self:Error([[The first argument of Gemini:LanguagePhraseExists() is not a string]], PhraseName, "string")
+    elseif (PhraseName == "") then
+        self:Error([[The first argument of Gemini:LanguagePhraseExists() is an empty string]], PhraseName, "string")
     end
 
-    if not isstring(LanguageTarget) then return nil
-    elseif (LanguageTarget == "") then return nil
-    end
-
-    if not istable(Language[LanguageTarget]) then return nil end
-
-    return istable(Language[LanguageTarget][PhraseName])
+    return CurrentLanguage:PhraseExists(PhraseName)
 end
 
 function Gemini:LanguagePoblate()
-    local LangFile, _ = file.Find("gemini/language/*.lua", "LUA")
+    local LanguageTarget = string.lower( Gemini:GetConfig("Language", "General", true) )
+    local LangFile, _ = file.Find("gemini/language/" .. LanguageTarget .. "/*.lua", "LUA")
 
-    for _, File in ipairs(LangFile) do
+    for _, FileName in ipairs(LangFile) do
         if SERVER then
-            AddCSLuaFile("gemini/language/" .. File)
+            AddCSLuaFile("gemini/language/" .. LanguageTarget .. "/" .. FileName)
         end
-        include("gemini/language/" .. File)
-        self:Print("Loaded language file: " .. File)
     end
 
-    -- The client does not need to poblate the hook functions
+    include("gemini/language/" .. LanguageTarget .. "/main.lua")
+
     if CLIENT then return end
 
-    -- Poblate hook functions
-    for LangName, LangTable in pairs(Language) do
-        for HookName, HookTable in pairs(LangTable) do
-            if not isfunction( HookTable["Func"] ) then continue end
+    for HookName, HookTable in pairs( CurrentLanguage:GetHooks() ) do
+        hook.Add(HookName, "GeminiLanguageHook:" .. CurrentLanguage.Name .. "." .. HookName, function(...)
+            local Args = HookTable["Function"](...)
+            local Phrase = HookTable["Phrase"]
 
-            -- Support for dots in the hook name
-            local CacheHookName = string.Explode(".", HookName)
-            local NewHookName = ""
+            if ( Args == false ) then return end
 
-            for i = 2, #CacheHookName do
-                NewHookName = NewHookName .. CacheHookName[i]
+            local PlayersInvolved = {}
+            for _, any in ipairs({...}) do
+                if ( isentity(any) and any:IsPlayer() ) then
+                    PlayersInvolved[any] = true
+                end
             end
 
-            hook.Add(NewHookName, "GeminiLanguageHook:" .. LangName .. "." .. NewHookName, function(...)
-                local CurrentLang = self:GetConfig("Language", "General", true)
-                if ( CurrentLang ~= LangName ) then return end
-
-                local Args = HookTable["Func"](...)
-                local Phrase = HookTable["Phrase"]
-
-                if ( Args == false ) then return end
-
-                local PlayersInvolved = {}
-                for _, any in ipairs({...}) do
-                    if ( isentity(any) and any:IsPlayer() ) then
-                        PlayersInvolved[any] = true
-                    end
-                end
-
-                PlayersInvolved = table.GetKeys(PlayersInvolved)
-                if ( #PlayersInvolved >= 1 ) then
-                    local Log = string.format(Phrase, unpack(Args))
-                    hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
-                end
-            end)
-        end
+            PlayersInvolved = table.GetKeys(PlayersInvolved)
+            if ( #PlayersInvolved >= 1 ) then
+                local Log = string.format(Phrase, unpack(Args))
+                hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
+            end
+        end)
     end
 end
-
-hook.Add("Gemini:ConfigChanged", "Gemini:UpdateMainLanguage", function(Name, Category, Value)
-    if ( Name == "Language" and Category == "General" ) then
-        LanguageTargetCache = Value
-    end
-end)
-
-hook.Add("Gemini:PostInit", "Gemini:LanguagePoblate", function()
-    LanguageTargetCache = Gemini:GetConfig("Language", "General", true)
-end)

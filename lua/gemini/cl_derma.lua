@@ -8,7 +8,7 @@ local GeminiDermaSkin = GeminiDermaSkin or {}
           Variables
 ------------------------]]--
 
-local ColorCyan = Color( 1, 129, 123)
+local ColorCyan = Color( 0, 165, 157)
 
 -- Button
 local ButtonHoverColor = Color( 1, 78, 129, 255)

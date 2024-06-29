@@ -21,7 +21,20 @@ end
 function MODULE:GetTrainID()
 end
 
-function MODULE:ClearTrainMenu()
+function MODULE:ClearDataTrain()
+    if IsValid(self.TrainingMenu) then
+        self.TrainingMenu.InputPlayer:SetText("")
+        self.TrainingMenu.InputLogStart:SetText("")
+        self.TrainingMenu.InputLogEnd:SetText("")
+    end
+end
+
+function MODULE:SetDataTrain(PlayerID, LogStart, LogEnd)
+    if IsValid(self.TrainingMenu) then
+        self.TrainingMenu.InputPlayer:SetText(PlayerID)
+        self.TrainingMenu.InputLogStart:SetText(LogStart)
+        self.TrainingMenu.InputLogEnd:SetText(LogEnd)
+    end
 end
 
 --[[------------------------
@@ -68,7 +81,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingList.NewTrain:DockMargin(9, 9, 9, 0)
     self.TrainingList.NewTrain:SetIcon("icon16/add.png")
     self.TrainingList.NewTrain.DoClick = function()
-        self:ClearTrainMenu()
+        self:ClearDataTrain()
     end
 
     --[[------------------------
@@ -97,14 +110,86 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingMenu.InputPlayerDescription:SetTall(30)
 
     self.TrainingMenu.InputPlayer = vgui.Create("DTextEntry", self.TrainingMenu)
-    self.TrainingMenu.InputPlayer:SetSize(self.TrainingMenu:GetWide() - 16, 20)
     self.TrainingMenu.InputPlayer:SetPos(8, 50)
     self.TrainingMenu.InputPlayer:SetNumeric(true)
     self.TrainingMenu.InputPlayer:Dock(TOP)
     self.TrainingMenu.InputPlayer:DockMargin(8, 0, 8, 4)
     self.TrainingMenu.InputPlayer:SetPlaceholderText(Gemini:GetPhrase("Logger.PlayerID"))
 
+    self.TrainingMenu.InputLogStartTitle = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.InputLogStartTitle:SetFont("Frutiger:Big")
+    self.TrainingMenu.InputLogStartTitle:SetTall(30)
+    self.TrainingMenu.InputLogStartTitle:SetText(Gemini:GetPhrase("Train.InputLogStart"))
+    self.TrainingMenu.InputLogStartTitle:SetContentAlignment(4)
+    self.TrainingMenu.InputLogStartTitle:Dock(TOP)
+    self.TrainingMenu.InputLogStartTitle:DockMargin(8, 8, 8, 4)
 
+    self.TrainingMenu.InputLogStartDesc = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.InputLogStartDesc:SetText(Gemini:GetPhrase("Train.InputLogStart.Desc"))
+    self.TrainingMenu.InputLogStartDesc:SetContentAlignment(4)
+    self.TrainingMenu.InputLogStartDesc:Dock(TOP)
+    self.TrainingMenu.InputLogStartDesc:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputLogStartDesc:SetWrap(true)
+    self.TrainingMenu.InputLogStartDesc:SetTall(30)
+
+    self.TrainingMenu.InputLogStart = vgui.Create("DTextEntry", self.TrainingMenu)
+    self.TrainingMenu.InputLogStart:SetPos(8, 50)
+    self.TrainingMenu.InputLogStart:SetNumeric(true)
+    self.TrainingMenu.InputLogStart:Dock(TOP)
+    self.TrainingMenu.InputLogStart:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputLogStart:SetPlaceholderText(Gemini:GetPhrase("Train.InputLogStart"))
+
+    self.TrainingMenu.InputLogEndTitle = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.InputLogEndTitle:SetFont("Frutiger:Big")
+    self.TrainingMenu.InputLogEndTitle:SetTall(30)
+    self.TrainingMenu.InputLogEndTitle:SetText(Gemini:GetPhrase("Train.InputLogEnd"))
+    self.TrainingMenu.InputLogEndTitle:SetContentAlignment(4)
+    self.TrainingMenu.InputLogEndTitle:Dock(TOP)
+    self.TrainingMenu.InputLogEndTitle:DockMargin(8, 8, 8, 4)
+
+    self.TrainingMenu.InputLogEndDesc = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.InputLogEndDesc:SetText(Gemini:GetPhrase("Train.InputLogEnd.Desc"))
+    self.TrainingMenu.InputLogEndDesc:SetContentAlignment(4)
+    self.TrainingMenu.InputLogEndDesc:Dock(TOP)
+    self.TrainingMenu.InputLogEndDesc:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputLogEndDesc:SetWrap(true)
+    self.TrainingMenu.InputLogEndDesc:SetTall(30)
+
+    self.TrainingMenu.InputLogEnd = vgui.Create("DTextEntry", self.TrainingMenu)
+    self.TrainingMenu.InputLogEnd:SetPos(8, 50)
+    self.TrainingMenu.InputLogEnd:SetNumeric(true)
+    self.TrainingMenu.InputLogEnd:Dock(TOP)
+    self.TrainingMenu.InputLogEnd:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputLogEnd:SetPlaceholderText(Gemini:GetPhrase("Train.InputLogEnd"))
+
+    self.TrainingMenu.PasteDataTitle = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.PasteDataTitle:SetFont("Frutiger:Big")
+    self.TrainingMenu.PasteDataTitle:SetTall(30)
+    self.TrainingMenu.PasteDataTitle:SetText(Gemini:GetPhrase("Train.DataTrain"))
+    self.TrainingMenu.PasteDataTitle:SetContentAlignment(4)
+    self.TrainingMenu.PasteDataTitle:Dock(TOP)
+    self.TrainingMenu.PasteDataTitle:DockMargin(8, 8, 8, 4)
+
+    self.TrainingMenu.PasteData = vgui.Create("DButton", self.TrainingMenu)
+    self.TrainingMenu.PasteData:SetText(Gemini:GetPhrase("Train.PasteData"))
+    self.TrainingMenu.PasteData:Dock(TOP)
+    self.TrainingMenu.PasteData:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.PasteData.DoClick = function()
+        local GlobalData = GetGlobalString("Gemini:TrainData", "")
+        if ( GlobalData == "" ) then
+            self.OutputMSG:SetText(Gemini:GetPhrase("Train.NoData"))
+            return
+        end
+
+        local Data = string.Explode(":", GlobalData)
+        if (#Data ~= 3) then
+            self.OutputMSG:SetText(Gemini:GetPhrase("Train.InvalidData"))
+            return
+        end
+
+        self:SetDataTrain(Data[1], Data[2], Data[3])
+        self.OutputMSG:SetText(Gemini:GetPhrase("Train.PastedData"))
+    end
 end
 
 Gemini:ModuleCreate(Gemini:GetPhrase("Train"), MODULE)

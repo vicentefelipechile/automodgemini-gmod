@@ -2,7 +2,7 @@
                    Google Gemini Automod - Configuration Menu
 ----------------------------------------------------------------------------]]--
 
-local ModelPrefix = "models/gemini-1."
+local ModelPrefix = "models/gem"
 local CurrentModel = CurrentModel or {}
 
 local MODULE = { ["Icon"] = "icon16/cog.png" }
@@ -239,16 +239,21 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option.OnMenuOpened = DComboBoxPaint
 
     for Key, Safety in ipairs( SAFETY_ENUM ) do
-        self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:AddChoice( Gemini:GetPhrase("Enum.Safety." .. Safety["Name"]), Key, false, Safety["Icon"] )
-        self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:AddChoice( Gemini:GetPhrase("Enum.Safety." .. Safety["Name"]), Key, false, Safety["Icon"] )
-        self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:AddChoice( Gemini:GetPhrase("Enum.Safety." .. Safety["Name"]), Key, false, Safety["Icon"] )
-        self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:AddChoice( Gemini:GetPhrase("Enum.Safety." .. Safety["Name"]), Key, false, Safety["Icon"] )
+        self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
+        self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
+        self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
+        self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
     end
 
     self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:SetSortItems( false )
     self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:SetSortItems( false )
     self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:SetSortItems( false )
     self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:SetSortItems( false )
+
+    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetyHarassment", 1) )
+    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetyHateSpeech", 1) )
+    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetySexuallyExplicit", 1) )
+    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetyDangerousContent", 1) )
 
 
     local AnotherHorizonalLine = vgui.Create( "DPanel", self.ConfigPanel.Gemini )

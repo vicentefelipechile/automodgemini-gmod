@@ -28,6 +28,32 @@ Gemini:CreateConfig("SafetyDangerousContent", "Gemini", OnlyThreeSafety, 2)
 
 
 --[[------------------------
+       Gemini Begin
+------------------------]]--
+
+local CurrentLanguage = CurrentLanguage or {}
+
+local SAFETY_ENUM = {
+    [1] = "BLOCK_NONE",
+    [2] = "BLOCK_ONLY_HIGH",
+    [3] = "BLOCK_MEDIUM_AND_ABOVE",
+    [4] = "BLOCK_LOW_AND_ABOVE"
+}
+
+local SAFETY_TYPE = {
+    ["HARM_CATEGORY_HARASSMENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHarassment", "Gemini") ] end,
+    ["HARM_CATEGORY_HATE_SPEECH"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHateSpeech", "Gemini") ] end,
+    ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
+    ["HARM_CATEGORY_DANGEROUS_CONTENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyDangerousContent", "Gemini") ] end
+}
+
+function Gemini:GeminiPoblate()
+    CurrentLanguage = self:CurrentLanguage()
+end
+
+
+
+--[[------------------------
        Retreive Models
 ------------------------]]--
 
@@ -111,43 +137,17 @@ end)
 
 
 --[[------------------------
-       Gemini Begin
-------------------------]]--
-
-local CurrentGamemodeContext = ""
-
-local SAFETY_ENUM = {
-    [1] = "BLOCK_NONE",
-    [2] = "BLOCK_ONLY_HIGH",
-    [3] = "BLOCK_MEDIUM_AND_ABOVE",
-    [4] = "BLOCK_LOW_AND_ABOVE"
-}
-
-local SAFETY_TYPE = {
-    ["HARM_CATEGORY_HARASSMENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHarassment", "Gemini") ] end,
-    ["HARM_CATEGORY_HATE_SPEECH"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHateSpeech", "Gemini") ] end,
-    ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
-    ["HARM_CATEGORY_DANGEROUS_CONTENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyDangerousContent", "Gemini") ] end
-}
-
-function Gemini:GeminiPoblate()
-    local CurrentGamemode = self:LanguagePhraseExists("Gamemode." .. engine.ActiveGamemode()) and "Gamemode." .. engine.ActiveGamemode() or "Gamemode.default"
-    CurrentGamemodeContext = self:GetPhrase(CurrentGamemode)
-end
-
-
-
---[[------------------------
        Safety Settings
 ------------------------]]--
 
-function Gemini:GemeniGetGeneration()
+function Gemini:GeminiGetGeneration(ResponseWithJson)
     return {
         ["temperature"] = self:GetConfig("Temperature", "Gemini"),
         ["topK"] = self:GetConfig("TopK", "Gemini"),
         ["topP"] = self:GetConfig("TopP", "Gemini"),
         ["maxOutputTokens"] = self:GetConfig("MaxTokens", "Gemini"),
-        ["stopSequences"] = {}
+        ["stopSequences"] = {},
+        ["response_mime_type"] = ( ResponseWithJson == true ) and "application/json" or "text/plain"
     }
 end
 
@@ -170,10 +170,6 @@ end
        Pre-Parameters
 ------------------------]]--
 
-function Gemini:GeminiGetContext()
-    return self:GetPhrase("context") .. "\n\n" .. CurrentGamemodeContext
-end
-
 function Gemini:GeminiGetPlayerLogs(Player, Amount)
     local Logs = self:LoggerFindPlayerLogs(Player, Amount, true)
     local FormatedLogs = ""
@@ -190,36 +186,28 @@ end
         AI Structure
 ------------------------]]--
 
-function Gemini:GeminiCreateBodyRequest()
+function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
     --[[ Candidate Structure ]]--
     local Candidate = {
-        ["generationConfig"] = self:GemeniGetGeneration(),
+        ["generationConfig"] = self:GeminiGetGeneration(),
         ["safetySettings"] = self:GeminiGetSafety(true),
         ["contents"] = {}
     }
 
-    local MainPrompt = ""
+    local MainPrompt = CurrentLanguage.GeneratePrompt(
+        self:GetServerInfo(),
+        self:GetRules(),
+        UserMessage, Logs, Gamemode
+    )
 
-    --[[ Game Context ]]--
-    MainPrompt = MainPrompt .. self:GeminiGetContext() .. "\n"
-
-    --[[ Pre-Context ]]--
-    MainPrompt = MainPrompt .. self:GetServerInfo() .. "\n\n" .. self:GetRules()
-
-    --[[ Trained Data ]]--
-    -- local TrainedData = self:TrainGetTrainings()
 
     --[[ Output ]]--
     local Contents = {
-        {["text"] = MainPrompt}
+        {
+            ["parts"] = {["text"] = MainPrompt},
+            ["role"] = "user"
+        }
     }
-
-    --[[
-    for _, Train in ipairs(TrainedData) do
-        table.insert(Contents, {["text"] = Train["User"], ["role"] = "user"}) -- Previuosly trained data
-        table.insert(Contents, {["text"] = Train["Bot"], ["role"] = "model"}) -- Bot response
-    end
-    --]]
 
     --[[ Inserting the contents ]]--
     Candidate["contents"] = Contents
@@ -260,6 +248,10 @@ hook.Add("PostGamemodeLoaded", "Gemini:GeminiSetGlobal", function()
     SetGlobal2Float("Gemini:TopP", Gemini:GetConfig("TopP", "Gemini"))
     SetGlobal2Float("Gemini:TopK", Gemini:GetConfig("TopK", "Gemini"))
     SetGlobal2Int("Gemini:MaxTokens", Gemini:GetConfig("MaxTokens", "Gemini"))
+    SetGlobal2Int("Gemini:SafetyHarassment", Gemini:GetConfig("SafetyHarassment", "Gemini") )
+    SetGlobal2Int("Gemini:SafetyHateSpeech", Gemini:GetConfig("SafetyHateSpeech", "Gemini") )
+    SetGlobal2Int("Gemini:SafetySexuallyExplicit", Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") )
+    SetGlobal2Int("Gemini:SafetyDangerousContent", Gemini:GetConfig("SafetyDangerousContent", "Gemini") )
 
     SetGlobal2Bool("Gemini:APIKeyEnabled", Gemini:GetConfig("APIKey", "Gemini") ~= "YOUR_API_KEY")
 end)
