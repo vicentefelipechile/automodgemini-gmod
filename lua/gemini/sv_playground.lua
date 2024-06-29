@@ -16,19 +16,13 @@ local AttachContext = "gemini_playground_attachcontext"
 ------------------------]]--
 
 function Gemini:PlaygroundSendMessage(ply, Message, Argument)
-    if not IsValid(ply) then
-        self:Error("The first argument of Gemini:PlaygroundSendMessage() must be a player.", ply, "player")
-    end
-
-    if not ( isentity(ply) and ply:IsPlayer() ) then
+    if not ( IsValid(ply) and ply:IsPlayer() ) then
         self:Error("The first argument of Gemini:PlaygroundSendMessage() must be a player.", ply, "player")
     end
 
     if not isstring(Message) then
         self:Error("The second argument of Gemini:PlaygroundSendMessage() must be a string.", Message, "string")
-    end
-
-    if ( Message == "" ) then
+    elseif ( Message == "" ) then
         self:Error("The second argument of Gemini:PlaygroundSendMessage() must not be empty.", Message, "string")
     end
 
@@ -78,9 +72,6 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         Candidate = PlayerUsingPlayground[ply]
 
     else
-        --[[ Candidate ]]--
-        Candidate = Gemini:GeminiCreateBodyRequest()
-
         --[[ Context ]]--
         local PlayerWantContext = self:GetPlayerInfo(ply, AttachContext)
         if PlayerWantContext then
@@ -90,8 +81,6 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply)
         else
             Candidate = Gemini:GeminiCreateBodyRequest(Prompt)
         end
-
-        Candidate["contents"][1] = { ["parts"] = {["text"] = FullPrompt}, ["role"] = "user"}
 
         --[[ Body ]]--
         PlayerUsingPlayground[ply] = Candidate

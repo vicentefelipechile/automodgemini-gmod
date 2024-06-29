@@ -137,7 +137,7 @@ end)
 
 
 --[[------------------------
-       Safety Settings
+       Gemini Functions
 ------------------------]]--
 
 function Gemini:GeminiGetGeneration(ResponseWithJson)
@@ -164,12 +164,6 @@ function Gemini:GeminiGetSafety()
     return SafetySettings
 end
 
-
-
---[[------------------------
-       Pre-Parameters
-------------------------]]--
-
 function Gemini:GeminiGetPlayerLogs(Player, Amount)
     local Logs = self:LoggerFindPlayerLogs(Player, Amount, true)
     local FormatedLogs = ""
@@ -179,12 +173,6 @@ function Gemini:GeminiGetPlayerLogs(Player, Amount)
     end
     return FormatedLogs
 end
-
-
-
---[[------------------------
-        AI Structure
-------------------------]]--
 
 function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
     --[[ Candidate Structure ]]--

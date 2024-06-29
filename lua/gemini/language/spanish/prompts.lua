@@ -32,10 +32,11 @@ $GAMEMODE_MAPS$
 
 # Reglas e Informacion del Servidor:
 Las siguientes reglas no forman parte del modo de juego, sino que son parte del servidor en donde estas siendo ejecutado, las reglas son las siguientes:
-
+```
 $ALL_SERVER_INFO$
 
 $ALL_SERVER_RULES$
+```
 
 # Registros del juego
 $LOGS$
@@ -109,9 +110,13 @@ PromptTable["gamemodes"]["darkrp"] = {
     ["GAMEMODE_MAPS"] = [[Los mapas preferiblemente son de ciudades o lugares urbanos, ya que estos mapas son los mas adecuados para simular una vida real. Los mapas pueden tener casas, tiendas, calles, estaciones policiales, entre otras cosas.]],
 }
 
-local ResponseCriteria = [[- Evita respuestas extensas y solo responde de manera corta y precisa
-- Si el usuario desea mas información, responderás de manera extensa
-- Si el usuario te habla en otro idioma que no sea el español, responde en el idioma que te hablo el usuario]]
+local ResponseCriteria = {
+    "Evita respuestas extensas y solo responde de manera corta y precisa",
+    "Si el usuario desea mas información, responderás de manera extensa",
+    "Si el usuario te habla en otro idioma que no sea el español, responde en el idioma que te hablo el usuario",
+    "No uses emojis",
+    "Evita hacer resumenes despues del texto, por ejemplo \"En resumen...\" o \"Es importante saber...\" o \"Hay que aclarar que...\"",
+}
 
 --[[------------------------
     Prompt Functions
@@ -130,12 +135,12 @@ function PromptFunctions.GetResponseCriteria()
 end
 
 function PromptFunctions.SetResponseCriteria(Criteria)
-    if not isstring(Criteria) then
-        Gemini:Error("The first argument of PromptFunctions.SetResponseCriteria must be a string.", Criteria, "string")
-    end
-
-    if ( Criteria == "" ) then
-        Gemini:Error("The first argument of PromptFunctions.SetResponseCriteria must not be an empty string.", Criteria, "string")
+    if not istable(Criteria) then
+        Gemini:Error("The first argument of PromptFunctions.SetResponseCriteria must be a table.", Criteria, "table")
+    elseif ( #Criteria == 0 ) then
+        Gemini:Error("The first argument of PromptFunctions.SetResponseCriteria must not be an empty table.", Criteria, "table")
+    elseif not table.IsSequential(Criteria) then
+        Gemini:Error("The first argument of PromptFunctions.SetResponseCriteria must be a sequential table.", Criteria, "table")
     end
 
     ResponseCriteria = Criteria
@@ -157,42 +162,31 @@ function PromptFunctions.GeneratePrompt(ServerInfo, ServerRules, UserMessage, Lo
     local Prompt = PromptTable["template"]
     local GamemodePrompt = PromptTable["gamemodes"][Gamemode or engine.ActiveGamemode()] or PromptTable["gamemodes"]["default"]
 
-    if not GamemodePrompt then
-        GamemodePrompt = PromptTable["Gamemode.default"]
-    end
+    Prompt = Prompt:gsub("%$GAMEMODE%$", GamemodePrompt["GAMEMODE"])
+    Prompt = Prompt:gsub("%$DESCRIPTION%$", GamemodePrompt["DESCRIPTION"])
+    Prompt = Prompt:gsub("%$OBJECTIVE%$", GamemodePrompt["OBJECTIVE"])
+    Prompt = Prompt:gsub("%$BEHAVIOR%$", GamemodePrompt["BEHAVIOR"])
+    Prompt = Prompt:gsub("%$GAMEMODE_RULES%$", TableToList(GamemodePrompt["GAMEMODE_RULES"]))
+    Prompt = Prompt:gsub("%$MECHANICS%$", TableToList(GamemodePrompt["MECHANICS"]))
+    Prompt = Prompt:gsub("%$GAMEMODE_MAPS%$", GamemodePrompt["GAMEMODE_MAPS"])
 
-    Prompt = Prompt:gsub("$GAMEMODE$", GamemodePrompt["GAMEMODE"])
-    Prompt = Prompt:gsub("$DESCRIPTION$", GamemodePrompt["DESCRIPTION"])
-    Prompt = Prompt:gsub("$OBJECTIVE$", GamemodePrompt["OBJECTIVE"])
-    Prompt = Prompt:gsub("$BEHAVIOR$", GamemodePrompt["BEHAVIOR"])
-    Prompt = Prompt:gsub("$GAMEMODE_RULES$", TableToList(GamemodePrompt["GAMEMODE_RULES"]))
-    Prompt = Prompt:gsub("$MECHANICS$", TableToList(GamemodePrompt["MECHANICS"]))
-    Prompt = Prompt:gsub("$GAMEMODE_MAPS$", GamemodePrompt["GAMEMODE_MAPS"])
-
-    Prompt = Prompt:gsub("$ALL_SERVER_INFO$", ServerInfo)
-    Prompt = Prompt:gsub("$ALL_SERVER_RULES$", ServerRules)
-    Prompt = Prompt:gsub("$RESPONSE$", ResponseCriteria)
+    Prompt = Prompt:gsub("%$ALL_SERVER_INFO%$", ServerInfo)
+    Prompt = Prompt:gsub("%$ALL_SERVER_RULES%$", ServerRules)
+    Prompt = Prompt:gsub("%$RESPONSE%$", TableToList(ResponseCriteria))
 
     -- In case we only need the prompt
     if ( UserMessage == nil and Logs == nil ) then
         return Prompt
     end
 
-    -- Else
     if not isstring(UserMessage) then
         Gemini:Error("The fourth argument of PromptFunctions.GeneratePrompt must be a string.", UserMessage, "string")
     elseif ( #UserMessage == 0 ) then
         Gemini:Error("The fourth argument of PromptFunctions.GeneratePrompt must not be an empty string.", UserMessage, "string")
     end
-    if not isstring(Logs) then
-        Gemini:Error("The third argument of PromptFunctions.GeneratePrompt must be a string.", Logs, "string")
-    elseif ( #Logs == 0 ) then
-        Gemini:Error("The third argument of PromptFunctions.GeneratePrompt must not be an empty string.", Logs, "string")
-    end
 
-    Logs = Logs or "No hay registros para mostrar."
-    Prompt = Prompt:gsub("$LOGS$", Logs)
-    Prompt = Prompt:gsub("$USER_MESSAGE$", UserMessage)
+    Prompt = Prompt:gsub("%$LOGS%$", Logs or "No hay registros para mostrar.")
+    Prompt = Prompt:gsub("%$USER_PROMPT%$", UserMessage)
 
     return Prompt
 end
