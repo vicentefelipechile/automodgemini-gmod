@@ -104,13 +104,8 @@ local function RetreiveNewModels()
 end
 
 hook.Add("InitPostEntity", "Gemini:RetreiveModels", function()
-    timer.Simple(8, function()
-        RetreiveNewModels()
-    end)
-
-    hook.Add("Gemini:PostInit", "Gemini:RetreiveModels", function()
-        RetreiveNewModels()
-    end)
+    timer.Simple(8, RetreiveNewModels)
+    hook.Add("Gemini:PostInit", "Gemini:RetreiveModels", RetreiveNewModels)
 end)
 
 hook.Add("Gemini:ConfigChanged", "Gemini:UpdateModels", function(Name, Category, Value, ConvarValue)
@@ -129,7 +124,7 @@ function Gemini:GeminiGetModels()
 end
 
 concommand.Add("gemini_reloadmodels", function(ply)
-    if ( IsValid(ply) and not Gemini:CanUse(ply, "gemini_automod") ) then return end
+    if not Gemini:CanUse(ply, "gemini_automod") then return end
 
     RetreiveNewModels()
 end)
@@ -174,31 +169,29 @@ function Gemini:GeminiGetPlayerLogs(Player, Amount)
     return FormatedLogs
 end
 
-function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
-    --[[ Candidate Structure ]]--
-    local Candidate = {
+function Gemini:GeminiCreateCandidate()
+    return {
         ["generationConfig"] = self:GeminiGetGeneration(),
-        ["safetySettings"] = self:GeminiGetSafety(true),
+        ["safetySettings"] = self:GeminiGetSafety(),
         ["contents"] = {}
     }
+end
 
+function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
+    local Candidate = self:GeminiCreateCandidate()
     local MainPrompt = CurrentLanguage.GeneratePrompt(
         self:GetServerInfo(),
         self:GetRules(),
         UserMessage, Logs, Gamemode
     )
 
-
-    --[[ Output ]]--
-    local Contents = {
+    --[[ Inserting the contents ]]--
+    Candidate["contents"] = {
         {
             ["parts"] = {["text"] = MainPrompt},
             ["role"] = "user"
         }
     }
-
-    --[[ Inserting the contents ]]--
-    Candidate["contents"] = Contents
 
     return Candidate
 end
