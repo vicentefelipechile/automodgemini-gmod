@@ -2,6 +2,8 @@
                       Google Gemini Automod - Gemini Module
 ----------------------------------------------------------------------------]]--
 
+include("gemini/gemini_object.lua")
+
 util.AddNetworkString("Gemini:SendGeminiModules")
 util.AddNetworkString("Gemini:SetGeminiModel")
 
@@ -13,12 +15,12 @@ end
        Gemini Config
 ------------------------]]--
 
-Gemini:CreateConfig("ModelName",     "Gemini", Gemini.VERIFICATION_TYPE.string, "gemini-1.5-pro-latest")
-Gemini:CreateConfig("Temperature",   "Gemini", Gemini.VERIFICATION_TYPE.range,  0.9)
-Gemini:CreateConfig("TopP",          "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
-Gemini:CreateConfig("TopK",          "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
-Gemini:CreateConfig("MaxTokens",     "Gemini", Gemini.VERIFICATION_TYPE.number, 2048)
-Gemini:CreateConfig("APIKey",        "Gemini", Gemini.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
+Gemini:CreateConfig("ModelName",    "Gemini", Gemini.VERIFICATION_TYPE.string, "gemini-1.5-pro-latest")
+Gemini:CreateConfig("Temperature",  "Gemini", Gemini.VERIFICATION_TYPE.range,  0.9)
+Gemini:CreateConfig("TopP",         "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
+Gemini:CreateConfig("TopK",         "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
+Gemini:CreateConfig("MaxTokens",    "Gemini", Gemini.VERIFICATION_TYPE.number, 2048)
+Gemini:CreateConfig("APIKey",       "Gemini", Gemini.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
 
 Gemini:CreateConfig("SafetyHarassment", "Gemini", OnlyThreeSafety, 2)
 Gemini:CreateConfig("SafetyHateSpeech", "Gemini", OnlyThreeSafety, 2)
@@ -57,9 +59,12 @@ end
        Retreive Models
 ------------------------]]--
 
-local GeminiModels = GeminiModels or {}
+local function RetrieveModels()
+    Gemini:ReloadModels()
+end
+
 local function BroadcastGeminiModels(ply)
-    local Models = util.TableToJSON(GeminiModels)
+    local Models = util.TableToJSON( Gemini:GetModels() )
     local ModelsCompressed = util.Compress(Models)
     local ModelsSize = #ModelsCompressed
 
@@ -71,62 +76,10 @@ local function BroadcastGeminiModels(ply)
     NetSend(ply)
 end
 
-local function RetreiveNewModels()
-    local EndPointUrl = Gemini.EndPoint .. "?key=" .. Gemini:GetConfig("APIKey", "Gemini")
-
-    local SuccessRequest = HTTP({
-        ["url"] = EndPointUrl,
-        ["method"] = "GET",
-        ["success"] = function(Code, Body, Headers)
-            Gemini:GetHTTPDescription(Code)
-
-            file.Write("gemini_models.txt", Body)
-
-            if ( Code ~= 200 ) then return end
-
-            local Response = util.JSONToTable(Body)
-            if ( Response == nil ) then return end
-
-            GeminiModels = Response["models"]
-
-            BroadcastGeminiModels()
-        end,
-        ["failed"] = function(Error)
-            Gemini:Print("Failed to retreive models. Error: " .. Error)
-        end
-    })
-
-    if ( SuccessRequest == false ) then
-        Gemini:Print("Failed to retreive models. HTTP Request failed.")
-    else
-        Gemini:Print("Retreiving models...")
-    end
-end
-
-hook.Add("InitPostEntity", "Gemini:RetreiveModels", function()
-    timer.Simple(8, RetreiveNewModels)
-    hook.Add("Gemini:PostInit", "Gemini:RetreiveModels", RetreiveNewModels)
-end)
-
-hook.Add("Gemini:ConfigChanged", "Gemini:UpdateModels", function(Name, Category, Value, ConvarValue)
-    if ( Category ~= "Gemini" ) then return end
-    if ( string.lower(Name) ~= "apikey" ) then return end
-
-    RetreiveNewModels()
-end)
+hook.Add("Gemini:HTTPLoaded", "Gemini:RetreiveModels", RetrieveModels)
 
 hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", function(Player)
     BroadcastGeminiModels(Player)
-end)
-
-function Gemini:GeminiGetModels()
-    return table.Copy(GeminiModels)
-end
-
-concommand.Add("gemini_reloadmodels", function(ply)
-    if not Gemini:CanUse(ply, "gemini_automod") then return end
-
-    RetreiveNewModels()
 end)
 
 
@@ -141,8 +94,7 @@ function Gemini:GeminiGetGeneration(ResponseWithJson)
         ["topK"] = self:GetConfig("TopK", "Gemini"),
         ["topP"] = self:GetConfig("TopP", "Gemini"),
         ["maxOutputTokens"] = self:GetConfig("MaxTokens", "Gemini"),
-        ["stopSequences"] = {},
-        ["response_mime_type"] = ( ResponseWithJson == true ) and "application/json" or "text/plain"
+        ["stopSequences"] = {}
     }
 end
 

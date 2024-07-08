@@ -27,11 +27,12 @@ if SERVER then
     util.AddNetworkString("Gemini:ReplicateConfig")
     util.AddNetworkString("Gemini:SetConfig")
     util.AddNetworkString("Gemini:AddConfig")
+
+    Promise = include("gemini/includes/promise.lua")
 end
 
 local FCVAR_PRIVATE = {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
 local FCVAR_PUBLIC = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or {FCVAR_ARCHIVE, FCVAR_USERINFO}
-
 
 local print = print
 local EmptyFunc = function() end
@@ -51,6 +52,8 @@ local VERIFICATION_TYPE = {
         return isnumber(v) and ( v >= 0 ) and ( v <= 1 )
     end
 }
+
+PRIVATE_CONFIG = true
 
 function Gemini:GeneratePrint(cfg)
     if not istable(cfg) then return print end
@@ -475,7 +478,7 @@ function Gemini:PreInit()
     self.VERIFICATION_TYPE = VERIFICATION_TYPE
 
     if SERVER then
-        self:CreateConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, true)
+        self:CreateConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, PRIVATE_CONFIG)
     end
 
     self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
@@ -487,7 +490,7 @@ function Gemini:PreInit()
         AddCSLuaFile("gemini/sh_rules.lua")     self:Print("File \"gemini/sh_rules.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_derma.lua")     self:Print("File \"gemini/cl_derma.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_gemini.lua")    self:Print("File \"gemini/cl_gemini.lua\" has been send to client.")
-        AddCSLuaFile("gemini/cl_gemini_panel.lua") self:Print("File \"gemini/cl_gemini_panel.lua\" has been send to client.")
+        AddCSLuaFile("gemini/cl_gemini_panel.lua")  self:Print("File \"gemini/cl_gemini_panel.lua\" has been send to client.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
         include("gemini/sv_sandbox.lua")        self:Print("File \"gemini/sv_sandbox.lua\" has been loaded.")
@@ -497,6 +500,7 @@ function Gemini:PreInit()
         include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
         include("gemini/sv_train.lua")          self:Print("File \"gemini/sv_train.lua\" has been loaded.")
         include("gemini/sv_playground.lua")     self:Print("File \"gemini/sv_playground.lua\" has been loaded.")
+        include("gemini/sv_formatter.lua")      self:Print("File \"gemini/sv_formatter.lua\" has been loaded.")
     else
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
@@ -537,6 +541,12 @@ function Gemini:Init()
             self:Error([[The function "TrainPoblate" has been replaced by another third-party addon!!!]], self.TrainPoblate, "function")
         end
 
+        if isfunction(self.FormatterPoblate) then
+            self:FormatterPoblate()
+        else
+            self:Error([[The function "FormatterPoblate" has been replaced by another third-party addon!!!]], self.FormatterPoblate, "function")
+        end
+
         -- AddCSLua file to all files inside "gemini/module"
         local LuaCSFiles, LuaSubFolder = file.Find("gemini/module/*", "LUA")
         for _, File in ipairs(LuaCSFiles) do
@@ -572,6 +582,16 @@ function Gemini:PostInit()
     print("")
 
     hook.Run("Gemini:PostInit")
+
+    if hook.GetTable()["InitPostEntity"]["Gemini:HTTPLoaded"] then
+        hook.Run("Gemini:HTTPLoaded")
+    else
+        hook.Add("InitPostEntity", "Gemini:HTTPLoaded", function()
+            timer.Simple(8, function()
+                hook.Run("Gemini:HTTPLoaded")
+            end)
+        end)
+    end
 end
 
 Gemini:PreInit()

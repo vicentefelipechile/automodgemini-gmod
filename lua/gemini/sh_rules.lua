@@ -1,5 +1,5 @@
 --[[----------------------------------------------------------------------------
-                   Google Gemini Automod - Server Owner Config
+                   Google Gemini Automod - Server Owner Rules
 ----------------------------------------------------------------------------]]--
 
 if SERVER then
@@ -77,9 +77,27 @@ function Gemini:SetRules(Rules)
         self:Error("The rules cannot be empty", Rules, "string")
     end
 
+    if #Rules > 60000 then
+        self:Error("The rules are too big", Rules, "string")
+    end
+
     ServerRule["Rules"] = Rules
 
     self:Print("Server rules have been set", os.date("%H:%M:%S"))
+
+    if CLIENT then
+        if Gemini:CanUse("gemini_rules_set") then
+            net.Start("Gemini:SetServerRules")
+                net.WriteString(Rules)
+            net.SendToServer()
+        else
+            self:Print("You can't set rules")
+        end
+    else
+        net.Start("Gemini:BroadcastRules")
+            net.WriteString(Rules)
+        net.Broadcast()
+    end
 end
 
 function Gemini:GetServerInfo()
@@ -98,132 +116,61 @@ hook.Add("Initialize", "Gemini:LoadServerInfo", function()
     Gemini:LoadServerInfo()
 end)
 
+if SERVER then
+    function Gemini:BroadcastServerInfo()
+        net.Start("Gemini:BroadcastRules")
+            net.WriteString(ServerRule["Rules"])
+            net.WriteString(ServerRule["ServerInfo"])
+        net.Broadcast()
+    end
+
+    hook.Add("ShutDown", "Gemini:SaveServerInfo", function()
+        Gemini:SaveServerInfo()
+    end)
+end
+
 --[[------------------------
       Network Functions
 ------------------------]]--
 
-function Gemini:BroadcastServerInfo()
-    local RulesCompressed = util.Compress(self:GetRules())
-    local RulesUInt = RulesCompressed and #RulesCompressed or 0
-
-    local ServerInfoCompressed = util.Compress(self:GetServerInfo())
-    local ServerInfoUInt = ServerInfoCompressed and #ServerInfoCompressed or 0
-
-    if ( RulesUInt > Gemini.Util.MaxBandwidth ) then
-        self:Print("The rules are too big to be broadcasted", os.date("%H:%M:%S"))
-        return
-    elseif ( ServerInfoUInt > Gemini.Util.MaxBandwidth ) then
-        self:Print("The server info is too big to be broadcasted", os.date("%H:%M:%S"))
-        return
-    end
-
-    net.Start("Gemini:BroadcastRules")
-        net.WriteUInt(RulesUInt, Gemini.Util.DefaultNetworkUInt)
-        net.WriteData(RulesCompressed, RulesUInt)
-        net.WriteUInt(ServerInfoUInt, Gemini.Util.DefaultNetworkUInt)
-        net.WriteData(ServerInfoCompressed, ServerInfoUInt)
-    net.Broadcast()
-
-    self:Print("Broadcasted server rules", os.date("%H:%M:%S"))
-end
-
-hook.Add("PlayerInitialSpawn", "Gemini:PlayerInitialSpawn", function()
-    Gemini:BroadcastServerInfo()
-end)
-
-function Gemini.ReceiveServerInfo()
-    local RulesCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
-    local ServerInfoCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
-
-    local Rules = util.Decompress(RulesCompressed)
-    local ServerInfo = util.Decompress(ServerInfoCompressed)
-
-    Gemini:SetRules(Rules)
-    Gemini:SetServerInfo(ServerInfo)
-
-    hook.Run("Gemini:ReceivedServerRules", Rules, ServerInfo)
-end
-
 if CLIENT then
-    net.Receive("Gemini:BroadcastRules", Gemini.ReceiveServerInfo)
-end
-
---[[------------------------
-       Replicate Rules
-------------------------]]--
-
-function Gemini:SetServerRulesClient(Rules)
-    if SERVER or not self:CanUse("gemini_rules_set") then return end
-
-    if not isstring(Rules) then
-        self:Error("The rules must be a string", Rules, "string")
-    end
-
-    if ( Rules == "" ) then
-        self:Error("The rules cannot be empty", Rules, "string")
-    end
-
-    local RulesCompresed = util.Compress(Rules)
-    local RulesUInt = RulesCompresed and #RulesCompresed or 0
-
-    if ( RulesUInt > Gemini.Util.MaxBandwidth ) then
-        self:Error("The rules are too big to be broadcasted")
-    end
-
-    net.Start("Gemini:SetServerRules")
-        net.WriteUInt(RulesUInt, Gemini.Util.DefaultNetworkUInt)
-        net.WriteData(RulesCompresed, RulesUInt)
-    net.SendToServer()
-end
-
-function Gemini:SetServerInfoClient(Info)
-    if SERVER or not self:CanUse("gemini_rules_set") then return end
-
-    if not isstring(Info) then
-        self:Error("The server name must be a string", Info, "string")
-    end
-
-    if ( Info == "" ) then
-        self:Error("The server name cannot be empty", Info, "string")
-    end
-
-    local InfoCompressed = util.Compress(Info)
-    local InfoUInt = InfoCompressed and #InfoCompressed or 0
-
-    if ( InfoUInt > Gemini.Util.MaxBandwidth ) then
-        self:Error("The server name is too big to be broadcasted")
-    end
-
-    net.Start("Gemini:SetServerInfo")
-        net.WriteUInt(InfoUInt, Gemini.Util.DefaultNetworkUInt)
-        net.WriteData(InfoCompressed, InfoUInt)
-    net.SendToServer()
-end
-
-
-if SERVER then
-    function Gemini.ReceivedClientRules(len, ply)
-        if not Gemini:CanUse(ply, "gemini_rules_set") then return end
-
-        local RulesCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
-        local Rules = util.Decompress(RulesCompressed)
-
+    net.Receive("Gemini:BroadcastRules", function()
+        local Rules = net.ReadString()
+        local Info = net.ReadString()
         Gemini:SetRules(Rules)
-        Gemini:SaveServerInfo()
-        Gemini:BroadcastServerInfo()
-    end
+        Gemini:SetServerInfo(Info)
+    end)
 
-    function Gemini.ReceivedClientInfo(len, ply)
+    net.Receive("Gemini:SetServerRules", function()
+        local Rules = net.ReadString()
+        Gemini:SetRules(Rules)
+    end)
+
+    net.Receive("Gemini:SetServerInfo", function()
+        local Info = net.ReadString()
+        Gemini:SetServerInfo(Info)
+    end)
+else
+    net.Receive("Gemini:BroadcastRules", function(_, ply)
+        if not Gemini:CanUse(ply, "gemini_rules") then return end
+
+        local Rules = net.ReadString()
+        local Info = net.ReadString()
+        Gemini:SetRules(Rules)
+        Gemini:SetServerInfo(Info)
+    end)
+
+    net.Receive("Gemini:SetServerRules", function(_, ply)
         if not Gemini:CanUse(ply, "gemini_rules_set") then return end
 
-        local InfoCompressed = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
-        local Info = util.Decompress(InfoCompressed)
+        local Rules = net.ReadString()
+        Gemini:SetRules(Rules)
+    end)
 
+    net.Receive("Gemini:SetServerInfo", function(_, ply)
+        if not Gemini:CanUse(ply, "gemini_rules_set") then return end
+
+        local Info = net.ReadString()
         Gemini:SetServerInfo(Info)
-        Gemini:SaveServerInfo()
-        Gemini:BroadcastServerInfo()
-    end
-
-    net.Receive("Gemini:SetServerRules", Gemini.ReceivedClientRules)
-    net.Receive("Gemini:SetServerInfo", Gemini.ReceivedClientInfo)
+    end)
 end

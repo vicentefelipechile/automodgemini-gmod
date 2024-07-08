@@ -318,6 +318,8 @@ function Gemini.LoggerStartAsynchronousLogs(len, ply)
 end
 
 function Gemini.LoggerStopAsynchronousLogs(len, ply)
+    if not table.HasValue(AsynchronousPlayers, ply) then return end
+
     table.RemoveByValue(AsynchronousPlayers, ply)
     Gemini:Print( string.format("Asynchronous logs stopped for \"%s\"", ply:Nick()) )
 end

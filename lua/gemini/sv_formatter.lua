@@ -1,11 +1,12 @@
 --[[----------------------------------------------------------------------------
-                 Google Gemini Automod - Server Owner Rules (SV)
+                 Google Gemini Automod - Gemini Formatter Module
 ----------------------------------------------------------------------------]]--
 
 util.AddNetworkString("Gemini:GeminiFormatter:ServerInfo")
 
-local FormatterTypes = FormatterTypes or {}
+local MethodGenerateContent = "models/%s:generateContent"
 local HTTPRegExp = "https?://[%w-_%.%?%.:/%+=&]+"
+local FormatterTypes = FormatterTypes or {}
 
 --[[------------------------
           Settings
@@ -13,6 +14,7 @@ local HTTPRegExp = "https?://[%w-_%.%?%.:/%+=&]+"
 
 function Gemini:FormatterPoblate()
     self:CreateConfig("Source", "Formatter", self.VERIFICATION_TYPE.string, "https://google.com")
+    file.CreateDir("gemini/formatter")
 end
 
 local function RetrieveFormats()
@@ -50,40 +52,13 @@ function Gemini:Formatter(InputText, Formatter)
     table.insert(FormatterTarget, {["text"] = "input: " .. InputText})
     table.insert(FormatterTarget, {["text"] = "output: "})
 
-    local Candidate = self:GeminiCreateCandidate()
-    Candidate["contents"] = {
-        {
-            ["parts"] = FormatterTarget,
-            ["role"] = "user"
-        }
-    }
+    local NewRequest = Gemini:NewRequest()
+    NewRequest:AddContent(FormatterTarget, "user")
+    NewRequest:SetMethod( string.format(MethodGenerateContent, self:GetConfig("ModelName", "Gemini")) )
 
-    file.Write("gemini_formatter_request.json", util.TableToJSON(Candidate, true))
+    file.Write("gemini/formatter_request.json", util.TableToJSON(NewRequest:GetBody(), true))
 
-    local promise = Promise()
-    HTTP({
-        ["url"] = string.format(self.URL, self:GetConfig("ModelName", "Gemini"), self:GetConfig("APIKey", "Gemini")),
-        ["method"] = "POST",
-        ["type"] = "application/json",
-        ["body"] = Body,
-        ["success"] = function(Code, BodyResponse, Headers)
-            self:GetHTTPDescription(Code)
-
-            file.Write("gemini_formatter_response.json", BodyResponse)
-
-            if ( Code ~= 200 ) then promise:Reject("There was an error with the request to the url") end
-
-            local Response = util.JSONToTable(BodyResponse)
-            if ( Response == nil ) then promise:Reject("The response must be a valid json") end
-
-            promise:Resolve(Response)
-        end,
-        ["failed"] = function(Reason)
-            promise:Reject("The request to the url failed")
-        end
-    })
-
-    return promise
+    return NewRequest:MakeRequest()
 end
 
 
@@ -91,21 +66,40 @@ end
    Formatter from sources
 ------------------------]]--
 
-function Gemini:FormatterAddFromURL(URL, Formatter) -- First function with a promise
+function Gemini:LoadFormatterFromURL(URL, Formatter, Cache) -- First function with a promise
     if not isstring(URL) then
-        self:Error("The first argument of Gemini:FormatterAddFromURL must be a string", URL, "string")
+        self:Error("The first argument of Gemini:LoadFormatterFromURL must be a string", URL, "string")
     elseif ( #URL == 0 ) then
-        self:Error("The first argument of Gemini:FormatterAddFromURL must not be empty", URL, "string")
+        self:Error("The first argument of Gemini:LoadFormatterFromURL must not be empty", URL, "string")
     end
 
     if not isstring(Formatter) then
-        self:Error("The second argument of Gemini:FormatterAddFromURL must be a string", Formatter, "string")
+        self:Error("The second argument of Gemini:LoadFormatterFromURL must be a string", Formatter, "string")
     elseif ( #Formatter == 0 ) then
-        self:Error("The second argument of Gemini:FormatterAddFromURL must not be empty", Formatter, "string")
+        self:Error("The second argument of Gemini:LoadFormatterFromURL must not be empty", Formatter, "string")
     end
 
     if not string.match(URL, HTTPRegExp) then
         self:Error("The URL is not valid", URL, "string")
+    end
+
+    if Cache then
+        -- get the filename from url
+        local FileName = string.GetFileFromFilename(URL)
+        if not isstring(FileName) then
+            FileName = "gemini/formatter/" .. string.lower(Formatter) .. ".json"
+        end
+
+        if file.Exists(FileName, "DATA") then
+            local FileData = file.Read(FileName, "DATA")
+            if FileData then
+                local JsonData = util.JSONToTable(FileData)
+                if JsonData then
+                    FormatterTypes[Formatter] = JsonData
+                    return JsonData
+                end
+            end
+        end
     end
 
     local promise = Promise()
@@ -137,20 +131,26 @@ function Gemini:FormatterAddFromURL(URL, Formatter) -- First function with a pro
         end
     })
 
+    if Cache then
+        promise:Then(function(Response)
+            file.Write(FileName, util.TableToJSON(Response, true))
+        end)
+    end
+
     return promise
 end
 
-function Gemini:FormatterAddFromFile(FilePath, Formatter)
+function Gemini:LoadFormatterFromFile(FilePath, Formatter)
     if not isstring(FilePath) then
-        self:Error("The first argument of Gemini:FormatterAddFromFile must be a string", FilePath, "string")
+        self:Error("The first argument of Gemini:LoadFormatterFromFile must be a string", FilePath, "string")
     elseif ( #FilePath == 0 ) then
-        self:Error("The first argument of Gemini:FormatterAddFromFile must not be empty", FilePath, "string")
+        self:Error("The first argument of Gemini:LoadFormatterFromFile must not be empty", FilePath, "string")
     end
 
     if not isstring(Formatter) then
-        self:Error("The second argument of Gemini:FormatterAddFromFile must be a string", Formatter, "string")
+        self:Error("The second argument of Gemini:LoadFormatterFromFile must be a string", Formatter, "string")
     elseif ( #Formatter == 0 ) then
-        self:Error("The second argument of Gemini:FormatterAddFromFile must not be empty", Formatter, "string")
+        self:Error("The second argument of Gemini:LoadFormatterFromFile must not be empty", Formatter, "string")
     end
 
     if not file.Exists(FilePath, "DATA") then
@@ -176,15 +176,16 @@ function Gemini:FormatterAddFromFile(FilePath, Formatter)
     return JsonData
 end
 
-local urlexample = "https://gist.githubusercontent.com/vicentefelipechile/60dc8d6faa88a72e121f2460079ea68a/raw/e3c0c3153aaa3ef1e937b241a05b25444a4810c3/gemini_formatter.json"
-Gemini:FormatterAddFromURL(urlexample, "ServerInfo"):Then(function(Response)
-    local promise = Gemini:Formatter("Generame un texto", "ServerInfo")
+concommand.Add("gemini_formattertest", function(ply)
+    if IsValid(ply) then return end
 
-    promise:Then(function(SubResponse)
-        PrintTable(SubResponse)
+    local urlexample = "https://gist.githubusercontent.com/vicentefelipechile/60dc8d6faa88a72e121f2460079ea68a/raw/e3c0c3153aaa3ef1e937b241a05b25444a4810c3/gemini_formatter.json"
+    Gemini:LoadFormatterFromURL(urlexample, "ServerInfo", true)
+    Gemini:Formatter("Hello World", "ServerInfo"):Then(function(Response)
+        PrintTable(Response)
 
-    end):Catch(function(Reason)
-        Gemini:Error(Reason)
-
+        file.Write("gemini/formatter_response.json", util.TableToJSON(Response, true))
+    end):Catch(function(Error)
+        print(Error)
     end)
 end)

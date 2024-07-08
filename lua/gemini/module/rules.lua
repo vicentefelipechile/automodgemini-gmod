@@ -79,28 +79,43 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerInfoPanel = vgui.Create( "DPanel", self.MainSheet )
     self.ServerInfoPanel:Dock( FILL )
 
-    self.ServerInfoPanel.TextEditor = vgui.Create( "DHTML", self.ServerInfoPanel )
-    self.ServerInfoPanel.TextEditor:Dock( FILL )
+    self.ServerInfoPanel.Panel = vgui.Create( "DPanel", self.ServerInfoPanel )
+    self.ServerInfoPanel.Panel:Dock( FILL )
+
+    self.ServerInfoPanel.Panel.PromptEditor = vgui.Create( "DHTML", self.ServerInfoPanel.Panel )
+    self.ServerInfoPanel.Panel.PromptEditor:Dock( LEFT )
+    self.ServerInfoPanel.Panel.PromptEditor:SetWide( 200 )
+    self.ServerInfoPanel.Panel.PromptEditor:SetAllowLua(true)
+    self.ServerInfoPanel.Panel.PromptEditor:SetHTML( self:CompileHTML("Insert your input", not CanEdit, true) )
+
+    self.ServerInfoPanel.Panel.HorizontalLine = vgui.Create( "DPanel", self.ServerInfoPanel.Panel )
+    self.ServerInfoPanel.Panel.HorizontalLine:Dock( LEFT )
+    self.ServerInfoPanel.Panel.HorizontalLine:SetWide( 16 )
+    self.ServerInfoPanel.Panel.HorizontalLine.Paint = BackgroundPaint
+
+    self.ServerInfoPanel.Panel.TextEditor = vgui.Create( "DHTML", self.ServerInfoPanel.Panel )
+    self.ServerInfoPanel.Panel.TextEditor:Dock( FILL )
 
     -- Main Functions
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
         gui.HideGameUI()
     end)
 
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SetClipboardText", function(text)
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SetClipboardText", function(text)
         SetClipboardText(text)
     end)
 
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "SaveServerInfoLua", function(text)
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SaveServerInfoLua", function(text)
         Gemini:SetServerInfoClient(text)
     end)
 
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "InfoFullyLoaded", function()
-        self.ServerInfoPanel.TextEditor.FullyLoaded = true
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "InfoFullyLoaded", function()
+        self.ServerInfoPanel.Panel.TextEditor.FullyLoaded = true
         self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
     end)
 
-    self.ServerInfoPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), not CanEdit, true) )
+    self.ServerInfoPanel.Panel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), not CanEdit, true) )
+
 
     self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
     self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
@@ -139,7 +154,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         SetClipboardText(text)
     end)
 
-    self.ServerInfoPanel.TextEditor:AddFunction("gmod", "RulesFullyLoaded", function()
+    self.ServerRulesPanel.TextEditor:AddFunction("gmod", "RulesFullyLoaded", function()
         self.ServerRulesPanel.TextEditor.FullyLoaded = true
         self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
     end)
@@ -177,8 +192,8 @@ Gemini:ModuleCreate(Gemini:GetPhrase("Rules"), MODULE)
 ------------------------]]--
 
 hook.Add("Gemini:ReceivedServerRules", "Gemini:RulesPanel", function(Rules, ServerInfo)
-    if IsValid(MODULE.ServerRulesPanel) then
-        MODULE.ServerInfoPanel.TextEditor:Call(string.format(ReplaceAceEditor, ServerInfo))
+    if IsValid(MODULE.ServerInfoPanel.Panel) then
+        MODULE.ServerInfoPanel.Panel.TextEditor:Call(string.format(ReplaceAceEditor, ServerInfo))
     end
 
     if IsValid(MODULE.ServerRulesPanel) then

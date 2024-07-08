@@ -69,7 +69,7 @@ end
 ------------------------]]--
 
 if SERVER then
-    function Gemini:SendMessage(ply, msg)
+    function Gemini:SendMessage(ply, msg, index)
         if not IsValid(ply) then
             self:Error("The first argument of Gemini:SendMessage() must be a player.", ply, "player")
         end
@@ -84,11 +84,15 @@ if SERVER then
 
         net.Start("Gemini:SendMessage")
             net.WriteString(msg)
+
+            if (index ~= nil) then
+                net.WriteString(index)
+            end
         net.Send(ply)
     end
 else
     net.Receive("Gemini:SendMessage", function()
-        hook.Run("Gemini:SendMessage", net.ReadString())
+        hook.Run("Gemini:SendMessage", net.ReadString(), net.ReadString())
     end)
 end
 
