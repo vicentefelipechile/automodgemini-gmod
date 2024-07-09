@@ -1,1 +1,0 @@
-Gemini = Gemini or {}

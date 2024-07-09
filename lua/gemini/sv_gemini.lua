@@ -59,10 +59,6 @@ end
        Retreive Models
 ------------------------]]--
 
-local function RetrieveModels()
-    Gemini:ReloadModels()
-end
-
 local function BroadcastGeminiModels(ply)
     local Models = util.TableToJSON( Gemini:GetModels() )
     local ModelsCompressed = util.Compress(Models)
@@ -75,8 +71,6 @@ local function BroadcastGeminiModels(ply)
         net.WriteData(ModelsCompressed, ModelsSize)
     NetSend(ply)
 end
-
-hook.Add("Gemini:HTTPLoaded", "Gemini:RetreiveModels", RetrieveModels)
 
 hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", function(Player)
     BroadcastGeminiModels(Player)

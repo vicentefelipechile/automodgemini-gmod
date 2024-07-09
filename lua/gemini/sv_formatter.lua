@@ -18,13 +18,16 @@ function Gemini:FormatterPoblate()
 end
 
 local function RetrieveFormats()
-    -- Gemini:FormatterAddFromJson(Gemini:GetConfig("Source", "Formatter"), "ServerInfo")
+    local SourcePath = Gemini:GetConfig("Source", "Formatter")
+
+    if string.match(SourcePath, HTTPRegExp) then
+        Gemini:LoadFormatterFromURL(SourcePath, "ServerInfo", true)
+    else
+        Gemini:LoadFormatterFromFile(SourcePath, "ServerInfo")
+    end
 end
 
-hook.Add("InitPostEntity", "Gemini:RetreiveFormats", function()
-    timer.Simple(8, RetrieveFormats)
-    hook.Add("Gemini:PostInit", "Gemini:RetreiveFormats", RetrieveFormats)
-end)
+hook.Add("Gemini:HTTPLoaded", "Gemini:RetreiveFormats", RetrieveFormats)
 
 
 --[[------------------------
@@ -83,15 +86,17 @@ function Gemini:LoadFormatterFromURL(URL, Formatter, Cache) -- First function wi
         self:Error("The URL is not valid", URL, "string")
     end
 
+    local FilePath = "gemini/formatter/"
     if Cache then
-        -- get the filename from url
         local FileName = string.GetFileFromFilename(URL)
         if not isstring(FileName) then
-            FileName = "gemini/formatter/" .. string.lower(Formatter) .. ".json"
+            FilePath = FilePath .. string.lower(Formatter) .. ".json"
+        else
+            FilePath = FilePath .. FileName
         end
 
-        if file.Exists(FileName, "DATA") then
-            local FileData = file.Read(FileName, "DATA")
+        if file.Exists(FilePath, "DATA") then
+            local FileData = file.Read(FilePath, "DATA")
             if FileData then
                 local JsonData = util.JSONToTable(FileData)
                 if JsonData then
@@ -109,33 +114,42 @@ function Gemini:LoadFormatterFromURL(URL, Formatter, Cache) -- First function wi
         success = function(code, body, headers)
             Gemini:GetHTTPDescription(Code)
 
-            file.Write("gemini_formatter.json", body)
+            file.Write("gemini/formatter_result.json", body)
 
-            if ( code ~= 200 ) then promise:Reject("There was an error with the request to the url") end
+            if ( code ~= 200 ) then promise:Reject("There was an error with the request to the url") return end
 
             local JsonData = util.JSONToTable(body)
-            if not JsonData then
-                promise:Reject( Gemini:Error("The request to the url must return a valid json", body, "string") )
+            if ( JsonData == nil ) then
+                promise:Reject("The request to the url must return a valid json")
+                return
             end
 
             if not table.IsSequential(JsonData) then
-                promise:Reject( Gemini:Error("The json must be an array", body, "string") )
+                promise:Reject("The json must be an array")
+                return
             end
 
             FormatterTypes[Formatter] = JsonData
 
+            if Cache then
+                FilePath = "gemini/formatter/"
+
+                local FileName = string.GetFileFromFilename(URL)
+                if not isstring(FileName) then
+                    FilePath = FilePath .. string.lower(Formatter) .. ".json"
+                else
+                    FilePath = FilePath .. FileName
+                end
+
+                file.Write(FilePath, body)
+            end
+
             promise:Resolve(JsonData)
         end,
         failed = function(reason)
-            promise:Reject( Gemini:Error("The request to the url failed", reason, "string") )
+            promise:Reject("The request to the url failed", reason, "string")
         end
     })
-
-    if Cache then
-        promise:Then(function(Response)
-            file.Write(FileName, util.TableToJSON(Response, true))
-        end)
-    end
 
     return promise
 end
@@ -179,13 +193,9 @@ end
 concommand.Add("gemini_formattertest", function(ply)
     if IsValid(ply) then return end
 
-    local urlexample = "https://gist.githubusercontent.com/vicentefelipechile/60dc8d6faa88a72e121f2460079ea68a/raw/e3c0c3153aaa3ef1e937b241a05b25444a4810c3/gemini_formatter.json"
-    Gemini:LoadFormatterFromURL(urlexample, "ServerInfo", true)
     Gemini:Formatter("Hello World", "ServerInfo"):Then(function(Response)
         PrintTable(Response)
 
         file.Write("gemini/formatter_response.json", util.TableToJSON(Response, true))
-    end):Catch(function(Error)
-        print(Error)
     end)
 end)

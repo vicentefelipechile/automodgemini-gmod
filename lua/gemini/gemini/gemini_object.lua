@@ -24,6 +24,9 @@ local ipairs = ipairs
        Local Variables
 ------------------------]]--
 
+local CachedModels = {} -- After the game loads, we will add the models
+local AllowedModels = {}
+
 local AllowedMimeType = {
     ["image/png"] = true,
     ["image/jpeg"] = true,
@@ -42,36 +45,29 @@ local AllowedHTTPMethods = {
     ["POST"] = true,
 }
 
-local AllowedMethods = {
-    ["batchEmbedContents"] = true,
-    ["countTokens"] = true,
-    ["embedContent"] = true,
-    ["generateContent"] = true,
-    ["get"] = true,
-    ["list"] = true,
-    ["streamGenerateContent"] = true
+local AllowedSafetySettings = {
+    -- Most used
+    [HARM_CATEGORY_SEXUALLY_EXPLICIT] = true,
+    [HARM_CATEGORY_DANGEROUS_CONTENT] = true,
+    [HARM_CATEGORY_HARASSMENT] = true,
+    [HARM_CATEGORY_HATE_SPEECH] = true,
+
+    -- Lest used
+    [HARM_CATEGORY_UNSPECIFIED] = true,
+    [HARM_CATEGORY_DEROGATORY] = true,
+    [HARM_CATEGORY_TOXICITY] = true,
+    [HARM_CATEGORY_VIOLENCE] = true,
+    [HARM_CATEGORY_SEXUAL] = true,
+    [HARM_CATEGORY_MEDICAL] = true,
+    [HARM_CATEGORY_DANGEROUS] = true
 }
 
-local CachedModels = {} -- After the game loads, we will add the models
-local AllowedModels = {}
-
-local DefaultSafetySettings = {
-    {
-        ["category"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        ["threshold"] = "BLOCK_ONLY_HIGH"
-    },
-    {
-        ["category"] = "HARM_CATEGORY_DANGEROUS_CONTENT",
-        ["threshold"] = "BLOCK_ONLY_HIGH"
-    },
-    {
-        ["category"] = "HARM_CATEGORY_HARASSMENT",
-        ["threshold"] = "BLOCK_ONLY_HIGH"
-    },
-    {
-        ["category"] = "HARM_CATEGORY_HATE_SPEECH",
-        ["threshold"] = "BLOCK_ONLY_HIGH"
-    }
+local AllowedLevels = {
+    [BLOCK_NONE] = true,
+    [BLOCK_LOW_AND_ABOVE] = true,
+    [BLOCK_MEDIUM_AND_ABOVE] = true,
+    [BLOCK_ONLY_HIGH] = true,
+    [HARM_BLOCK_THRESHOLD_UNSPECIFIED] = true
 }
 
 --[[------------------------
@@ -172,6 +168,30 @@ function GEMINI_OOP:GetBody()
     return table_Copy(self.__requestbody)
 end
 
+function GEMINI_OOP:SetSafetySettings(SafetySettings, Level)
+    if not isstring(SafetySettings) then
+        Gemini:Error("The first argument of GEMINI_OOP:SetSafetySettings must be a string.", SafetySettings, "Harm Category")
+    elseif not AllowedSafetySettings[SafetySettings] then
+        Gemini:Error("The first argument of GEMINI_OOP:SetSafetySettings is not a valid Harm Category.", SafetySettings, "Harm Category")
+    end
+
+    if Level ~= nil then
+        if not isstring(Level) then
+            Gemini:Error("The second argument of GEMINI_OOP:SetSafetySettings must be a string.", Level, "Block Level")
+        elseif not AllowedLevels[Level] then
+            Gemini:Error("The second argument of GEMINI_OOP:SetSafetySettings is not a valid Block Level.", Level, "Block Level")
+        end
+
+        self.__requestbody["safetySettings"][SafetySettings] = Level
+    else
+        self.__requestbody["safetySettings"][SafetySettings] = BLOCK_NONE
+    end
+end
+
+function GEMINI_OOP:GetSafetySettings()
+    return table_Copy(self.__requestbody["safetySettings"])
+end
+
 function GEMINI_OOP:SetVersion(Version)
     if not isstring(Version) then
         Gemini:Error("The first argument of GEMINI_OOP:SetVersion must be a string.", Version, "string")
@@ -191,8 +211,6 @@ function GEMINI_OOP:SetMethod(Method)
         Gemini:Error("The first argument of GEMINI_OOP:SetMethod must be a string.", Method, "string")
     elseif ( #Method == 0 ) then
         Gemini:Error("The first argument of GEMINI_OOP:SetMethod must not be empty.", Method, "string")
-    --  elseif AllowedMethods[Method] == nil then
-    --      Gemini:Error("The first argument of GEMINI_OOP:SetMethod is not a valid method.", Method, "a valid method")
     end
 
     self.__method = Method
@@ -252,6 +270,8 @@ function GEMINI_OOP:MakeRequest()
 
     RequestURL = RequestURL:sub(1, -2)
 
+    file.Write("gemini/debug/gemini_request.txt", util_TableToJSON(self.__requestbody, true))
+
     local promise = Promise()
     HTTP({
         ["url"] = RequestURL,
@@ -262,7 +282,7 @@ function GEMINI_OOP:MakeRequest()
                 Gemini:GetHTTPDescription(Code)
             end
 
-            file.Write("gemini/gemini_response.txt", Body)
+            file.Write("gemini/debug/gemini_response.txt", Body)
             local BodyTable = util_JSONToTable(Body)
 
             if not ( Code >= 200 and Code < 300 ) then
@@ -285,6 +305,8 @@ end
 ------------------------]]--
 
 local function RetrieveModels()
+    file.CreateDir("gemini/debug")
+
     local NewRequest = Gemini:NewRequest()
     NewRequest:ClearBody()
     NewRequest:SetMethod("models")
@@ -293,12 +315,14 @@ local function RetrieveModels()
 
     local NewPromise = NewRequest:MakeRequest()
     NewPromise:Then(function(DataInfo)
-        Gemini:Print("Retreived models.")
+        Gemini:Print("Retreived " .. #DataInfo["Body"]["models"] .. " models.")
         CachedModels = DataInfo["Body"]["models"]
 
         for index, modeldata in ipairs(CachedModels) do
             AllowedModels[ modeldata["name"] ] = true
         end
+
+        file.Write("gemini/gemini_models.json", util_TableToJSON(CachedModels, true))
 
     end):Catch(function(Error)
         Gemini:Print("Failed to retreive models. Error: " .. Error)

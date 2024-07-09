@@ -484,13 +484,19 @@ function Gemini:PreInit()
     self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
     self:CreateConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
 
+    self.IsDebug = function()
+        return Gemini:GetConfig("Debug", "General")
+    end
+
     if SERVER then
+        AddCSLuaFile("gemini/sh_enum.lua")      self:Print("File \"gemini/sh_enum.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_util.lua")      self:Print("File \"gemini/sh_util.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_language.lua")  self:Print("File \"gemini/sh_language.lua\" has been send to client.")
         AddCSLuaFile("gemini/sh_rules.lua")     self:Print("File \"gemini/sh_rules.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_derma.lua")     self:Print("File \"gemini/cl_derma.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_gemini.lua")    self:Print("File \"gemini/cl_gemini.lua\" has been send to client.")
         AddCSLuaFile("gemini/cl_gemini_panel.lua")  self:Print("File \"gemini/cl_gemini_panel.lua\" has been send to client.")
+        include("gemini/sh_enum.lua")           self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
         include("gemini/sv_sandbox.lua")        self:Print("File \"gemini/sv_sandbox.lua\" has been loaded.")
@@ -502,6 +508,7 @@ function Gemini:PreInit()
         include("gemini/sv_playground.lua")     self:Print("File \"gemini/sv_playground.lua\" has been loaded.")
         include("gemini/sv_formatter.lua")      self:Print("File \"gemini/sv_formatter.lua\" has been loaded.")
     else
+        include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
     end
@@ -573,6 +580,7 @@ function Gemini:Init()
 end
 
 
+local HTTPLoaded = false
 function Gemini:PostInit()
     local Print = Gemini:GeneratePrint({prefix = ""})
 
@@ -583,12 +591,13 @@ function Gemini:PostInit()
 
     hook.Run("Gemini:PostInit")
 
-    if hook.GetTable()["InitPostEntity"]["Gemini:HTTPLoaded"] then
+    if HTTPLoaded then
         hook.Run("Gemini:HTTPLoaded")
     else
         hook.Add("InitPostEntity", "Gemini:HTTPLoaded", function()
             timer.Simple(8, function()
                 hook.Run("Gemini:HTTPLoaded")
+                HTTPLoaded = true
             end)
         end)
     end
