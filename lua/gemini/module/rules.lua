@@ -19,10 +19,38 @@ local function ReplaceCoincidences(Text, Replacements)
     return Text
 end
 
+local AllowedFormatters = {
+    ["ServerInfo"] = true,
+}
+
+--[[------------------------
+       Extra Functions
+------------------------]]--
+
 -- https://github.com/WilliamVenner/SQLWorkbench/blob/master/lua/sqlworkbench/menu.lua#L421-L592
 function MODULE:GetAceScript(File)
     return include("gemini/module/ace/" .. File .. ".lua")
 end
+
+function MODULE:ApplyFormat(Text, Formatter)
+    if not Gemini:CanUse("gemini_rules_set") then return end
+    local CompressedText = util.Compress(Text)
+    local CompressedSize = #CompressedText
+
+    if CompressedSize > Gemini.Util.MaxBandwidth then
+        Gemini:Error("The text is too large to be sent", CompressedSize, Gemini.Util.MaxBandwidth)
+    end
+
+    net.Start("Gemini:Formatter")
+        net.WriteString(Formatter)
+        net.WriteUInt(CompressedSize, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(CompressedText, CompressedSize)
+    net.SendToServer()
+end
+
+--[[------------------------
+       Train Functions
+------------------------]]--
 
 function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
     InitialValue = InitialValue or "# Test Script"
@@ -198,5 +226,17 @@ hook.Add("Gemini:ReceivedServerRules", "Gemini:RulesPanel", function(Rules, Serv
 
     if IsValid(MODULE.ServerRulesPanel) then
         MODULE.ServerRulesPanel.TextEditor:Call(string.format(ReplaceAceEditor, Rules))
+    end
+end)
+
+--[[------------------------
+        Networking
+------------------------]]--
+
+hook.Add("Gemini:Formatter", "Gemini:Rules", function(Formatter, Text)
+    if not AllowedFormatters[Formatter] then return end
+
+    if IsValid(MODULE.ServerInfoPanel.Panel) and MODULE.ServerInfoPanel.Panel.TextEditor.FullyLoaded then
+        MODULE.ServerInfoPanel.Panel.TextEditor:Call(string.format(ReplaceAceEditor, Text))
     end
 end)

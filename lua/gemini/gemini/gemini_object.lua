@@ -24,8 +24,19 @@ local ipairs = ipairs
        Local Variables
 ------------------------]]--
 
-local CachedModels = {} -- After the game loads, we will add the models
-local AllowedModels = {}
+local CachedModels = CachedModels or {} -- After the game loads, we will add the models
+local DefaultSafetySettings = {
+    HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    HARM_CATEGORY_DANGEROUS_CONTENT,
+    HARM_CATEGORY_HARASSMENT,
+    HARM_CATEGORY_HATE_SPEECH
+}
+
+--[[------------------------
+      Allowed Constants
+------------------------]]--
+
+local AllowedModels = AllowedModels or {}
 
 local AllowedMimeType = {
     ["image/png"] = true,
@@ -90,7 +101,7 @@ end
 local GEMINI_OOP = {
     __requestbody = {
         ["contents"] = {},
-        ["safetySettings"] = table_Copy(DefaultSafetySettings),
+        ["safetySettings"] = {},
         ["generationConfig"] = {}
     },
     __resturl = "https://generativelanguage.googleapis.com/$REST_VER$/$METHOD$",
@@ -175,17 +186,13 @@ function GEMINI_OOP:SetSafetySettings(SafetySettings, Level)
         Gemini:Error("The first argument of GEMINI_OOP:SetSafetySettings is not a valid Harm Category.", SafetySettings, "Harm Category")
     end
 
-    if Level ~= nil then
-        if not isstring(Level) then
-            Gemini:Error("The second argument of GEMINI_OOP:SetSafetySettings must be a string.", Level, "Block Level")
-        elseif not AllowedLevels[Level] then
-            Gemini:Error("The second argument of GEMINI_OOP:SetSafetySettings is not a valid Block Level.", Level, "Block Level")
-        end
-
-        self.__requestbody["safetySettings"][SafetySettings] = Level
-    else
-        self.__requestbody["safetySettings"][SafetySettings] = BLOCK_NONE
+    if not isstring(Level) then
+        Gemini:Error("The second argument of GEMINI_OOP:SetSafetySettings must be a string.", Level, "Block Level")
+    elseif not AllowedLevels[Level] then
+        Gemini:Error("The second argument of GEMINI_OOP:SetSafetySettings is not a valid Block Level.", Level, "Block Level")
     end
+
+    self.__requestbody["safetySettings"][SafetySettings] = Level
 end
 
 function GEMINI_OOP:GetSafetySettings()
@@ -259,6 +266,27 @@ function GEMINI_OOP:MakeRequest()
     local RequestURL = string_Replace(self.__resturl, "$REST_VER$", self.__restver)
     RequestURL = string_Replace(RequestURL, "$METHOD$", self.__method) .. "?"
 
+
+    --[[ Safety Settings ]]--
+    if istable(self.__requestbody["safetySettings"]) then
+        for _, SafetySetting in pairs(DefaultSafetySettings) do
+            if self.__requestbody["safetySettings"][SafetySetting] == nil then
+                self:SetSafetySettings(SafetySetting, HARM_BLOCK_THRESHOLD_UNSPECIFIED)
+            end
+        end
+
+        local OldTable = table_Copy(self.__requestbody["safetySettings"])
+        self.__requestbody["safetySettings"] = {}
+
+        for SafetySetting, Level in pairs(OldTable) do
+            table.insert(self.__requestbody["safetySettings"], {
+                ["category"] = SafetySetting,
+                ["threshold"] = Level
+            })
+        end
+    end
+
+    --[[ Params ]]--
     self:AddParam({
         ["key"] = "key",
         ["value"] = Gemini:GetConfig("APIKey", "Gemini")
@@ -268,6 +296,7 @@ function GEMINI_OOP:MakeRequest()
         RequestURL = RequestURL .. Param["key"] .. "=" .. Param["value"] .. "&"
     end
 
+    --[[ URL Request ]]--
     RequestURL = RequestURL:sub(1, -2)
 
     file.Write("gemini/debug/gemini_request.txt", util_TableToJSON(self.__requestbody, true))
@@ -307,14 +336,14 @@ end
 local function RetrieveModels()
     file.CreateDir("gemini/debug")
 
-    local NewRequest = Gemini:NewRequest()
-    NewRequest:ClearBody()
-    NewRequest:SetMethod("models")
-    NewRequest:SetHTTPMethod("GET")
-    NewRequest:Silent()
+    local LoadAllModels = Gemini:NewRequest()
+    LoadAllModels:ClearBody()
+    LoadAllModels:SetMethod("models")
+    LoadAllModels:SetHTTPMethod("GET")
+    LoadAllModels:Silent()
 
-    local NewPromise = NewRequest:MakeRequest()
-    NewPromise:Then(function(DataInfo)
+    local AllModelsPromise = LoadAllModels:MakeRequest()
+    AllModelsPromise:Then(function(DataInfo)
         Gemini:Print("Retreived " .. #DataInfo["Body"]["models"] .. " models.")
         CachedModels = DataInfo["Body"]["models"]
 
@@ -324,8 +353,10 @@ local function RetrieveModels()
 
         file.Write("gemini/gemini_models.json", util_TableToJSON(CachedModels, true))
 
+        hook.Run("Gemini:ModelsReloaded", CachedModels)
     end):Catch(function(Error)
         Gemini:Print("Failed to retreive models. Error: " .. Error)
+        hook.Run("Gemini:ModelsReloaded", CachedModels)
     end)
 end
 
@@ -335,7 +366,7 @@ hook_Add("Gemini:ConfigChanged", "Gemini:UpdateModels", function(Name, Category,
     if ( Category ~= "Gemini" ) then return end
     if ( string_lower(Name) ~= "apikey" ) then return end
 
-    Gemini:ReloadModels()
+    RetrieveModels()
 end)
 
 concommand_Add("gemini_reloadmodels", function(ply)
@@ -354,7 +385,7 @@ function Gemini:NewRequest()
 end
 
 function Gemini:GetModels()
-    return table_Copy(AllowedModels)
+    return table_Copy(CachedModels)
 end
 
 function Gemini:ReloadModels()

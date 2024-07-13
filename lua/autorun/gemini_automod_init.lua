@@ -29,7 +29,9 @@ if SERVER then
     util.AddNetworkString("Gemini:AddConfig")
 
     Promise = include("gemini/includes/promise.lua")
+    AddCSLuaFile("gemini/sh_enum.lua")
 end
+include("gemini/sh_enum.lua")
 
 local FCVAR_PRIVATE = {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
 local FCVAR_PUBLIC = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or {FCVAR_ARCHIVE, FCVAR_USERINFO}
@@ -341,6 +343,26 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
         ["Verification"] = Verification,
         ["Type"] = type(Default)
     }
+
+    -- Warning
+    cvars.AddChangeCallback("gemini_" .. Category .. "_" .. Name, function(_, _, NewValue)
+        local ConvertedValue = nil
+
+        if ToConvarConverter[ GeminiCFG[Category][Name]["Type"] ] then
+            ConvertedValue = ToConvarConverter[ GeminiCFG[Category][Name]["Type"] ](NewValue)
+        else
+            self:Print("The value type is not supported.")
+            return
+        end
+
+        if not Verification(ConvertedValue) then
+            self:Print("The value doesn't match the verification function. Skipping...")
+            return
+        end
+
+        self:SaveAllConfig()
+        hook.Run("Gemini:ConfigChanged", Name, Category, ConvertedValue, Value)
+    end, "Gemini_" .. Category .. "_" .. Name)
 end
 
 
@@ -377,11 +399,6 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
     end
 
     return self:FromConvar(Name, Category)
-end
-
-
-function Gemini:GetAllConfigs()
-    return table.Copy(GeminiCFG)
 end
 
 
@@ -425,6 +442,8 @@ function Gemini:SetConfig(Name, Category, Value)
     local ConvarValue = self:ToConvar(FormatName, FormatCategory, Value)
     GeminiCFG[FormatCategory][FormatName]["Convar"]:SetString( ConvarValue )
 
+    self:SaveAllConfig()
+
     hook.Run("Gemini:ConfigChanged", Name, Category, Value, ConvarValue)
 end
 
@@ -463,6 +482,58 @@ function Gemini:ResetConfig(Name, Category, SkipValidation)
     end
 
     GeminiCFG[Category][Name]["Convar"]:Revert()
+end
+
+
+function Gemini:GetAllConfigs()
+    return table.Copy(GeminiCFG)
+end
+
+
+function Gemini:SaveAllConfig()
+    local CopyConfigs = self:GetAllConfigs()
+    local Configs = {}
+
+    for Category, ConfigsTable in pairs(CopyConfigs) do
+        Configs[Category] = {}
+        for Name, Config in pairs(ConfigsTable) do
+            Configs[Category][Name] = {
+                ["Value"] = Config["Convar"]:GetString(),
+                ["Type"] = Config["Type"]
+            }
+        end
+    end
+
+    file.Write("gemini/configs.json", util.TableToJSON(Configs, true))
+end
+
+
+function Gemini:LoadAllConfig()
+    local Configs = file.Read("gemini/configs.json", "DATA")
+    if not Configs then return end
+
+    Configs = util.JSONToTable(Configs)
+    if not Configs then return end
+
+    for Category, ConfigsTable in pairs(Configs) do
+        for Name, Config in pairs(ConfigsTable) do
+            if not GeminiCFG[Category] then
+                self:Print([[The category doesn't exist.]], Category, "string")
+                continue
+            end
+
+            if not GeminiCFG[Category][Name] then
+                self:Print([[The config doesn't exist.]], Name, "string")
+                continue
+            end
+
+            if ( GeminiCFG[Category][Name]["Type"] ~= Config["Type"] ) then
+                self:Error([[The value type doesn't match the config type.]], Config["Value"], "any")
+            end
+
+            GeminiCFG[Category][Name]["Convar"]:SetString( Config["Value"] )
+        end
+    end
 end
 
 
@@ -588,6 +659,12 @@ function Gemini:PostInit()
     Print("         Gemini Automod Loaded")
     Print("==================================]]==")
     print("")
+
+    if not file.Exists("gemini/configs.json", "DATA") then
+        Gemini:SaveAllConfig()
+    else
+        Gemini:LoadAllConfig()
+    end
 
     hook.Run("Gemini:PostInit")
 

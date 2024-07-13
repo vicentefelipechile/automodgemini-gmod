@@ -76,9 +76,7 @@ if SERVER then
 
         if not isstring(msg) then
             self:Error("The second argument of Gemini:SendMessage() must be a string.", msg, "string")
-        end
-
-        if ( msg == "" ) then
+        elseif ( msg == "" ) then
             self:Error("The second argument of Gemini:SendMessage() must not be empty.", msg, "string")
         end
 

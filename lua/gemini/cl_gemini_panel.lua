@@ -178,6 +178,8 @@ function GEMINIPANEL:Init()
     self:SetDraggable(true)
     self:DockPadding(5, 5, 5, 5)
 
+    self:SetKeyboardInputEnabled(false)
+
     self:SetSkin("Gemini:DermaSkin")
 
     self.Tabs = vgui.Create("DPropertySheet", self)

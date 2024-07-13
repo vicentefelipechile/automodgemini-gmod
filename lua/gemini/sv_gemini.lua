@@ -64,7 +64,7 @@ local function BroadcastGeminiModels(ply)
     local ModelsCompressed = util.Compress(Models)
     local ModelsSize = #ModelsCompressed
 
-    local NetSend = ( ply == nil ) and net.Broadcast or net.Send
+    local NetSend = ( isentity(ply) and ply:IsPlayer() ) and net.Send or net.Broadcast
 
     net.Start("Gemini:SendGeminiModules")
         net.WriteUInt(ModelsSize, Gemini.Util.DefaultNetworkUInt)
@@ -72,9 +72,8 @@ local function BroadcastGeminiModels(ply)
     NetSend(ply)
 end
 
-hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", function(Player)
-    BroadcastGeminiModels(Player)
-end)
+hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", BroadcastGeminiModels)
+hook.Add("Gemini:ModelsReloaded", "Gemini:SendGeminiModules", BroadcastGeminiModels)
 
 
 
@@ -132,12 +131,10 @@ function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
     )
 
     --[[ Inserting the contents ]]--
-    Candidate["contents"] = {
-        {
-            ["parts"] = {["text"] = MainPrompt},
-            ["role"] = "user"
-        }
-    }
+    table.insert(Candidate["contents"], {
+        ["parts"] = { ["text"] = MainPrompt },
+        ["role"] = "user"
+    })
 
     return Candidate
 end

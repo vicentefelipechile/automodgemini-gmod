@@ -12,12 +12,13 @@ local FormatterTypes = FormatterTypes or {}
           Settings
 ------------------------]]--
 
+Gemini:CreateConfig("Source", "Formatter", Gemini.VERIFICATION_TYPE.string, "https://google.com")
+
 function Gemini:FormatterPoblate()
-    self:CreateConfig("Source", "Formatter", self.VERIFICATION_TYPE.string, "https://google.com")
     file.CreateDir("gemini/formatter")
 end
 
-local function RetrieveFormats()
+hook.Add("Gemini:HTTPLoaded", "Gemini:RetreiveFormats", function()
     local SourcePath = Gemini:GetConfig("Source", "Formatter")
 
     if string.match(SourcePath, HTTPRegExp) then
@@ -25,13 +26,11 @@ local function RetrieveFormats()
     else
         Gemini:LoadFormatterFromFile(SourcePath, "ServerInfo")
     end
-end
-
-hook.Add("Gemini:HTTPLoaded", "Gemini:RetreiveFormats", RetrieveFormats)
+end)
 
 
 --[[------------------------
-          Settings
+          Methods
 ------------------------]]--
 
 function Gemini:Formatter(InputText, Formatter)
@@ -62,6 +61,30 @@ function Gemini:Formatter(InputText, Formatter)
     file.Write("gemini/formatter_request.json", util.TableToJSON(NewRequest:GetBody(), true))
 
     return NewRequest:MakeRequest()
+end
+
+function Gemini:FormatterExists(Formatter)
+    if not isstring(Formatter) then
+        self:Error("The first argument of Gemini:FormatterExists must be a string", Formatter, "string")
+    elseif ( #Formatter == 0 ) then
+        self:Error("The first argument of Gemini:FormatterExists must not be empty", Formatter, "string")
+    end
+
+    return FormatterTypes[Formatter] ~= nil
+end
+
+function Gemini:GetFormatter(Formatter)
+    if not isstring(Formatter) then
+        self:Error("The first argument of Gemini:GetFormatter must be a string", Formatter, "string")
+    elseif ( #Formatter == 0 ) then
+        self:Error("The first argument of Gemini:GetFormatter must not be empty", Formatter, "string")
+    end
+
+    if not FormatterTypes[Formatter] then
+        self:Error("The formatter does not exist", Formatter, "string")
+    end
+
+    return FormatterTypes[Formatter]
 end
 
 
@@ -142,6 +165,10 @@ function Gemini:LoadFormatterFromURL(URL, Formatter, Cache) -- First function wi
                 end
 
                 file.Write(FilePath, body)
+
+                Gemini:Print("Formatter downloaded and saved.")
+            else
+                Gemini:Print("Formatter downloaded.")
             end
 
             promise:Resolve(JsonData)
@@ -190,12 +217,121 @@ function Gemini:LoadFormatterFromFile(FilePath, Formatter)
     return JsonData
 end
 
+
+--[[------------------------
+      Network Functions
+------------------------]]--
+
+function Gemini:BroadcastFormatterToPlayer(ply, Formatter, Text)
+    if not IsValid(ply) then
+        self:Error("The first argument of Gemini:BroadcastFormatterToPlayer must be a player", ply, "player")
+    end
+
+    if not isstring(Formatter) then
+        self:Error("The second argument of Gemini:BroadcastFormatterToPlayer must be a string", Formatter, "string")
+    elseif ( #Formatter == 0 ) then
+        self:Error("The second argument of Gemini:BroadcastFormatterToPlayer must not be empty", Formatter, "string")
+    end
+
+    if not FormatterTypes[Formatter] then
+        self:Error("The formatter does not exist", Formatter, "string")
+    end
+
+    if not isstring(Text) then
+        self:Error("The third argument of Gemini:BroadcastFormatterToPlayer must be a string", Text, "string")
+    elseif ( #Text == 0 ) then
+        self:Error("The third argument of Gemini:BroadcastFormatterToPlayer must not be empty", Text, "string")
+    end
+
+    local CompressedText = util.Compress(Text)
+    local CompressedSize = #CompressedText
+
+    if CompressedSize > Gemini.Util.MaxBandwidth then
+        self:Error("The text is too large to be sent", CompressedSize, Gemini.Util.MaxBandwidth)
+    end
+
+    net.Start("Gemini:Formatter")
+        net.WriteString(Formatter)
+        net.WriteUInt(CompressedSize, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(CompressedText, CompressedSize)
+    net.Send(ply)
+end
+
+net.Receive("Gemini:Formatter", function(len, ply)
+    if not (
+        Gemini:CanUse(ply, "gemini_rules_set") or
+        Gemini:CanUse(ply, "gemini_config_set") or
+        ( hook.Run("Gemini:PlayerRequestFormatter", ply) == true )
+    )
+    then
+        Gemini:SendMessage(ply, "You do not have permission to request a formatter", "Gemini:Formatter")
+        return
+    end
+
+    local Formatter = net.ReadString()
+
+    if not FormatterTypes[Formatter] then
+        Gemini:SendMessage(ply, "Error: The formatter does not exist", "Gemini:Formatter")
+        Gemini:Error("The formatter does not exist", Formatter, "string")
+    end
+
+    local CompressedSize = net.ReadUInt( Gemini.Util.DefaultNetworkUInt )
+    local CompressedText = util.Decompress( net.ReadData( CompressedSize ) )
+
+    local NewPromise = Gemini:Formatter(CompressedText, Formatter)
+    NewPromise:Then(function(DataInfo)
+        local Body = DataInfo["Body"]
+        file.Write("gemini/debug/formatter_response.json", util.TableToJSON(Body, true))
+
+        if ( Code == 429 ) then Gemini:SendMessage(ply, "Gemini.Error.RateLimit", "Formatter") return end
+        if ( Code ~= 200 ) then Gemini:SendMessage(ply, "Gemini.Error.ServerError", "Formatter") return end
+
+        if Body["promptFeedback"] and Body["promptFeedback"]["blockReason"] then
+            local FeedbackMessage = "Enum.BlockReason." .. Body["promptFeedback"]["blockReason"]
+
+            Gemini:Print( Gemini:GetPhrase(FeedbackMessage) )
+            Gemini:SendMessage(ply, FeedbackMessage, "Formatter")
+            return
+        end
+
+        local Candidates = Body["candidates"]
+
+        if not Candidates[1]["content"] then
+            local MessageError = "Gemini.Error.FailedRequest"
+            if Candidates[1]["finishReason"] then
+                MessageError = "Enum.FinishReason." .. Candidates[1]["finishReason"]
+            end
+
+            Gemini:Print(Gemini:GetPhrase(MessageError))
+            Gemini:PlaygroundSendMessage(ply, MessageError, "Formatter")
+            return
+        end
+
+        --[[ Send Response ]]--
+        local Text = Candidates[1]["content"]["parts"][1]["text"]
+
+        Gemini:BroadcastFormatterToPlayer(ply, Formatter, Text)
+    end):Catch(function(Error)
+        Gemini:Print("There was an error with the formatter request")
+        Gemini:SendMessage(ply, Error, "Formatter")
+    end)
+end)
+
+
+--[[------------------------
+        Command Test
+------------------------]]--
+
 concommand.Add("gemini_formattertest", function(ply)
     if IsValid(ply) then return end
 
-    Gemini:Formatter("Hello World", "ServerInfo"):Then(function(Response)
-        PrintTable(Response)
+    if not Gemini:FormatterExists("ServerInfo") then
+        Gemini:Print("There is not currently a formatter available for this test")
+    else
+        Gemini:Formatter("Hello World", "ServerInfo"):Then(function(Response)
+            PrintTable(Response)
 
-        file.Write("gemini/formatter_response.json", util.TableToJSON(Response, true))
-    end)
+            file.Write("gemini/debug/formatter_test_response.json", util.TableToJSON(Response, true))
+        end)
+    end
 end)
