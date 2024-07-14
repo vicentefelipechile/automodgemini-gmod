@@ -1,6 +1,6 @@
 --[[----------------------------------------------------------------------------
                          Gemini Automod - Gemini Object
-----------------------------------------------------------------------------]]--
+----------------------------------------------------------------------------]]-- BG
 
 -- localize global functions
 local util_IsBinaryModuleInstalled = util.IsBinaryModuleInstalled -- Yes, this order is made on purpose
