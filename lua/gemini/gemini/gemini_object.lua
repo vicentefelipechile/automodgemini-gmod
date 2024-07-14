@@ -2,6 +2,8 @@
                          Gemini Automod - Gemini Object
 ----------------------------------------------------------------------------]]-- BG
 
+include("response.lua")
+
 -- localize global functions
 local util_IsBinaryModuleInstalled = util.IsBinaryModuleInstalled -- Yes, this order is made on purpose
 local table_IsSequential = table.IsSequential
@@ -117,6 +119,10 @@ local GEMINI_OOP = {
 ------------------------]]--
 
 function GEMINI_OOP:AddContent(Part, Role)
+    if isstring(Part) then
+        Part = {{ ["text"] = Part }}
+    end
+
     if not istable(Part) then
         Gemini:Error("The first argument of GEMINI_OOP:AddContent must be a table.", Part, "table")
     elseif table_IsEmpty(Part) then
@@ -145,6 +151,10 @@ function GEMINI_OOP:AddContent(Part, Role)
         end
     end
 
+    local Content = {
+        ["parts"] = Part
+    }
+
     if Role ~= nil then
         if not isstring(Role) then
             Gemini:Error("The second argument of GEMINI_OOP:AddContent must be a string.", Role, "user/model")
@@ -152,15 +162,12 @@ function GEMINI_OOP:AddContent(Part, Role)
             Gemini:Error("The second argument of GEMINI_OOP:AddContent is not a valid role.", Role, "user/model")
         end
 
-        table_insert(self.__requestbody["contents"], {
-            ["parts"] = Part,
-            ["role"] = Role
-        })
-    else
-        table_insert(self.__requestbody["contents"], {
-            ["parts"] = Part
-        })
+        Content["role"] = Role
     end
+
+    table_insert(self.__requestbody["contents"], Content)
+
+    return Content
 end
 
 function GEMINI_OOP:GetContents()
@@ -266,6 +273,7 @@ function GEMINI_OOP:MakeRequest()
     local RequestURL = string_Replace(self.__resturl, "$REST_VER$", self.__restver)
     RequestURL = string_Replace(RequestURL, "$METHOD$", self.__method) .. "?"
 
+    local IsGeneratingContent = not not string.find(RequestURL, ":generateContent")
 
     --[[ Safety Settings ]]--
     if istable(self.__requestbody["safetySettings"]) then
@@ -317,7 +325,15 @@ function GEMINI_OOP:MakeRequest()
             if not ( Code >= 200 and Code < 300 ) then
                 promise:Reject("There was an error with the request to the url")
             else
-                promise:Resolve({["Code"] = Code, ["Body"] = BodyTable, ["Headers"] = Headers})
+                if IsGeneratingContent then
+                    promise:Resolve(Gemini:CreateResponseObject({
+                        ["code"] = Code,
+                        ["body"] = BodyTable,
+                        ["headers"] = Headers
+                    }))
+                else
+                    promise:Resolve({["Code"] = Code, ["Body"] = BodyTable, ["Headers"] = Headers})
+                end
             end
         end,
         ["failed"] = function(Error)
@@ -327,6 +343,7 @@ function GEMINI_OOP:MakeRequest()
 
     return promise
 end
+GEMINI_OOP.SendRequest = GEMINI_OOP.MakeRequest
 
 
 --[[------------------------

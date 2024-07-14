@@ -51,128 +51,81 @@ end
        Playground API
 ------------------------]]--
 
-function Gemini:PlaygroundMakeRequest(Prompt, ply)
+function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
     if not isstring(Prompt) then
         self:Error("The first argument of Gemini:PlaygroundMakeRequest() must be a string.", Prompt, "string")
     elseif ( Prompt == "" ) then
         self:Error("The first argument of Gemini:PlaygroundMakeRequest() must not be empty.", Prompt, "string")
     end
 
-    --[[ Candidate ]]--
-    local Candidate = nil
-    local GeminiModel = self:GetConfig("ModelName", "Gemini")
+    local NewRequest = Gemini:NewRequest()
 
     if PlayerUsingPlayground[ply] then
-        local Part = {
-            ["parts"] = {["text"] = Prompt},
-            ["role"] = "user"
-        }
+        NewRequest.__requestbody = Candidate
 
-        table.insert(PlayerUsingPlayground[ply]["contents"], Part)
-        Candidate = PlayerUsingPlayground[ply]
+        local content = NewRequest:AddContent(Prompt, "user")
+        table.insert(PlayerUsingPlayground[ply]["contents"], content)
 
     else
-        --[[ Context ]]--
-        local PlayerWantContext = self:GetPlayerInfo(ply, AttachContext)
-        if PlayerWantContext then
+        local PlayerWantToAttachContext = self:GetPlayerInfo(ply, AttachContext)
+        if PlayerWantToAttachContext then
             local Logs = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
-            Candidate = Gemini:GeminiCreateBodyRequest(Prompt, Logs)
+            NewRequest.__requestbody = Gemini:GeminiCreateBodyRequest(Prompt, Logs)
         else
-            Candidate = Gemini:GeminiCreateBodyRequest(Prompt)
+            NewRequest.__requestbody = Gemini:GeminiCreateBodyRequest(Prompt)
         end
 
-        --[[ Body ]]--
-        PlayerUsingPlayground[ply] = Candidate
+        PlayerUsingPlayground[ply] = NewRequest:GetBody()
     end
 
-    local Body = util.TableToJSON(Candidate, true)
-    file.Write("gemini_request.txt", Body)
+    file.Write("gemini/debug/playground_request.json", util.TableToJSON(NewRequest:GetBody(), true))
 
-    --[[ Request ]]--
-    local APIKey = self:GetConfig("APIKey", "Gemini")
+    NewRequest:SetMethod("models/" .. Gemini:GetConfig("ModelName", "Gemini") .. ":generateContent")
+    NewRequest:SetVersion("v1")
 
-    local RequestMade = HTTP({
-        ["url"] = string.format(self.URL, GeminiModel, APIKey),
-        ["method"] = "POST",
-        ["type"] = "application/json",
-        ["body"] = Body,
-        ["success"] = function(Code, BodyResponse, Headers)
-            self:GetHTTPDescription(Code)
-            file.Write("gemini_response.txt", BodyResponse)
+    local NewPromise = NewRequest:SendRequest()
+    NewPromise:Then(function(Response)
+        file.Write("gemini/debug/playground_response.json", util.TableToJSON(Response:GetBody(), true))
 
-            if ( Code == 429 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.RateLimit") return end
-            if ( Code ~= 200 ) then self:PlaygroundSendMessage(ply, "Gemini.Error.ServerError") return end
+        local Candidates = Response:GetFirstCandidate()
+        if not Candidates then
+            local BlockReason = "Enum.BlockReason." .. Response:GetBlockReason()
 
-            --[[ Check Response ]]--
-            TableBody = util.JSONToTable(BodyResponse)
+            self:Print( self:GetPhrase(BlockReason) )
+            self:PlaygroundSendMessage(ply, BlockReason)
 
-            if TableBody["promptFeedback"] and TableBody["promptFeedback"]["blockReason"] then
-                local FeedbackMessage = "Enum.BlockReason." .. TableBody["promptFeedback"]["blockReason"]
-
-                self:Print( self:GetPhrase(FeedbackMessage) )
-                self:PlaygroundSendMessage(ply, FeedbackMessage)
-
-                Gemini:PlaygroundClearHistory(ply)
-                return
-            end
-
-            local Candidates = TableBody["candidates"]
-
-            if not Candidates[1]["content"] then
-                local MessageError = "Gemini.Error.FailedRequest"
-                if Candidates[1]["finishReason"] then
-                    MessageError = "Enum.FinishReason." .. Candidates[1]["finishReason"]
-                end
-
-                self:Print(self:GetPhrase(MessageError))
-                self:PlaygroundSendMessage(ply, MessageError)
-
-                Gemini:PlaygroundClearHistory(ply)
-                return
-            end
-
-            --[[ Check if the player still exists ]]--
-            if not IsValid(ply) then
-                self:Print("The player that requested the prompt no longer exists.")
-                return
-            elseif not istable( PlayerUsingPlayground[ply] ) then
-                self:Print("The player that requested the prompt is no longer using the playground.")
-                return
-            end
-
-            --[[ Save Response ]]--
-            table.insert(PlayerUsingPlayground[ply]["contents"], Candidates[1]["content"])
-
-            --[[ Send Response ]]--
-            local Text = Candidates[1]["content"]["parts"][1]["text"]
-
-            local Compress = util.Compress( string.Replace(Text, "**", "") )
-            local CompressSize = #Compress
-
-            if ( CompressSize > Gemini.Util.MaxBandwidth ) then
-                self:Print("The response from Gemini API is too large to send to the client. Size: ", CompressSize, " bytes")
-
-                self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
-                return
-            end
-
-            net.Start("Gemini:PlaygroundMakeRequest")
-                net.WriteUInt(CompressSize, Gemini.Util.DefaultNetworkUInt)
-                net.WriteData(Compress, CompressSize)
-            net.Send(ply)
-        end,
-        ["failed"] = function(Error)
-            self:Print( string.format("Gemini.Error.Reason", Error) )
-            self:PlaygroundSendMessage(ply, "Gemini.Error.Reason", Error)
+            Gemini:PlaygroundClearHistory(ply)
         end
-    })
 
-    if RequestMade then
-        self:PlaygroundSendMessage(ply, "Gemini.Requested")
-    else
-        self:PlaygroundSendMessage(ply, "Gemini.Error")
-    end
+        if not IsValid(ply) then
+            self:Print("The player that requested the prompt no longer exists.")
+            return
+        elseif not istable( PlayerUsingPlayground[ply] ) then
+            self:Print("The player that requested the prompt is no longer using the playground.")
+            return
+        end
+
+        local ContentText = Candidates:GetTextContent()
+        if not ContentText then return end
+
+        local Compress = util.Compress( ContentText )
+        local CompressSize = #Compress
+
+        if ( CompressSize > Gemini.Util.MaxBandwidth ) then
+            self:Print("The response from Gemini API is too large to send to the client. Size: ", CompressSize, " bytes")
+
+            self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
+            return
+        end
+
+        net.Start("Gemini:PlaygroundMakeRequest")
+            net.WriteUInt(CompressSize, Gemini.Util.DefaultNetworkUInt)
+            net.WriteData(Compress, CompressSize)
+        net.Send(ply)
+    end)
+
+    self:PlaygroundSendMessage(ply, "Gemini.Requested")
 end
 
 --[[------------------------
