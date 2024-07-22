@@ -6,6 +6,7 @@ include("gemini/gemini_object.lua")
 
 util.AddNetworkString("Gemini:SendGeminiModules")
 util.AddNetworkString("Gemini:SetGeminiModel")
+util.AddNetworkString("Gemini:SetGeminiSetting")
 
 local function OnlyThreeSafety(value)
     return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 4 )
@@ -87,7 +88,8 @@ function Gemini:GeminiGetGeneration(ResponseWithJson)
         ["topK"] = self:GetConfig("TopK", "Gemini"),
         ["topP"] = self:GetConfig("TopP", "Gemini"),
         ["maxOutputTokens"] = self:GetConfig("MaxTokens", "Gemini"),
-        ["stopSequences"] = {}
+        ["stopSequences"] = {},
+        -- ["responseMimeType"] = ResponseWithJson and "application/json" or "text/plain"
     }
 end
 
@@ -138,6 +140,73 @@ function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
 
     return Candidate
 end
+
+function Gemini:GenerateSimplePrompt(Prompt, Success, LogsAmount) -- BG
+    if not isstring(Prompt) then
+        self:Error("The first argument of Gemini:GenerateSimplePrompt() must be a string.", Prompt, "string")
+    elseif ( Prompt == "" ) then
+        self:Error("The first argument of Gemini:GenerateSimplePrompt() must not be empty.", Prompt, "string")
+    end
+
+    if not isfunction(Success) then
+        self:Error("The second argument of Gemini:GenerateSimplePrompt() must be a function.", Success, "function")
+    end
+
+    local Context = ""
+    if isnumber(LogsAmount) then
+        local Logs = self:LoggerGetLogsLimit(LogsAmount)
+        local LogsFormat = {}
+
+        for _, LogInfo in ipairs(Logs) do
+            table.insert(LogsFormat, LogInfo["geminilog_time"] .. " - " .. LogInfo["geminilog_log"])
+        end
+
+        Context = self:LogsToText(LogsFormat) .. "\n"
+    end
+
+    local NewRequest = Gemini:NewRequest()
+    NewRequest:AddContent( Context .. Prompt, "user" )
+    NewRequest:SetMethod("models/" .. Gemini:GetConfig("ModelName", "Gemini") .. ":generateContent")
+    NewRequest:SetVersion("v1")
+
+    local NewPromise = NewRequest:SendRequest()
+    NewPromise:Then(function(Response)
+        local Candidates = Response:GetFirstCandidate()
+        if not Candidates then
+            local BlockReason = "Enum.BlockReason." .. Response:GetBlockReason()
+            self:Print( self:GetPhrase(BlockReason) )
+            return
+        end
+
+        local ContentText = Candidates:GetTextContent()
+        if not ContentText then return end
+
+        Success(ContentText)
+    end):Catch(function(Error)
+        self:Print("Error: " .. Error)
+    end)
+end
+
+concommand.Add("gemini_testprompt", function(ply, _, arg, argStr)
+    if IsValid(ply) and not Gemini:CanUse(ply, "gemini_automod") then return end
+
+    local Prompt = "What is the meaning of life?"
+    local LogsAmount = nil
+
+    if arg[1] then
+        LogsAmount = tonumber(arg[1])
+    end
+
+    if arg[2] then
+        local argSplit = string.Explode(" ", argStr)
+        table.remove(argSplit, 1)
+        Prompt = table.concat(argSplit, " ")
+    end
+
+    Gemini:GenerateSimplePrompt(Prompt, function(Content)
+        print(Content)
+    end, LogsAmount)
+end)
 
 
 
@@ -191,4 +260,24 @@ net.Receive("Gemini:SetGeminiModel", function(_, ply)
 
     local ModelName = net.ReadString()
     Gemini:SetConfig("ModelName", "Gemini", ModelName)
+end)
+
+local AllowedSetting = {
+    ["Temperature"] = true,
+    ["TopP"] = true,
+    ["TopK"] = true,
+    ["MaxTokens"] = true,
+    ["SafetyHarassment"] = true,
+    ["SafetyHateSpeech"] = true,
+    ["SafetySexuallyExplicit"] = true,
+    ["SafetyDangerousContent"] = true
+}
+net.Receive("Gemini:SetGeminiSetting", function(_, ply)
+    if ( not Gemini:CanUse(ply, "gemini_config_set") ) then return end
+
+    local SettingName = net.ReadString()
+    if ( AllowedSetting[SettingName] == nil ) then return end
+
+    local SettingValue = net.ReadType(Gemini.Util.DefaultNetworkType[SettingName])
+    Gemini:SetConfig(SettingName, "Gemini", SettingValue)
 end)

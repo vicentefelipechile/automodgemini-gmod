@@ -58,22 +58,21 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
         self:Error("The first argument of Gemini:PlaygroundMakeRequest() must not be empty.", Prompt, "string")
     end
 
-    local NewRequest = Gemini:NewRequest()
+    local NewRequest = self:NewRequest()
 
     if PlayerUsingPlayground[ply] then
-        NewRequest.__requestbody = Candidate
-
         local content = NewRequest:AddContent(Prompt, "user")
         table.insert(PlayerUsingPlayground[ply]["contents"], content)
 
+        NewRequest.__requestbody = PlayerUsingPlayground[ply]
     else
         local PlayerWantToAttachContext = self:GetPlayerInfo(ply, AttachContext)
         if PlayerWantToAttachContext then
             local Logs = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
-            NewRequest.__requestbody = Gemini:GeminiCreateBodyRequest(Prompt, Logs)
+            NewRequest.__requestbody = self:GeminiCreateBodyRequest(Prompt, Logs)
         else
-            NewRequest.__requestbody = Gemini:GeminiCreateBodyRequest(Prompt)
+            NewRequest.__requestbody = self:GeminiCreateBodyRequest(Prompt)
         end
 
         PlayerUsingPlayground[ply] = NewRequest:GetBody()
@@ -81,7 +80,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
 
     file.Write("gemini/debug/playground_request.json", util.TableToJSON(NewRequest:GetBody(), true))
 
-    NewRequest:SetMethod("models/" .. Gemini:GetConfig("ModelName", "Gemini") .. ":generateContent")
+    NewRequest:SetMethod("models/" .. self:GetConfig("ModelName", "Gemini") .. ":generateContent")
     NewRequest:SetVersion("v1")
 
     local NewPromise = NewRequest:SendRequest()
@@ -95,7 +94,8 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
             self:Print( self:GetPhrase(BlockReason) )
             self:PlaygroundSendMessage(ply, BlockReason)
 
-            Gemini:PlaygroundClearHistory(ply)
+            self:PlaygroundClearHistory(ply)
+            return
         end
 
         if not IsValid(ply) then
@@ -116,8 +116,14 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
             self:Print("The response from Gemini API is too large to send to the client. Size: ", CompressSize, " bytes")
 
             self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
+            self:PlaygroundClearHistory(ply)
             return
         end
+
+        table.insert(PlayerUsingPlayground[ply]["contents"], {
+            ["parts"] = { ["text"] = ContentText },
+            ["role"] = "model"
+        })
 
         net.Start("Gemini:PlaygroundMakeRequest")
             net.WriteUInt(CompressSize, Gemini.Util.DefaultNetworkUInt)

@@ -6,6 +6,7 @@ Gemini.Util = Gemini.Util or {}
 
 if SERVER then
     util.AddNetworkString("Gemini:SendMessage")
+    util.AddNetworkString("Gemini:BroadcastMessage")
     util.AddNetworkString("Gemini:PlayerFullyConnected")
 end
 
@@ -88,9 +89,42 @@ if SERVER then
             end
         net.Send(ply)
     end
+
+    function Gemini:BroadcastMessage(index, msg, extra)
+        if not isstring(index) then
+            self:Error("The first argument of Gemini:BroadcastMessage() must be a string.", index, "string")
+        elseif ( index == "" ) then
+            self:Error("The first argument of Gemini:BroadcastMessage() must not be empty.", index, "string")
+        end
+
+        if not isstring(msg) then
+            self:Error("The second argument of Gemini:BroadcastMessage() must be a string.", msg, "string")
+        elseif ( msg == "" ) then
+            self:Error("The second argument of Gemini:BroadcastMessage() must not be empty.", msg, "string")
+        end
+
+        net.Start("Gemini:BroadcastMessage")
+            net.WriteString(index)
+            net.WriteString(msg)
+
+            if (extra ~= nil) then
+                if not isstring(extra) then
+                    self:Error("The third argument of Gemini:BroadcastMessage() must be a string.", extra, "string")
+                elseif ( extra == "" ) then
+                    self:Error("The third argument of Gemini:BroadcastMessage() must not be empty.", extra, "string")
+                end
+
+                net.WriteString(extra)
+            end
+        net.Broadcast()
+    end
 else
     net.Receive("Gemini:SendMessage", function()
         hook.Run("Gemini:SendMessage", net.ReadString(), net.ReadString())
+    end)
+
+    net.Receive("Gemini:BroadcastMessage", function()
+        hook.Run("Gemini:BroadcastMessage", net.ReadString(), net.ReadString(), net.ReadString())
     end)
 end
 

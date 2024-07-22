@@ -7,6 +7,16 @@ local BackgroundPaint = function(SubSelf, w, h)
     draw.RoundedBox( 0, 0, 0, w, h, BackgroundColor )
 end
 
+local HorizontalLineColor = Color( 48, 48, 48)
+local HorizontalLine = function(SubSelf, w, h)
+    draw.RoundedBox( 0, 0, 0, w, 4, HorizontalLineColor )
+end
+
+local ForegroundColor = Color( 48, 48, 48)
+local ForegroundPaint = function(SubSelf, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, ForegroundColor )
+end
+
 local MODULE = { ["Icon"] = "icon16/page_edit.png" }
 local COMPILED_HTML = COMPILED_HTML or ""
 local ReplaceAceEditor = [[ace.edit("editor").setValue("%s")]]
@@ -96,9 +106,15 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.MainSheet = vgui.Create( "DColumnSheet", OurTab )
-    self.MainSheet.Navigation:SetWide( 130 )
+    self.MainSheet.Navigation:SetWide( 110 )
     self.MainSheet:Dock( FILL )
-    self.MainSheet:DockMargin( 10, 10, 10, 10 )
+
+    -- Black Foreground to make a transition when changing tabs
+    self.MainSheet.Foreground = vgui.Create( "DPanel", self.MainSheet )
+    self.MainSheet.Foreground:Dock( FILL )
+    self.MainSheet.Foreground.Paint = ForegroundPaint
+    self.MainSheet.Foreground:SetVisible( false )
+
 
     --[[------------------------
            Server Info
@@ -109,17 +125,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerInfoPanel.Panel = vgui.Create( "DPanel", self.ServerInfoPanel )
     self.ServerInfoPanel.Panel:Dock( FILL )
-
-    self.ServerInfoPanel.Panel.PromptEditor = vgui.Create( "DHTML", self.ServerInfoPanel.Panel )
-    self.ServerInfoPanel.Panel.PromptEditor:Dock( LEFT )
-    self.ServerInfoPanel.Panel.PromptEditor:SetWide( 200 )
-    self.ServerInfoPanel.Panel.PromptEditor:SetAllowLua(true)
-    self.ServerInfoPanel.Panel.PromptEditor:SetHTML( self:CompileHTML("Insert your input", not CanEdit, true) )
-
-    self.ServerInfoPanel.Panel.HorizontalLine = vgui.Create( "DPanel", self.ServerInfoPanel.Panel )
-    self.ServerInfoPanel.Panel.HorizontalLine:Dock( LEFT )
-    self.ServerInfoPanel.Panel.HorizontalLine:SetWide( 16 )
-    self.ServerInfoPanel.Panel.HorizontalLine.Paint = BackgroundPaint
 
     self.ServerInfoPanel.Panel.TextEditor = vgui.Create( "DHTML", self.ServerInfoPanel.Panel )
     self.ServerInfoPanel.Panel.TextEditor:Dock( FILL )
@@ -139,29 +144,72 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "InfoFullyLoaded", function()
         self.ServerInfoPanel.Panel.TextEditor.FullyLoaded = true
-        self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
+
+        if not CanEdit then return end
+
+        self.ServerInfoPanel.ToolBar.SaveButton:SetEnabled( CanEdit )
     end)
 
     self.ServerInfoPanel.Panel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), not CanEdit, true) )
+    self.ServerInfoPanel.Panel.TextEditor:Call([[SetEditorOption("showPrintMargin", false)]])
+
+    if CanEdit then
+        self.ServerInfoPanel.Panel.PromptPanel = vgui.Create( "DPanel", self.ServerInfoPanel.Panel )
+        self.ServerInfoPanel.Panel.PromptPanel:Dock( BOTTOM )
+        self.ServerInfoPanel.Panel.PromptPanel:SetTall( 100 )
+        self.ServerInfoPanel.Panel.PromptPanel.Paint = BackgroundPaint
+
+        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine = vgui.Create( "DPanel", self.ServerInfoPanel.Panel.PromptPanel )
+        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine:Dock( TOP )
+        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine:SetTall( 16 )
+        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine.Paint = HorizontalLine
+
+        self.ServerInfoPanel.Panel.PromptPanel.Editor = vgui.Create( "DHTML", self.ServerInfoPanel.Panel.PromptPanel )
+        self.ServerInfoPanel.Panel.PromptPanel.Editor:Dock( FILL )
+        self.ServerInfoPanel.Panel.PromptPanel.Editor:SetTall( 100 )
+        self.ServerInfoPanel.Panel.PromptPanel.Editor:SetAllowLua(true)
+        self.ServerInfoPanel.Panel.PromptPanel.Editor:SetHTML( self:CompileHTML(Gemini:GetPhrase("Rules.Formatter.Use"), not CanEdit, true ) )
+        self.ServerInfoPanel.Panel.PromptPanel.Editor:Call([[SetEditorOption("showGutter", false)]])
+        self.ServerInfoPanel.Panel.PromptPanel.Editor:Call([[SetEditorOption("showPrintMargin", false)]])
+
+        self.ServerInfoPanel.Panel.PromptPanel:SetVisible( false )
 
 
-    self.ServerInfoPanel.ActionPanel = vgui.Create( "DPanel", self.ServerInfoPanel )
-    self.ServerInfoPanel.ActionPanel:Dock( BOTTOM )
-    self.ServerInfoPanel.ActionPanel:SetTall( 40 )
-    self.ServerInfoPanel.ActionPanel.Paint = BackgroundPaint
+        self.ServerInfoPanel.ToolBar = vgui.Create( "DPanel", self.ServerInfoPanel )
+        self.ServerInfoPanel.ToolBar:Dock( LEFT )
+        self.ServerInfoPanel.ToolBar:SetWide( 115 )
+        self.ServerInfoPanel.ToolBar.Paint = BackgroundPaint
 
-    self.ServerInfoPanel.ActionPanel.SaveButton = vgui.Create( "DButton", self.ServerInfoPanel.ActionPanel )
-    self.ServerInfoPanel.ActionPanel.SaveButton:Dock( LEFT )
-    self.ServerInfoPanel.ActionPanel.SaveButton:DockMargin( 4, 4, 4, 4 )
-    self.ServerInfoPanel.ActionPanel.SaveButton:SetWide( 100 )
-    self.ServerInfoPanel.ActionPanel.SaveButton:SetText( "Save" )
-    self.ServerInfoPanel.ActionPanel.SaveButton:SetEnabled( false )
+        self.ServerInfoPanel.ToolBar.SaveButton = vgui.Create( "DButton", self.ServerInfoPanel.ToolBar )
+        self.ServerInfoPanel.ToolBar.SaveButton:Dock( TOP )
+        self.ServerInfoPanel.ToolBar.SaveButton:DockMargin( 4, 4, 4, 4 )
+        self.ServerInfoPanel.ToolBar.SaveButton:SetTall( 28 )
+        self.ServerInfoPanel.ToolBar.SaveButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Save") )
+        self.ServerInfoPanel.ToolBar.SaveButton:SetEnabled( false )
+        self.ServerInfoPanel.ToolBar.SaveButton:SetIcon( "icon16/disk.png" )
 
-    self.ServerInfoPanel.ActionPanel.SaveButton.DoClick = function()
-        self.ServerInfoPanel.TextEditor:Call([[gmod.SaveServerInfoJS()]])
+        self.ServerInfoPanel.ToolBar.SaveButton.DoClick = function()
+            self.ServerInfoPanel.TextEditor:Call([[gmod.SaveServerInfoJS()]])
+        end
+
+        self.ServerInfoPanel.ToolBar.PromptButton = vgui.Create( "DButton", self.ServerInfoPanel.ToolBar )
+        self.ServerInfoPanel.ToolBar.PromptButton:Dock( TOP )
+        self.ServerInfoPanel.ToolBar.PromptButton:DockMargin( 4, 4, 4, 4 )
+        self.ServerInfoPanel.ToolBar.PromptButton:SetTall( 28 )
+        self.ServerInfoPanel.ToolBar.PromptButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Formatter") )
+        self.ServerInfoPanel.ToolBar.PromptButton:SetIcon( "icon16/application_edit.png" )
+
+        local TextEditorHeight = self.ServerInfoPanel.Panel.TextEditor:GetTall()
+        self.ServerInfoPanel.ToolBar.PromptButton.DoClick = function()
+            self.ServerInfoPanel.Panel.PromptPanel:SetVisible( not self.ServerInfoPanel.Panel.PromptPanel:IsVisible() )
+
+            if not self.ServerInfoPanel.Panel.PromptPanel:IsVisible() then
+                self.ServerInfoPanel.Panel.TextEditor:SetTall( TextEditorHeight )
+            end
+        end
     end
 
-    self.MainSheet:AddSheet( "Server Info", self.ServerInfoPanel, "icon16/information.png" )
+    self.MainSheet:AddSheet( Gemini:GetPhrase("Rules.ServerInfo"), self.ServerInfoPanel, "icon16/information.png" )
 
     --[[------------------------
            Server Rules
@@ -172,6 +220,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ServerRulesPanel.TextEditor = vgui.Create( "DHTML", self.ServerRulesPanel )
     self.ServerRulesPanel.TextEditor:Dock( FILL )
+    self.ServerRulesPanel.TextEditor:SetVisible( false )
 
     -- Main Functions
     self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
@@ -185,6 +234,8 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerRulesPanel.TextEditor:AddFunction("gmod", "RulesFullyLoaded", function()
         self.ServerRulesPanel.TextEditor.FullyLoaded = true
         self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
+
+        self.ServerRulesPanel.TextEditor:SetVisible( true )
     end)
 
     self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SaveServerRulesLua", function(text)
@@ -202,14 +253,14 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerRulesPanel.ActionPanel.SaveButton:Dock( LEFT )
     self.ServerRulesPanel.ActionPanel.SaveButton:DockMargin( 4, 4, 4, 4 )
     self.ServerRulesPanel.ActionPanel.SaveButton:SetWide( 100 )
-    self.ServerRulesPanel.ActionPanel.SaveButton:SetText( "Save" )
+    self.ServerRulesPanel.ActionPanel.SaveButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Save") )
     self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( false )
 
     self.ServerRulesPanel.ActionPanel.SaveButton.DoClick = function()
         self.ServerRulesPanel.TextEditor:Call([[gmod.SaveServerRulesJS()]])
     end
 
-    self.MainSheet:AddSheet( "Server Rules", self.ServerRulesPanel, "icon16/page_white_text.png" )
+    self.MainSheet:AddSheet( Gemini:GetPhrase("Rules.Rules"), self.ServerRulesPanel, "icon16/page_white_text.png" )
 end
 
 

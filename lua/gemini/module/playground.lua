@@ -86,7 +86,7 @@ function MODULE:ResetPrompt()
     table.Empty(PromptHistory)
     self.PromptPanel.PromptHistory:Clear()
 
-    if not Gemini:CanUse("gemini_playground") then return end
+    -- if not Gemini:CanUse("gemini_playground") then return end
 
     net.Start("Gemini:PlaygroundResetRequest")
     net.SendToServer()

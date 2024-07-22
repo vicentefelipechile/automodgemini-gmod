@@ -1,12 +1,12 @@
 --[[----------------------------------------------------------------------------
-                Gemini Automod - Spanish Prompts
+                        Gemini Automod - Spanish Prompts
 ----------------------------------------------------------------------------]]--
 
 local PromptTable = PromptTable or { ["gamemodes"] = {} }
 local PromptFunctions = PromptFunctions or {}
 
 --[[------------------------
-    Prompt Template
+       Prompt Template
 ------------------------]]--
 
 PromptTable["template"] = [[Eres un modelo de lenguaje dedicado al modo de juego Garry's Mod a continuación se te mostrara el contexto que debes saber para tener una conversación con el usuario.
@@ -119,7 +119,7 @@ local ResponseCriteria = {
 }
 
 --[[------------------------
-    Prompt Functions
+      Prompt Functions
 ------------------------]]--
 
 local function TableToList(Table)

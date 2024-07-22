@@ -12,6 +12,20 @@ local MenuPhrases = {
     ["Config.Default.DisplayName"] = "Sin modelo seleccionado",
     ["Config.Default.Description"] = "El modelo actual no esta seleccionado, por favor selecciona un modelo.",
     ["Config.APIKey"] = "Clave API",
+    ["Config.APIKey.Disabled"] = "Esta casilla esta desactivada porque ya hay una Clave API establecida.",
+    ["Config.APIKey.Checkbox"] = "Permitir cambiar la Clave API",
+    ["Config.APIKey.Note"] = "Por motivos de seguridad una vez establecida la clave, no se puede volver a mostrar.",
+    ["Config.SafetySetting"] = "Configuración de seguridad",
+    ["Config.SafetySetting.Harrassment"] = "Acoso",
+    ["Config.SafetySetting.HateSpeech"] = "Discurso de odio",
+    ["Config.SafetySetting.SexuallyExplicit"] = "Contenido sexualmente explicito",
+    ["Config.SafetySetting.DangerousContent"] = "Contenido peligroso/dañino",
+    ["Config.AIModel"] = "Modelo de Generación (IA) actual",
+    ["Config.AIModel.Name"] = "Nombre del modelo:",
+    ["Config.AIModel.InputTokens"] = "Maxima cantidad de tokens de entrada:",
+    ["Config.AIModel.OutputTokens"] = "Maxima cantidad de tokens de salida:",
+    ["Config.AIModel.Words"] = "palabras",
+    ["Config.AIModel.Description"] = "Descripción del modelo:",
 
     ["Logger"] = "Registros",
     ["Logger.Settings"] = "Parametros",
@@ -73,6 +87,13 @@ local MenuPhrases = {
     ["Train.InputLogStart.Desc"] = "La id del registro inicial (ej: 1004)",
     ["Train.InputLogEnd"] = "Registro final",
     ["Train.InputLogEnd.Desc"] = "La id del registro final (ej: 1104)",
+
+    ["Rules.Rules"] = "Reglas",
+    ["Rules.ServerInfo"] = "Información",
+    ["Rules.ToolBar.Save"] = "Guardar",
+    ["Rules.ToolBar.Formatter"] = "Convertidor",
+    ["Rules.Formatter.Use"] = "// Escribe aqui una instruccion para darle formato a la informacion de arriba",
+    ["Rules.Formatter.Apply"] = "Convertir Formato"
 }
 
 return MenuPhrases

@@ -12,10 +12,10 @@ return [[
                 left: 0;
             }
         </style>
-    
+
         <meta charset="utf-8">
     </head>
-    <body>
+    <body style="background-color: #232323;">
         <script type="text/javascript"> $AceScript$ </script>
         <script type="text/javascript"> $Extension$ </script>
         <script type="text/javascript"> $Theme$ </script>
@@ -38,6 +38,11 @@ return [[
         </script>
 
         <script type="text/javascript"> $GmodScript$ </script>
+        <script type="text/javascript">
+            function SetEditorOption(Option, Value) {
+                editor.setOption(Option, Value)
+            }
+        </script>
     </body>
 </html>
 ]]

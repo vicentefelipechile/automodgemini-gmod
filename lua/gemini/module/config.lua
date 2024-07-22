@@ -8,6 +8,7 @@ local CurrentModel = CurrentModel or {}
 local MODULE = { ["Icon"] = "icon16/cog.png" }
 
 local GCLOUD_ICON = "materials/gemini/gcloud.png"
+local GENERATION_ICON = "icon16/page_white_gear.png"
 local CONFIG_ICON = "icon16/cog.png"
 
 local BackgroundColor = Color( 45, 45, 45 )
@@ -26,6 +27,8 @@ local DefaultModelTbl = {
     ["inputTokenLimit"] = -1,
     ["outputTokenLimit"] = -1
 }
+
+local HTMLCONFIG = include("config/gemini_spread.html.lua")
 
 --[[------------------------
           Functions
@@ -54,10 +57,17 @@ end
 ------------------------]]--
 
 local SAFETY_ENUM = {
-    [1] = {["Name"] = "BLOCK_NONE", ["Icon"] = "icon16/page.png"},
-    [2] = {["Name"] = "BLOCK_ONLY_HIGH", ["Icon"] = "icon16/page_key.png"},
-    [3] = {["Name"] = "BLOCK_MEDIUM_AND_ABOVE", ["Icon"] = "icon16/page_link.png"},
-    [4] = {["Name"] = "BLOCK_LOW_AND_ABOVE", ["Icon"] = "icon16/page_find.png"}
+    [1] = {["Name"] = BLOCK_NONE, ["Icon"] = "icon16/page.png"},
+    [2] = {["Name"] = BLOCK_ONLY_HIGH, ["Icon"] = "icon16/page_key.png"},
+    [3] = {["Name"] = BLOCK_MEDIUM_AND_ABOVE, ["Icon"] = "icon16/page_link.png"},
+    [4] = {["Name"] = BLOCK_LOW_AND_ABOVE, ["Icon"] = "icon16/page_find.png"}
+}
+
+local SaffetySetting = {
+    "Harrassment",
+    "HateSpeech",
+    "SexuallyExplicit",
+    "DangerousContent"
 }
 
 --[[------------------------
@@ -90,7 +100,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.APIKeyTitle:Dock( TOP )
     self.ConfigPanel.Gemini.APIKeyTitle:DockMargin( 10, 10, 10, 0 )
     self.ConfigPanel.Gemini.APIKeyTitle:SetHeight( 40 )
-    self.ConfigPanel.Gemini.APIKeyTitle:SetText( "API Key" )
+    self.ConfigPanel.Gemini.APIKeyTitle:SetText( Gemini:GetPhrase("Config.APIKey") )
     self.ConfigPanel.Gemini.APIKeyTitle:SetFont("Frutiger:Big")
 
     self.ConfigPanel.Gemini.APIKey = vgui.Create( "DTextEntry", self.ConfigPanel.Gemini )
@@ -100,13 +110,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     local APIKeyIsSetted = GetGlobal2Bool("Gemini:APIKeyEnabled", true)
     if APIKeyIsSetted then
         self.ConfigPanel.Gemini.APIKey:SetEnabled( false )
-        self.ConfigPanel.Gemini.APIKey:SetText( "This field is disabled, because the API Key is already setted. To enable it, click on the checkbox below to allow edit." )
+        self.ConfigPanel.Gemini.APIKey:SetText( Gemini:GetPhrase("Config.APIKey.Disabled") )
     end
 
     self.ConfigPanel.Gemini.APIKeyEnabled = vgui.Create( "DCheckBoxLabel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.APIKeyEnabled:Dock( TOP )
     self.ConfigPanel.Gemini.APIKeyEnabled:DockMargin( 10, 0, 10, 10 )
-    self.ConfigPanel.Gemini.APIKeyEnabled:SetText( "Allow edit the API Key" )
+    self.ConfigPanel.Gemini.APIKeyEnabled:SetText( Gemini:GetPhrase("Config.APIKey.Checkbox") )
 
     self.ConfigPanel.Gemini.APIKeyEnabled:SetValue( not APIKeyIsSetted )
 
@@ -124,7 +134,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.APIKeyExplanation = vgui.Create( "DLabel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.APIKeyExplanation:Dock( TOP )
     self.ConfigPanel.Gemini.APIKeyExplanation:DockMargin( 10, 0, 10, 10 )
-    self.ConfigPanel.Gemini.APIKeyExplanation:SetText( "For security reasons you can't see the API Key, only set it. If you want to see it, too bad." )
+    self.ConfigPanel.Gemini.APIKeyExplanation:SetText( Gemini:GetPhrase("Config.APIKey.Note") )
 
 
     local HorizonalLine = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
@@ -138,122 +148,45 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.SafetySettingsTitle = vgui.Create( "DLabel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.SafetySettingsTitle:Dock( TOP )
     self.ConfigPanel.Gemini.SafetySettingsTitle:DockMargin( 10, 0, 10, 0 )
-    self.ConfigPanel.Gemini.SafetySettingsTitle:SetText( "Safety Settings" )
+    self.ConfigPanel.Gemini.SafetySettingsTitle:SetText( Gemini:GetPhrase("Config.SafetySetting") )
     self.ConfigPanel.Gemini.SafetySettingsTitle:SetFont("Frutiger:Big")
     self.ConfigPanel.Gemini.SafetySettingsTitle:SetHeight( 40 )
 
     self.ConfigPanel.Gemini.SafetySettings = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.SafetySettings:Dock( TOP )
     self.ConfigPanel.Gemini.SafetySettings:DockMargin( 10, 4, 10, 10 )
-    self.ConfigPanel.Gemini.SafetySettings:SetTall( 190 )
+    self.ConfigPanel.Gemini.SafetySettings:SetTall( 270 )
     self.ConfigPanel.Gemini.SafetySettings.Paint = function( SubSelf, w, h )
         draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
     end
 
-    self.ConfigPanel.Gemini.SafetySettings.Description = vgui.Create( "DLabel", self.ConfigPanel.Gemini.SafetySettings )
-    self.ConfigPanel.Gemini.SafetySettings.Description:Dock( TOP )
-    self.ConfigPanel.Gemini.SafetySettings.Description:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.Description:SetText( "Selecciona el nivel de seguridad que deseas para cada tipo de contenido. El tipo de conversacion que haya en tu servidor afectara directamente a la seguridad de los mensajes." )
-    self.ConfigPanel.Gemini.SafetySettings.Description:SetFont("HudHintTextLarge")
-    self.ConfigPanel.Gemini.SafetySettings.Description:SetWrap(true)
-    self.ConfigPanel.Gemini.SafetySettings.Description:SetTall( 30 )
+    for _, Category in ipairs(SaffetySetting) do
+        self.ConfigPanel.Gemini.SafetySettings[Category] = vgui.Create("DPanel", self.ConfigPanel.Gemini.SafetySettings)
+        self.ConfigPanel.Gemini.SafetySettings[Category]:Dock( TOP )
+        self.ConfigPanel.Gemini.SafetySettings[Category]:DockMargin( 5, 10, 10, 5 )
+        self.ConfigPanel.Gemini.SafetySettings[Category]:SetTall( 48 )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Paint = Gemini.Util.ReturnNoneFunction
 
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment = vgui.Create("DPanel", self.ConfigPanel.Gemini.SafetySettings)
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment:Dock( TOP )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment:SetTall( 24 )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Paint = Gemini.Util.ReturnNoneFunction
+        self.ConfigPanel.Gemini.SafetySettings[Category].Title = vgui.Create( "DLabel", self.ConfigPanel.Gemini.SafetySettings[Category] )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Title:Dock( TOP )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Title:DockMargin( 5, 0, 5, 0 )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Title:SetText( Gemini:GetPhrase("Config.SafetySetting." .. Category) )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Title:SetFont("HudHintTextLarge")
+        self.ConfigPanel.Gemini.SafetySettings[Category].Title:SetWide( 160 )
 
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Title = vgui.Create( "DLabel", self.ConfigPanel.Gemini.SafetySettings.Harrassment )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Title:Dock( LEFT )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Title:DockMargin( 0, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Title:SetText( "Harassment" )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Title:SetFont("HudHintTextLarge")
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Title:SetWide( 160 )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option = vgui.Create( "DComboBox", self.ConfigPanel.Gemini.SafetySettings[Category] )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option:Dock( FILL )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option:DockMargin( 5, 0, 5, 0 )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option.Paint = SmallBackgroundPaint
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option.OnMenuOpened = DComboBoxPaint
 
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option = vgui.Create( "DComboBox", self.ConfigPanel.Gemini.SafetySettings.Harrassment )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:Dock( FILL )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:DockMargin( 10, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:SetValue( "Harassment" )
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option.Paint = SmallBackgroundPaint
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option.OnMenuOpened = DComboBoxPaint
+        for Key, Safety in ipairs( SAFETY_ENUM ) do
+            self.ConfigPanel.Gemini.SafetySettings[Category].Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
+        end
 
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech = vgui.Create("DPanel", self.ConfigPanel.Gemini.SafetySettings)
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech:Dock( TOP )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech:SetTall( 24 )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Paint = Gemini.Util.ReturnNoneFunction
-
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Title = vgui.Create( "DLabel", self.ConfigPanel.Gemini.SafetySettings.HateSpeech )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Title:Dock( LEFT )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Title:DockMargin( 0, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Title:SetText( "Hate Speech" )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Title:SetFont("HudHintTextLarge")
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Title:SetWide( 160 )
-
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option = vgui.Create( "DComboBox", self.ConfigPanel.Gemini.SafetySettings.HateSpeech )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:Dock( FILL )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:DockMargin( 10, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:SetValue( "Hate Speech" )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option.Paint = SmallBackgroundPaint
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option.OnMenuOpened = DComboBoxPaint
-
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit = vgui.Create("DPanel", self.ConfigPanel.Gemini.SafetySettings)
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit:Dock( TOP )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit:SetTall( 24 )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Paint = Gemini.Util.ReturnNoneFunction
-
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Title = vgui.Create( "DLabel", self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Title:Dock( LEFT )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Title:DockMargin( 0, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Title:SetText( "Sexually Explicit" )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Title:SetFont("HudHintTextLarge")
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Title:SetWide( 160 )
-
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option = vgui.Create( "DComboBox", self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:Dock( FILL )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:DockMargin( 10, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:SetValue( "Sexually Explicit" )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option.Paint = SmallBackgroundPaint
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option.OnMenuOpened = DComboBoxPaint
-
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent = vgui.Create("DPanel", self.ConfigPanel.Gemini.SafetySettings)
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent:Dock( TOP )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent:SetTall( 24 )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Paint = Gemini.Util.ReturnNoneFunction
-
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Title = vgui.Create( "DLabel", self.ConfigPanel.Gemini.SafetySettings.DangerousContent )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Title:Dock( LEFT )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Title:DockMargin( 0, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Title:SetText( "Dangerous Content" )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Title:SetFont("HudHintTextLarge")
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Title:SetWide( 160 )
-
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option = vgui.Create( "DComboBox", self.ConfigPanel.Gemini.SafetySettings.DangerousContent )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:Dock( FILL )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:DockMargin( 10, 0, 0, 0 )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:SetValue( "Dangerous Content" )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option.Paint = SmallBackgroundPaint
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option.OnMenuOpened = DComboBoxPaint
-
-    for Key, Safety in ipairs( SAFETY_ENUM ) do
-        self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
-        self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
-        self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
-        self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:AddChoice( Gemini:GetPhrase("SafetySetting." .. Safety["Name"]), Key, false, Safety["Icon"] )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option:SetSortItems( false )
+        self.ConfigPanel.Gemini.SafetySettings[Category].Option:ChooseOptionID( GetGlobal2Int("Gemini:Safety" .. Category, 1) )
     end
-
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:SetSortItems( false )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:SetSortItems( false )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:SetSortItems( false )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:SetSortItems( false )
-
-    self.ConfigPanel.Gemini.SafetySettings.Harrassment.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetyHarassment", 1) )
-    self.ConfigPanel.Gemini.SafetySettings.HateSpeech.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetyHateSpeech", 1) )
-    self.ConfigPanel.Gemini.SafetySettings.SexuallyExplicit.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetySexuallyExplicit", 1) )
-    self.ConfigPanel.Gemini.SafetySettings.DangerousContent.Option:ChooseOptionID( GetGlobal2Int("Gemini:SafetyDangerousContent", 1) )
 
 
     local AnotherHorizonalLine = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
@@ -269,7 +202,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelNameTitle = vgui.Create( "DLabel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.ModelNameTitle:Dock( TOP )
     self.ConfigPanel.Gemini.ModelNameTitle:DockMargin( 10, 0, 0, 0 )
-    self.ConfigPanel.Gemini.ModelNameTitle:SetText( "Current AI Model" )
+    self.ConfigPanel.Gemini.ModelNameTitle:SetText( Gemini:GetPhrase("Config.AIModel") )
     self.ConfigPanel.Gemini.ModelNameTitle:SetFont("Frutiger:Big")
     self.ConfigPanel.Gemini.ModelNameTitle:SetHeight( 40 )
 
@@ -286,7 +219,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelInfo.ModelName = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( "Model Name:" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelName:SetText( Gemini:GetPhrase("Config.AIModel.Name") )
     self.ConfigPanel.Gemini.ModelInfo.ModelName:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
@@ -298,7 +231,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( "Max Input Tokens:" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetText( Gemini:GetPhrase("Config.AIModel.InputTokens") )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokens:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
@@ -310,7 +243,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:DockMargin( 10, 5, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( "Max Output Tokens:" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetText( Gemini:GetPhrase("Config.AIModel.OutputTokens") )
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokens:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
@@ -322,7 +255,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.ModelInfo.ModelDescription = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
     self.ConfigPanel.Gemini.ModelInfo.ModelDescription:Dock( TOP )
     self.ConfigPanel.Gemini.ModelInfo.ModelDescription:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( "Description:" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetText( Gemini:GetPhrase("Config.AIModel.Description") )
     self.ConfigPanel.Gemini.ModelInfo.ModelDescription:SetFont("HudHintTextLarge")
 
     self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput = vgui.Create( "DLabel", self.ConfigPanel.Gemini.ModelInfo )
@@ -362,16 +295,16 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetText( "> " .. CurrentModel["displayName"] )
     self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetText( CurrentModel["description"] )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
-    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " " .. Gemini:GetPhrase("Config.AIModel.Words") .. ")" )
+    self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " " .. Gemini:GetPhrase("Config.AIModel.Words") .. ")" )
 
     self.ConfigPanel.Gemini.ModelName.OnSelect = function( SubSelf, index, value, data )
         CurrentModel = data
 
         self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetText( "> " .. CurrentModel["displayName"] )
         self.ConfigPanel.Gemini.ModelInfo.ModelDescriptionOutput:SetText( CurrentModel["description"] )
-        self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " words)" )
-        self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " words)" )
+        self.ConfigPanel.Gemini.ModelInfo.ModelMaxInputTokensOutput:SetText( "> " .. FN( CurrentModel["inputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["inputTokenLimit"] ) * 0.75 ) ) .. " " .. Gemini:GetPhrase("Config.AIModel.Words") .. ")" )
+        self.ConfigPanel.Gemini.ModelInfo.ModelMaxOutputTokensOutput:SetText( "> " .. FN( CurrentModel["outputTokenLimit"] ) .. " (" .. ( FN( math.floor( CurrentModel["outputTokenLimit"] ) * 0.75 ) ) .. " " .. Gemini:GetPhrase("Config.AIModel.Words") .. ")" )
 
         if Gemini:CanUse("gemini_config_set") then
             local ModelName = string.Replace( CurrentModel["name"], "models/", "" )
@@ -392,14 +325,105 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     --[[------------------------
             Google Cloud
-    ------------------------]]--
+    ------------------------]+]--
 
     self.ConfigPanel.GoogleCloud = vgui.Create( "DPanel", self.ConfigPanel )
     self.ConfigPanel.GoogleCloud:Dock( FILL )
     self.ConfigPanel.GoogleCloud:DockMargin( 10, 10, 10, 10 )
     self.ConfigPanel.GoogleCloud.Paint = BackgroundPaint
 
-    self.Items["GoogleCloud"] = self.ConfigPanel:AddSheet( "Google Cloud", self.ConfigPanel.GoogleCloud, GCLOUD_ICON )
+    -- self.Items["GoogleCloud"] = self.ConfigPanel:AddSheet( "Google Cloud", self.ConfigPanel.GoogleCloud, GCLOUD_ICON )
+
+    --[[------------------------
+          Generation Config
+    ------------------------]]--
+
+    self.ConfigPanel.Generation = vgui.Create( "DPanel", self.ConfigPanel )
+    self.ConfigPanel.Generation:Dock( FILL )
+    self.ConfigPanel.Generation:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.Generation.Paint = BackgroundPaint
+
+    self.ConfigPanel.Generation.Preview = vgui.Create( "DHTML", self.ConfigPanel.Generation )
+    self.ConfigPanel.Generation.Preview:Dock( RIGHT )
+    self.ConfigPanel.Generation.Preview:DockMargin( 10, 30, 10, 30 )
+    self.ConfigPanel.Generation.Preview:SetWide( 240 )
+    self.ConfigPanel.Generation.Preview:SetHTML( HTMLCONFIG )
+    self.ConfigPanel.Generation.Preview:Call("SetResolution(250," .. self.ConfigPanel.Generation.Preview:GetTall() .. ")")
+    self.ConfigPanel.Generation.Preview:Call("SetTemperature(" .. GetGlobal2Float("Gemini:Temperature", 0.5) .. ")")
+    self.ConfigPanel.Generation.Preview:Call("SetTopK(" .. GetGlobal2Int("Gemini:TopK", 30) .. ")")
+    self.ConfigPanel.Generation.Preview:Call("SetTopP(" .. GetGlobal2Float("Gemini:TopP", 0.5) .. ")")
+
+    self.ConfigPanel.Generation.Options = vgui.Create( "DScrollPanel", self.ConfigPanel.Generation )
+    self.ConfigPanel.Generation.Options:Dock( FILL )
+    self.ConfigPanel.Generation.Options:DockMargin( 0, 0, 0, 0 )
+    self.ConfigPanel.Generation.Options.Paint = BackgroundPaint
+
+    self.ConfigPanel.Generation.Options.Label = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.Label:Dock( TOP )
+    self.ConfigPanel.Generation.Options.Label:DockMargin( 10, 10, 10, 0 )
+    self.ConfigPanel.Generation.Options.Label:SetText( Gemini:GetPhrase("Config.Generation") )
+    self.ConfigPanel.Generation.Options.Label:SetFont("Frutiger:Big")
+    self.ConfigPanel.Generation.Options.Label:SetHeight( 40 )
+
+    self.ConfigPanel.Generation.Options.TemperatureTitle = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.TemperatureTitle:Dock( TOP )
+    self.ConfigPanel.Generation.Options.TemperatureTitle:DockMargin( 10, 10, 10, 0 )
+    self.ConfigPanel.Generation.Options.TemperatureTitle:SetText( Gemini:GetPhrase("Config.Generation.Temperature") )
+    self.ConfigPanel.Generation.Options.TemperatureTitle:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Generation.Options.Temperature = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.Temperature:Dock( TOP )
+    self.ConfigPanel.Generation.Options.Temperature:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.Generation.Options.Temperature:SetText( Gemini:GetPhrase("Config.Generation.Temperature") )
+    self.ConfigPanel.Generation.Options.Temperature:SetMin( 0 )
+    self.ConfigPanel.Generation.Options.Temperature:SetMax( 1 )
+    self.ConfigPanel.Generation.Options.Temperature:SetDecimals( 2 )
+    self.ConfigPanel.Generation.Options.Temperature:SetValue( GetGlobal2Float("Gemini:Temperature", 0.5) )
+    self.ConfigPanel.Generation.Options.Temperature.Scratch:SetWide( 8 )
+
+    self.ConfigPanel.Generation.Options.Temperature.OnValueChanged = function( SubSelf, fVal )
+        self.ConfigPanel.Generation.Preview:Call("SetTemperature(" .. fVal .. ")")
+    end
+
+    self.ConfigPanel.Generation.Options.TopKTitle = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.TopKTitle:Dock( TOP )
+    self.ConfigPanel.Generation.Options.TopKTitle:DockMargin( 10, 10, 10, 0 )
+    self.ConfigPanel.Generation.Options.TopKTitle:SetText( Gemini:GetPhrase("Config.Generation.TopK") )
+    self.ConfigPanel.Generation.Options.TopKTitle:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Generation.Options.TopK = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.TopK:Dock( TOP )
+    self.ConfigPanel.Generation.Options.TopK:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.Generation.Options.TopK:SetText( Gemini:GetPhrase("Config.Generation.TopK") )
+    self.ConfigPanel.Generation.Options.TopK:SetMin( 1 )
+    self.ConfigPanel.Generation.Options.TopK:SetMax( 100 )
+    self.ConfigPanel.Generation.Options.TopK:SetDecimals( 0 )
+    self.ConfigPanel.Generation.Options.TopK:SetValue( GetGlobal2Int("Gemini:TopK", 30) )
+
+    self.ConfigPanel.Generation.Options.TopK.OnValueChanged = function( SubSelf, iVal )
+        self.ConfigPanel.Generation.Preview:Call("SetTopK(" .. iVal .. ")")
+    end
+
+    self.ConfigPanel.Generation.Options.TopPTitle = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.TopPTitle:Dock( TOP )
+    self.ConfigPanel.Generation.Options.TopPTitle:DockMargin( 10, 10, 10, 0 )
+    self.ConfigPanel.Generation.Options.TopPTitle:SetText( Gemini:GetPhrase("Config.Generation.TopP") )
+    self.ConfigPanel.Generation.Options.TopPTitle:SetFont("HudHintTextLarge")
+
+    self.ConfigPanel.Generation.Options.TopP = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.TopP:Dock( TOP )
+    self.ConfigPanel.Generation.Options.TopP:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.Generation.Options.TopP:SetText( Gemini:GetPhrase("Config.Generation.TopP") )
+    self.ConfigPanel.Generation.Options.TopP:SetMin( 0 )
+    self.ConfigPanel.Generation.Options.TopP:SetMax( 1 )
+    self.ConfigPanel.Generation.Options.TopP:SetDecimals( 2 )
+    self.ConfigPanel.Generation.Options.TopP:SetValue( GetGlobal2Float("Gemini:TopP", 0.5) )
+
+    self.ConfigPanel.Generation.Options.TopP.OnValueChanged = function( SubSelf, fVal )
+        self.ConfigPanel.Generation.Preview:Call("SetTopP(" .. fVal .. ")")
+    end
+
+    self.Items["Generation"] = self.ConfigPanel:AddSheet( Gemini:GetPhrase("Config.Generation"), self.ConfigPanel.Generation, GENERATION_ICON )
 
     --[[------------------------
                 Style

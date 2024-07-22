@@ -204,7 +204,7 @@ local function DeleteOnCloseFunc(SelfPanel)
 end
 
 function GEMINIPANEL:Close()
-    if ispanel(self.ACTIVE_PANEL) and IsValid(self.ACTIVE_PANEL.__MODULE) and isfunction(self.ACTIVE_PANEL.__MODULE.OnLostFocus) then
+    if ispanel(self.ACTIVE_PANEL) and self.ACTIVE_PANEL.__MODULE and isfunction(self.ACTIVE_PANEL.__MODULE.OnLostFocus) then
         self.ACTIVE_PANEL.__MODULE:OnLostFocus(self, self.Tabs)
     end
 

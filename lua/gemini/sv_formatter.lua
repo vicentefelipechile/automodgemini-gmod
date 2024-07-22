@@ -322,7 +322,7 @@ end)
         Command Test
 ------------------------]]--
 
-concommand.Add("gemini_formattertest", function(ply)
+concommand.Add("gemini_testformatter", function(ply)
     if IsValid(ply) then return end
 
     if not Gemini:FormatterExists("ServerInfo") then

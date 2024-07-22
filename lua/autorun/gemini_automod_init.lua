@@ -578,6 +578,7 @@ function Gemini:PreInit()
         include("gemini/sv_train.lua")          self:Print("File \"gemini/sv_train.lua\" has been loaded.")
         include("gemini/sv_playground.lua")     self:Print("File \"gemini/sv_playground.lua\" has been loaded.")
         include("gemini/sv_formatter.lua")      self:Print("File \"gemini/sv_formatter.lua\" has been loaded.")
+        include("gemini/sv_image.lua")          self:Print("File \"gemini/sv_image.lua\" has been loaded.")
     else
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
@@ -623,6 +624,12 @@ function Gemini:Init()
             self:FormatterPoblate()
         else
             self:Error([[The function "FormatterPoblate" has been replaced by another third-party addon!!!]], self.FormatterPoblate, "function")
+        end
+
+        if isfunction(self.ImagePoblate) then
+            self:ImagePoblate()
+        else
+            self:Error([[The function "ImagePoblate" has been replaced by another third-party addon!!!]], self.ImagePoblate, "function")
         end
 
         -- AddCSLua file to all files inside "gemini/module"

@@ -27,12 +27,6 @@ local ipairs = ipairs
 ------------------------]]--
 
 local CachedModels = CachedModels or {} -- After the game loads, we will add the models
-local DefaultSafetySettings = {
-    HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    HARM_CATEGORY_DANGEROUS_CONTENT,
-    HARM_CATEGORY_HARASSMENT,
-    HARM_CATEGORY_HATE_SPEECH
-}
 
 --[[------------------------
       Allowed Constants
@@ -102,9 +96,9 @@ end
 
 local GEMINI_OOP = {
     __requestbody = {
-        ["contents"] = {},
+        ["generationConfig"] = {},
         ["safetySettings"] = {},
-        ["generationConfig"] = {}
+        ["contents"] = {}
     },
     __resturl = "https://generativelanguage.googleapis.com/$REST_VER$/$METHOD$",
     __restver = "v1beta",
@@ -112,6 +106,7 @@ local GEMINI_OOP = {
     __params = {},
     __httpmethod = "POST",
     __silent = false,
+    __outputjson = false,
 }
 
 --[[------------------------
@@ -120,33 +115,33 @@ local GEMINI_OOP = {
 
 function GEMINI_OOP:AddContent(Part, Role)
     if isstring(Part) then
-        Part = {{ ["text"] = Part }}
+        Part = { ["text"] = Part }
     end
 
     if not istable(Part) then
         Gemini:Error("The first argument of GEMINI_OOP:AddContent must be a table.", Part, "table")
     elseif table_IsEmpty(Part) then
         Gemini:Error("The first argument of GEMINI_OOP:AddContent must not be empty.", Part, "table")
-    elseif not table_IsSequential(Part) then
-        Gemini:Error("The first argument of GEMINI_OOP:AddContent must be an array.", Part, "table[Array]")
     end
 
-    for index, SubPart in ipairs(Part) do -- This maybe can be expensive
-        if not isstring(SubPart["text"]) then
-            Gemini:Error("There is not valid string in " .. index .. " of the first argument of GEMINI_OOP:AddContent.", SubPart, "table[text]")
-        end
-
-        if ( SubPart["inlineData"] ~= nil ) then -- There is a blob data
-            if not isstring(SubPart["inlineData"]["mimeType"]) then
-                Gemini:Error("The mimeType of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent must be a string.", SubPart, "table[inlineData][mimeType]")
-            elseif not AllowedMimeType[SubPart["inlineData"]["mimeType"]] then
-                Gemini:Error("The mimeType of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent is not allowed.", SubPart, "table[inlineData][mimeType]")
+    if table_IsSequential(Part) then
+        for index, SubPart in ipairs(Part) do -- This maybe can be expensive
+            if not isstring(SubPart["text"]) then
+                Gemini:Error("There is not valid string in " .. index .. " of the first argument of GEMINI_OOP:AddContent.", SubPart, "table[text]")
             end
 
-            if not isstring(SubPart["inlineData"]["data"]) then
-                Gemini:Error("The data of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent must be a string.", SubPart, "table[inlineData][data]")
-            elseif ( #SubPart["inlineData"]["data"] == 0 ) then
-                Gemini:Error("The data of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent must not be empty.", SubPart, "table[inlineData][data]")
+            if ( SubPart["inlineData"] ~= nil ) then -- There is a blob data
+                if not isstring(SubPart["inlineData"]["mimeType"]) then
+                    Gemini:Error("The mimeType of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent must be a string.", SubPart, "table[inlineData][mimeType]")
+                elseif not AllowedMimeType[SubPart["inlineData"]["mimeType"]] then
+                    Gemini:Error("The mimeType of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent is not allowed.", SubPart, "table[inlineData][mimeType]")
+                end
+
+                if not isstring(SubPart["inlineData"]["data"]) then
+                    Gemini:Error("The data of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent must be a string.", SubPart, "table[inlineData][data]")
+                elseif ( #SubPart["inlineData"]["data"] == 0 ) then
+                    Gemini:Error("The data of the inlineData in " .. index .. " of the first argument of GEMINI_OOP:AddContent must not be empty.", SubPart, "table[inlineData][data]")
+                end
             end
         end
     end
@@ -204,6 +199,10 @@ end
 
 function GEMINI_OOP:GetSafetySettings()
     return table_Copy(self.__requestbody["safetySettings"])
+end
+
+function GEMINI_OOP:ClearSafetySettings()
+    self.__requestbody["safetySettings"] = {}
 end
 
 function GEMINI_OOP:SetVersion(Version)
@@ -268,31 +267,16 @@ function GEMINI_OOP:Silent()
     self.__silent = true
 end
 
+function GEMINI_OOP:ResponseWithJson()
+    self.__outputjson = true
+end
+
 function GEMINI_OOP:MakeRequest()
     local RequestBody = util_TableToJSON(self.__requestbody)
     local RequestURL = string_Replace(self.__resturl, "$REST_VER$", self.__restver)
     RequestURL = string_Replace(RequestURL, "$METHOD$", self.__method) .. "?"
 
     local IsGeneratingContent = not not string.find(RequestURL, ":generateContent")
-
-    --[[ Safety Settings ]]--
-    if istable(self.__requestbody["safetySettings"]) then
-        for _, SafetySetting in pairs(DefaultSafetySettings) do
-            if self.__requestbody["safetySettings"][SafetySetting] == nil then
-                self:SetSafetySettings(SafetySetting, HARM_BLOCK_THRESHOLD_UNSPECIFIED)
-            end
-        end
-
-        local OldTable = table_Copy(self.__requestbody["safetySettings"])
-        self.__requestbody["safetySettings"] = {}
-
-        for SafetySetting, Level in pairs(OldTable) do
-            table.insert(self.__requestbody["safetySettings"], {
-                ["category"] = SafetySetting,
-                ["threshold"] = Level
-            })
-        end
-    end
 
     --[[ Params ]]--
     self:AddParam({
@@ -307,7 +291,8 @@ function GEMINI_OOP:MakeRequest()
     --[[ URL Request ]]--
     RequestURL = RequestURL:sub(1, -2)
 
-    file.Write("gemini/debug/gemini_request.txt", util_TableToJSON(self.__requestbody, true))
+    file.Write("gemini/debug/gemini_request.json", util_TableToJSON(self.__requestbody, true))
+    file.Write("gemini/debug/gemini_request_raw.json", util_TableToJSON(self, true))
 
     local promise = Promise()
     HTTP({
@@ -319,7 +304,8 @@ function GEMINI_OOP:MakeRequest()
                 Gemini:GetHTTPDescription(Code)
             end
 
-            file.Write("gemini/debug/gemini_response.txt", Body)
+            file.Write("gemini/debug/gemini_response.json", Body)
+            file.Write("gemini/debug/gemini_response_headers.json", util_TableToJSON(Headers, true))
             local BodyTable = util_JSONToTable(Body)
 
             if not ( Code >= 200 and Code < 300 ) then
@@ -398,7 +384,11 @@ end)
 ------------------------]]--
 
 function Gemini:NewRequest()
-    return table_Copy(GEMINI_OOP)
+    local NewRequest = table_Copy(GEMINI_OOP)
+    NewRequest.__requestbody["generationConfig"] = Gemini:GeminiGetGeneration()
+    NewRequest.__requestbody["safetySettings"] = Gemini:GeminiGetSafety()
+
+    return NewRequest
 end
 
 function Gemini:GetModels()
