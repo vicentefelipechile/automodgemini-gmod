@@ -140,11 +140,7 @@ function Gemini:CanUse(ply, permission)
         self:Error("The first argument of Gemini:CanUse() must be a valid player entity.", ply, "player")
     end
 
-    if not isstring(permission) then
-        self:Error("The second argument of Gemini:CanUse() must be a string.", permission, "string")
-    elseif permission == "" then
-        self:Error("The second argument of Gemini:CanUse() must not be an empty string.", permission, "string")
-    end
+    self:Checker({permission, "string", 2})
 
     local CanUse = false
 

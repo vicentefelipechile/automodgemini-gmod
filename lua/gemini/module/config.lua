@@ -7,15 +7,8 @@ local CurrentModel = CurrentModel or {}
 
 local MODULE = { ["Icon"] = "icon16/cog.png" }
 
-local GCLOUD_ICON = "materials/gemini/gcloud.png"
 local GENERATION_ICON = "icon16/page_white_gear.png"
-local CONFIG_ICON = "icon16/cog.png"
-
-local BackgroundColor = Color( 45, 45, 45 )
-local OutlineColor = Color( 80, 80, 80, 200 )
-local OutlineColorOpaque = Color( 80, 80, 80 )
-
-local OutlineWidth = 3
+local CONFIG_ICON = "gemini/gemini_icon.png"
 
 local function FN(n)
     return string.Comma(n, ".")
@@ -31,8 +24,25 @@ local DefaultModelTbl = {
 local HTMLCONFIG = include("config/gemini_spread.html.lua")
 
 --[[------------------------
-          Functions
+      Generation Config
 ------------------------]]--
+
+local GENERATION_CONFIG = {
+    { ["Name"] = "Temperature", ["Decimals"] = 2, ["Min"] = 0, ["Max"] = 1 },
+    { ["Name"] = "TopK", ["Decimals"] = 0, ["Min"] = 1, ["Max"] = 100 },
+    { ["Name"] = "TopP", ["Decimals"] = 2, ["Min"] = 0, ["Max"] = 1 }
+}
+
+--[[------------------------
+       Paint Functions
+------------------------]]--
+
+local BackgroundColor = Color( 45, 45, 45 )
+local OutlineColor = Color( 80, 80, 80, 200 )
+local OutlineColorOpaque = Color( 80, 80, 80 )
+local HoverLineColor = Color( 1, 129, 123)
+
+local OutlineWidth = 3
 
 local function BackgroundPaint(self, w, h)
     draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
@@ -50,6 +60,14 @@ end
 
 local function DComboBoxPaint( SubSelf, SubPanel )
     SubPanel.Paint = SubDComboBoxPaint
+end
+
+local ScrollbarPaint = function(self, w, h)
+    draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+
+    if self:IsHovered() then
+        draw.RoundedBox( 0, 0, 0, w, h, HoverLineColor )
+    end
 end
 
 --[[------------------------
@@ -86,6 +104,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel = vgui.Create( "DColumnSheet", OurTab )
     self.ConfigPanel:Dock( FILL )
     self.ConfigPanel:DockMargin( 5, 5, 5, 5 )
+
+    --[[------------------------
+               Gemini
+    ------------------------]]--
 
     --[[------------------------
                Gemini
@@ -345,7 +367,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.ConfigPanel.Generation.Preview = vgui.Create( "DHTML", self.ConfigPanel.Generation )
     self.ConfigPanel.Generation.Preview:Dock( RIGHT )
-    self.ConfigPanel.Generation.Preview:DockMargin( 10, 30, 10, 30 )
+    self.ConfigPanel.Generation.Preview:DockMargin( 0, OutlineWidth, OutlineWidth, OutlineWidth )
     self.ConfigPanel.Generation.Preview:SetWide( 240 )
     self.ConfigPanel.Generation.Preview:SetHTML( HTMLCONFIG )
     self.ConfigPanel.Generation.Preview:Call("SetResolution(250," .. self.ConfigPanel.Generation.Preview:GetTall() .. ")")
@@ -358,70 +380,100 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Generation.Options:DockMargin( 0, 0, 0, 0 )
     self.ConfigPanel.Generation.Options.Paint = BackgroundPaint
 
-    self.ConfigPanel.Generation.Options.Label = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.Label:Dock( TOP )
-    self.ConfigPanel.Generation.Options.Label:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Generation.Options.Label:SetText( Gemini:GetPhrase("Config.Generation") )
-    self.ConfigPanel.Generation.Options.Label:SetFont("Frutiger:Big")
-    self.ConfigPanel.Generation.Options.Label:SetHeight( 40 )
+    self.ConfigPanel.Generation.Options.Header = vgui.Create( "DPanel", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.Header:Dock( TOP )
+    self.ConfigPanel.Generation.Options.Header:DockMargin( 10, 10, 10, 20 )
+    self.ConfigPanel.Generation.Options.Header:SetHeight( 40 )
+    self.ConfigPanel.Generation.Options.Header.Paint = Gemini.Util.ReturnNoneFunction
 
-    self.ConfigPanel.Generation.Options.TemperatureTitle = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.TemperatureTitle:Dock( TOP )
-    self.ConfigPanel.Generation.Options.TemperatureTitle:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Generation.Options.TemperatureTitle:SetText( Gemini:GetPhrase("Config.Generation.Temperature") )
-    self.ConfigPanel.Generation.Options.TemperatureTitle:SetFont("HudHintTextLarge")
+    self.ConfigPanel.Generation.Options.Header.Title = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options.Header )
+    self.ConfigPanel.Generation.Options.Header.Title:Dock( FILL )
+    self.ConfigPanel.Generation.Options.Header.Title:DockMargin( 10, 0, 0, 0 )
+    self.ConfigPanel.Generation.Options.Header.Title:SetText( Gemini:GetPhrase("Config.Generation") )
+    self.ConfigPanel.Generation.Options.Header.Title:SetFont("Frutiger:Big")
 
-    self.ConfigPanel.Generation.Options.Temperature = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.Temperature:Dock( TOP )
-    self.ConfigPanel.Generation.Options.Temperature:DockMargin( 10, 10, 10, 10 )
-    self.ConfigPanel.Generation.Options.Temperature:SetText( Gemini:GetPhrase("Config.Generation.Temperature") )
-    self.ConfigPanel.Generation.Options.Temperature:SetMin( 0 )
-    self.ConfigPanel.Generation.Options.Temperature:SetMax( 1 )
-    self.ConfigPanel.Generation.Options.Temperature:SetDecimals( 2 )
-    self.ConfigPanel.Generation.Options.Temperature:SetValue( GetGlobal2Float("Gemini:Temperature", 0.5) )
-    self.ConfigPanel.Generation.Options.Temperature.Scratch:SetWide( 8 )
+    self.ConfigPanel.Generation.Options.Header.ApplyButton = vgui.Create( "DButton", self.ConfigPanel.Generation.Options.Header )
+    self.ConfigPanel.Generation.Options.Header.ApplyButton:Dock( RIGHT )
+    self.ConfigPanel.Generation.Options.Header.ApplyButton:DockMargin( 0, 0, 10, 0 )
+    self.ConfigPanel.Generation.Options.Header.ApplyButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Save") )
+    self.ConfigPanel.Generation.Options.Header.ApplyButton:SetWide( 100 )
 
-    self.ConfigPanel.Generation.Options.Temperature.OnValueChanged = function( SubSelf, fVal )
-        self.ConfigPanel.Generation.Preview:Call("SetTemperature(" .. fVal .. ")")
+    self.ConfigPanel.Generation.Options.Header.ApplyButton.DoClick = function( SubSelf )
+        local NewGeneration = {}
+        for _, GenerationTbl in ipairs(GENERATION_CONFIG) do
+            NewGeneration[GenerationTbl["Name"]] = self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:GetValue()
+
+            if ( GenerationTbl["Decimals"] == 0 ) then
+                NewGeneration[GenerationTbl["Name"]] = math.Round( NewGeneration[GenerationTbl["Name"]] )
+            else
+                NewGeneration[GenerationTbl["Name"]] = math.Round( NewGeneration[GenerationTbl["Name"]], GenerationTbl["Decimals"] )
+            end
+
+            NewGeneration[GenerationTbl["Name"]] = math.Clamp( NewGeneration[GenerationTbl["Name"]], GenerationTbl["Min"], GenerationTbl["Max"] )
+        end
+
+        if Gemini:CanUse("gemini_config_set") then
+            net.Start("Gemini:SetGeminiGeneration")
+                net.WriteTable( NewGeneration )
+            net.SendToServer()
+        end
     end
 
-    self.ConfigPanel.Generation.Options.TopKTitle = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.TopKTitle:Dock( TOP )
-    self.ConfigPanel.Generation.Options.TopKTitle:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Generation.Options.TopKTitle:SetText( Gemini:GetPhrase("Config.Generation.TopK") )
-    self.ConfigPanel.Generation.Options.TopKTitle:SetFont("HudHintTextLarge")
+    for index, GenerationTbl in ipairs(GENERATION_CONFIG) do
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Title"] = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Title"]:Dock( TOP )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Title"]:DockMargin( 10, 10, 10, 0 )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Title"]:SetText( Gemini:GetPhrase("Config.Generation." .. GenerationTbl["Name"]) )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Title"]:SetFont("HudHintTextLarge")
 
-    self.ConfigPanel.Generation.Options.TopK = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.TopK:Dock( TOP )
-    self.ConfigPanel.Generation.Options.TopK:DockMargin( 10, 10, 10, 10 )
-    self.ConfigPanel.Generation.Options.TopK:SetText( Gemini:GetPhrase("Config.Generation.TopK") )
-    self.ConfigPanel.Generation.Options.TopK:SetMin( 1 )
-    self.ConfigPanel.Generation.Options.TopK:SetMax( 100 )
-    self.ConfigPanel.Generation.Options.TopK:SetDecimals( 0 )
-    self.ConfigPanel.Generation.Options.TopK:SetValue( GetGlobal2Int("Gemini:TopK", 30) )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]] = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:Dock( TOP )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:DockMargin( 10, 10, 10, 10 )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:SetText( Gemini:GetPhrase("Config.Generation." .. GenerationTbl["Name"]) )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:SetMin( GenerationTbl["Min"] )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:SetMax( GenerationTbl["Max"] )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:SetDecimals( GenerationTbl["Decimals"] )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]]:SetValue( GetGlobal2Float("Gemini:" .. GenerationTbl["Name"], 0.5) )
 
-    self.ConfigPanel.Generation.Options.TopK.OnValueChanged = function( SubSelf, iVal )
-        self.ConfigPanel.Generation.Preview:Call("SetTopK(" .. iVal .. ")")
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"]].OnValueChanged = function( SubSelf, fVal )
+            self.ConfigPanel.Generation.Preview:Call("Set" .. GenerationTbl["Name"] .. "(" .. fVal .. ")")
+        end
+
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "High"] = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "High"]:Dock( TOP )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "High"]:DockMargin( 10, 0, 10, 12 )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "High"]:SetText( Gemini:GetPhrase("Config.Generation." .. GenerationTbl["Name"] .. ".High") )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "High"]:SetWrap(true)
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "High"]:SetAutoStretchVertical(true)
+
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Low"] = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Low"]:Dock( TOP )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Low"]:DockMargin( 10, 0, 10, 24 )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Low"]:SetText( Gemini:GetPhrase("Config.Generation." .. GenerationTbl["Name"] .. ".Low") )
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Low"]:SetWrap(true)
+        self.ConfigPanel.Generation.Options[GenerationTbl["Name"] .. "Low"]:SetAutoStretchVertical(true)
+
+        if ( index ~= #GENERATION_CONFIG ) then
+            local BHorizonalLine = vgui.Create( "DPanel", self.ConfigPanel.Generation.Options )
+            BHorizonalLine:Dock( TOP )
+            BHorizonalLine:DockMargin( 10, 8, 10, 8 )
+            BHorizonalLine:SetTall( 2 )
+            BHorizonalLine.Paint = function( SubSelf, w, h )
+                draw.RoundedBox( 0, 0, 0, w, h, OutlineColor )
+            end
+        end
     end
 
-    self.ConfigPanel.Generation.Options.TopPTitle = vgui.Create( "DLabel", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.TopPTitle:Dock( TOP )
-    self.ConfigPanel.Generation.Options.TopPTitle:DockMargin( 10, 10, 10, 0 )
-    self.ConfigPanel.Generation.Options.TopPTitle:SetText( Gemini:GetPhrase("Config.Generation.TopP") )
-    self.ConfigPanel.Generation.Options.TopPTitle:SetFont("HudHintTextLarge")
+    -- Empty space
+    self.ConfigPanel.Generation.Options.EmptyContent = vgui.Create( "DPanel", self.ConfigPanel.Generation.Options )
+    self.ConfigPanel.Generation.Options.EmptyContent:SetTall( 70 )
+    self.ConfigPanel.Generation.Options.EmptyContent:Dock( TOP )
+    self.ConfigPanel.Generation.Options.EmptyContent.Paint = Gemini.Util.ReturnNoneFunction
 
-    self.ConfigPanel.Generation.Options.TopP = vgui.Create( "DNumSlider", self.ConfigPanel.Generation.Options )
-    self.ConfigPanel.Generation.Options.TopP:Dock( TOP )
-    self.ConfigPanel.Generation.Options.TopP:DockMargin( 10, 10, 10, 10 )
-    self.ConfigPanel.Generation.Options.TopP:SetText( Gemini:GetPhrase("Config.Generation.TopP") )
-    self.ConfigPanel.Generation.Options.TopP:SetMin( 0 )
-    self.ConfigPanel.Generation.Options.TopP:SetMax( 1 )
-    self.ConfigPanel.Generation.Options.TopP:SetDecimals( 2 )
-    self.ConfigPanel.Generation.Options.TopP:SetValue( GetGlobal2Float("Gemini:TopP", 0.5) )
-
-    self.ConfigPanel.Generation.Options.TopP.OnValueChanged = function( SubSelf, fVal )
-        self.ConfigPanel.Generation.Preview:Call("SetTopP(" .. fVal .. ")")
-    end
+    -- Scrollbar paint
+    self.ConfigPanel.Generation.Options.VBar.Paint = Gemini.Util.ReturnNoneFunction
+    self.ConfigPanel.Generation.Options.VBar.btnGrip.Paint = ScrollbarPaint
+    self.ConfigPanel.Generation.Options.VBar:SetHideButtons( true )
 
     self.Items["Generation"] = self.ConfigPanel:AddSheet( Gemini:GetPhrase("Config.Generation"), self.ConfigPanel.Generation, GENERATION_ICON )
 

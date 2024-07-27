@@ -34,17 +34,8 @@ end)
 ------------------------]]--
 
 function Gemini:Formatter(InputText, Formatter)
-    if not isstring(InputText) then
-        self:Error("The first argument of Gemini:Formatter must be a string", InputText, "string")
-    elseif ( #InputText == 0 ) then
-        self:Error("The first argument of Gemini:Formatter must not be empty", InputText, "string")
-    end
-
-    if not isstring(Formatter) then
-        self:Error("The second argument of Gemini:Formatter must be a string", Formatter, "string")
-    elseif ( #Formatter == 0 ) then
-        self:Error("The second argument of Gemini:Formatter must not be empty", Formatter, "string")
-    end
+    self:Checker({InputText, "string", 1})
+    self:Checker({Formatter, "string", 2})
 
     if not FormatterTypes[Formatter] then
         self:Error("The formatter does not exist", Formatter, "string")
@@ -64,21 +55,13 @@ function Gemini:Formatter(InputText, Formatter)
 end
 
 function Gemini:FormatterExists(Formatter)
-    if not isstring(Formatter) then
-        self:Error("The first argument of Gemini:FormatterExists must be a string", Formatter, "string")
-    elseif ( #Formatter == 0 ) then
-        self:Error("The first argument of Gemini:FormatterExists must not be empty", Formatter, "string")
-    end
+    self:Checker({Formatter, "string", 1})
 
     return FormatterTypes[Formatter] ~= nil
 end
 
 function Gemini:GetFormatter(Formatter)
-    if not isstring(Formatter) then
-        self:Error("The first argument of Gemini:GetFormatter must be a string", Formatter, "string")
-    elseif ( #Formatter == 0 ) then
-        self:Error("The first argument of Gemini:GetFormatter must not be empty", Formatter, "string")
-    end
+    self:Checker({Formatter, "string", 1})
 
     if not FormatterTypes[Formatter] then
         self:Error("The formatter does not exist", Formatter, "string")
@@ -93,17 +76,8 @@ end
 ------------------------]]--
 
 function Gemini:LoadFormatterFromURL(URL, Formatter, Cache) -- First function with a promise
-    if not isstring(URL) then
-        self:Error("The first argument of Gemini:LoadFormatterFromURL must be a string", URL, "string")
-    elseif ( #URL == 0 ) then
-        self:Error("The first argument of Gemini:LoadFormatterFromURL must not be empty", URL, "string")
-    end
-
-    if not isstring(Formatter) then
-        self:Error("The second argument of Gemini:LoadFormatterFromURL must be a string", Formatter, "string")
-    elseif ( #Formatter == 0 ) then
-        self:Error("The second argument of Gemini:LoadFormatterFromURL must not be empty", Formatter, "string")
-    end
+    self:Checker({URL, "string", 1})
+    self:Checker({Formatter, "string", 2})
 
     if not string.match(URL, HTTPRegExp) then
         self:Error("The URL is not valid", URL, "string")
@@ -182,17 +156,8 @@ function Gemini:LoadFormatterFromURL(URL, Formatter, Cache) -- First function wi
 end
 
 function Gemini:LoadFormatterFromFile(FilePath, Formatter)
-    if not isstring(FilePath) then
-        self:Error("The first argument of Gemini:LoadFormatterFromFile must be a string", FilePath, "string")
-    elseif ( #FilePath == 0 ) then
-        self:Error("The first argument of Gemini:LoadFormatterFromFile must not be empty", FilePath, "string")
-    end
-
-    if not isstring(Formatter) then
-        self:Error("The second argument of Gemini:LoadFormatterFromFile must be a string", Formatter, "string")
-    elseif ( #Formatter == 0 ) then
-        self:Error("The second argument of Gemini:LoadFormatterFromFile must not be empty", Formatter, "string")
-    end
+    self:Checker({FilePath, "string", 1})
+    self:Checker({Formatter, "string", 2})
 
     if not file.Exists(FilePath, "DATA") then
         self:Error("The file does not exist", FilePath, "string")
@@ -227,21 +192,13 @@ function Gemini:BroadcastFormatterToPlayer(ply, Formatter, Text)
         self:Error("The first argument of Gemini:BroadcastFormatterToPlayer must be a player", ply, "player")
     end
 
-    if not isstring(Formatter) then
-        self:Error("The second argument of Gemini:BroadcastFormatterToPlayer must be a string", Formatter, "string")
-    elseif ( #Formatter == 0 ) then
-        self:Error("The second argument of Gemini:BroadcastFormatterToPlayer must not be empty", Formatter, "string")
-    end
+    self:Checker({Formatter, "string", 2})
 
     if not FormatterTypes[Formatter] then
         self:Error("The formatter does not exist", Formatter, "string")
     end
 
-    if not isstring(Text) then
-        self:Error("The third argument of Gemini:BroadcastFormatterToPlayer must be a string", Text, "string")
-    elseif ( #Text == 0 ) then
-        self:Error("The third argument of Gemini:BroadcastFormatterToPlayer must not be empty", Text, "string")
-    end
+    self:Checker({Text, "string", 3})
 
     local CompressedText = util.Compress(Text)
     local CompressedSize = #CompressedText

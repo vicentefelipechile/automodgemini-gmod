@@ -260,21 +260,27 @@ for _, File in ipairs(file.Find("gemini/module/*.lua", "LUA")) do
 end
 
 --[[------------------------
-          Debugging
+          Commands
 ------------------------]]--
 
+local CURRENT_PANEL = CURRENT_PANEL or nil
 concommand.Add("gemini_panel", function()
     if ( ScrW() < 800 ) or ( ScrH() < 600 ) then
         chat.AddText("The screen resolution is too small to open the config panel.")
     else
-        vgui.Create("Gemini:ConfigPanel")
+        CURRENT_PANEL = vgui.Create("Gemini:ConfigPanel")
     end
 end)
 
--- on say !config
 hook.Add("OnPlayerChat", "Gemini:ConfigPanel", function(ply, text)
     if ( ply == LocalPlayer() ) and ( string.Trim(text) == "!gemini" ) then
         RunConsoleCommand("gemini_panel")
         return true
+    end
+end)
+
+hook.Add("Gemini:PreInit", "Gemini:ForceClose", function()
+    if ispanel(CURRENT_PANEL) and CURRENT_PANEL:IsVisible() then
+        CURRENT_PANEL:Close()
     end
 end)

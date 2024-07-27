@@ -52,11 +52,7 @@ end
 ------------------------]]--
 
 function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
-    if not isstring(Prompt) then
-        self:Error("The first argument of Gemini:PlaygroundMakeRequest() must be a string.", Prompt, "string")
-    elseif ( Prompt == "" ) then
-        self:Error("The first argument of Gemini:PlaygroundMakeRequest() must not be empty.", Prompt, "string")
-    end
+    self:Checker({Prompt, "string", 1})
 
     local NewRequest = self:NewRequest()
 
@@ -64,15 +60,15 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
         local content = NewRequest:AddContent(Prompt, "user")
         table.insert(PlayerUsingPlayground[ply]["contents"], content)
 
-        NewRequest.__requestbody = PlayerUsingPlayground[ply]
+        NewRequest:SetBody( PlayerUsingPlayground[ply] )
     else
         local PlayerWantToAttachContext = self:GetPlayerInfo(ply, AttachContext)
         if PlayerWantToAttachContext then
             local Logs = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
-            NewRequest.__requestbody = self:GeminiCreateBodyRequest(Prompt, Logs)
+            NewRequest:SetBody( self:GeminiCreateBodyRequest(Prompt, Logs) )
         else
-            NewRequest.__requestbody = self:GeminiCreateBodyRequest(Prompt)
+            NewRequest:SetBody( self:GeminiCreateBodyRequest(Prompt) )
         end
 
         PlayerUsingPlayground[ply] = NewRequest:GetBody()
@@ -173,3 +169,8 @@ end
 net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
 net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlaygroundResetRequest)
 net.Receive("Gemini:AskLogs:Playground", Gemini.PlaygroundPlayerAskLogs)
+
+
+concommand.Add("gemini_displaychats", function()
+    PrintTable(PlayerUsingPlayground)
+end)

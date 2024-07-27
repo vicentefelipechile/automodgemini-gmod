@@ -181,6 +181,16 @@ function GEMINI_OOP:GetBody()
     return table_Copy(self.__requestbody)
 end
 
+function GEMINI_OOP:SetBody(NewBody)
+    if not istable(NewBody) then
+        Gemini:Error("The first argument of GEMINI_OOP:SetBody must be a table.", NewBody, "table")
+    elseif table_IsEmpty(NewBody) then
+        Gemini:Error("The first argument of GEMINI_OOP:SetBody must not be empty.", NewBody, "table")
+    end
+
+    self.__requestbody = NewBody
+end
+
 function GEMINI_OOP:SetSafetySettings(SafetySettings, Level)
     if not isstring(SafetySettings) then
         Gemini:Error("The first argument of GEMINI_OOP:SetSafetySettings must be a string.", SafetySettings, "Harm Category")
@@ -359,6 +369,12 @@ local function RetrieveModels()
         hook.Run("Gemini:ModelsReloaded", CachedModels)
     end):Catch(function(Error)
         Gemini:Print("Failed to retreive models. Error: " .. Error)
+
+        if file.Exists("gemini/gemini_models.json", "DATA") then
+            CachedModels = util_JSONToTable(file.Read("gemini/gemini_models.json", "DATA"))
+            Gemini:Print("Loading chached models.")
+        end
+
         hook.Run("Gemini:ModelsReloaded", CachedModels)
     end)
 end

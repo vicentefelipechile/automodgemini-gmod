@@ -7,6 +7,7 @@ include("gemini/gemini_object.lua")
 util.AddNetworkString("Gemini:SendGeminiModules")
 util.AddNetworkString("Gemini:SetGeminiModel")
 util.AddNetworkString("Gemini:SetGeminiSetting")
+util.AddNetworkString("Gemini:SetGeminiGeneration")
 
 local function OnlyThreeSafety(value)
     return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 4 )
@@ -19,7 +20,7 @@ end
 Gemini:CreateConfig("ModelName",    "Gemini", Gemini.VERIFICATION_TYPE.string, "gemini-1.5-pro-latest")
 Gemini:CreateConfig("Temperature",  "Gemini", Gemini.VERIFICATION_TYPE.range,  0.9)
 Gemini:CreateConfig("TopP",         "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
-Gemini:CreateConfig("TopK",         "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
+Gemini:CreateConfig("TopK",         "Gemini", Gemini.VERIFICATION_TYPE.number, 1)
 Gemini:CreateConfig("MaxTokens",    "Gemini", Gemini.VERIFICATION_TYPE.number, 2048)
 Gemini:CreateConfig("APIKey",       "Gemini", Gemini.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
 
@@ -125,6 +126,15 @@ function Gemini:GeminiCreateCandidate()
 end
 
 function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
+    if isnumber(Logs) then
+        local TableLogs = self:LoggerGetLogsLimit(Logs)
+        local LogsFormat = {}
+        for _, LogInfo in ipairs(TableLogs) do
+            table.insert(LogsFormat, LogInfo["geminilog_time"] .. " - " .. LogInfo["geminilog_log"])
+        end
+        Logs = self:LogsToText(LogsFormat)
+    end
+
     local Candidate = self:GeminiCreateCandidate()
     local MainPrompt = CurrentLanguage.GeneratePrompt(
         self:GetServerInfo(),
@@ -142,11 +152,7 @@ function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
 end
 
 function Gemini:GenerateSimplePrompt(Prompt, Success, LogsAmount) -- BG
-    if not isstring(Prompt) then
-        self:Error("The first argument of Gemini:GenerateSimplePrompt() must be a string.", Prompt, "string")
-    elseif ( Prompt == "" ) then
-        self:Error("The first argument of Gemini:GenerateSimplePrompt() must not be empty.", Prompt, "string")
-    end
+    self:Checker({Prompt, "string", 1})
 
     if not isfunction(Success) then
         self:Error("The second argument of Gemini:GenerateSimplePrompt() must be a function.", Success, "function")
@@ -214,17 +220,26 @@ end)
        Hook Functions
 ------------------------]]--
 
+local GeminiConfigAllowedInAVeryGoodTable = {
+    ["ModelName"] =     function() SetGlobal2String("Gemini:ModelName", Gemini:GetConfig("ModelName", "Gemini")) end,
+    ["Temperature"] =   function() SetGlobal2Float("Gemini:Temperature", Gemini:GetConfig("Temperature", "Gemini")) end,
+    ["TopP"] =          function() SetGlobal2Float("Gemini:TopP", Gemini:GetConfig("TopP", "Gemini")) end,
+    ["TopK"] =          function() SetGlobal2Float("Gemini:TopK", Gemini:GetConfig("TopK", "Gemini")) end,
+    ["MaxTokens"] =     function() SetGlobal2Int("Gemini:MaxTokens", Gemini:GetConfig("MaxTokens", "Gemini")) end,
+    ["SafetyHarassment"] = function() SetGlobal2Int("Gemini:SafetyHarassment", Gemini:GetConfig("SafetyHarassment", "Gemini")) end,
+    ["SafetyHateSpeech"] = function() SetGlobal2Int("Gemini:SafetyHateSpeech", Gemini:GetConfig("SafetyHateSpeech", "Gemini")) end,
+    ["SafetySexuallyExplicit"] = function() SetGlobal2Int("Gemini:SafetySexuallyExplicit", Gemini:GetConfig("SafetySexuallyExplicit", "Gemini")) end,
+    ["SafetyDangerousContent"] = function() SetGlobal2Int("Gemini:SafetyDangerousContent", Gemini:GetConfig("SafetyDangerousContent", "Gemini")) end
+}
+
 hook.Add("Gemini:ConfigChanged", "Gemini:ReplicateGemini", function(Name, Category, Value, ConvarValue)
     if ( Category ~= "Gemini" ) then return end
     if ( string.lower(Name) == "apikey" ) then return end
 
-    local IsSafety = string.StartsWith(Name, "Safety")
-    if ( IsSafety == true ) then
-        SetGlobal2Int("Gemini:" .. Name, Value)
-    elseif isnumber(Value) then
-        SetGlobal2Int("Gemini:" .. Name, Value)
+    if ( GeminiConfigAllowedInAVeryGoodTable[Name] ) then
+        GeminiConfigAllowedInAVeryGoodTable[Name]()
     else
-        SetGlobal2String("Gemini:" .. Name, Value)
+        Gemini:Print("The config " .. Name .. " is not allowed to be replicated.")
     end
 end)
 
@@ -236,15 +251,9 @@ hook.Add("Gemini:ConfigChanged", "Gemini:APIKeyIsSetted", function(Name, Categor
 end)
 
 hook.Add("PostGamemodeLoaded", "Gemini:GeminiSetGlobal", function()
-    SetGlobal2String("Gemini:ModelName", Gemini:GetConfig("ModelName", "Gemini"))
-    SetGlobal2Float("Gemini:Temperature", Gemini:GetConfig("Temperature", "Gemini"))
-    SetGlobal2Float("Gemini:TopP", Gemini:GetConfig("TopP", "Gemini"))
-    SetGlobal2Float("Gemini:TopK", Gemini:GetConfig("TopK", "Gemini"))
-    SetGlobal2Int("Gemini:MaxTokens", Gemini:GetConfig("MaxTokens", "Gemini"))
-    SetGlobal2Int("Gemini:SafetyHarassment", Gemini:GetConfig("SafetyHarassment", "Gemini") )
-    SetGlobal2Int("Gemini:SafetyHateSpeech", Gemini:GetConfig("SafetyHateSpeech", "Gemini") )
-    SetGlobal2Int("Gemini:SafetySexuallyExplicit", Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") )
-    SetGlobal2Int("Gemini:SafetyDangerousContent", Gemini:GetConfig("SafetyDangerousContent", "Gemini") )
+    for Name, Func in pairs(GeminiConfigAllowedInAVeryGoodTable) do
+        Func()
+    end
 
     SetGlobal2Bool("Gemini:APIKeyEnabled", Gemini:GetConfig("APIKey", "Gemini") ~= "YOUR_API_KEY")
 end)
@@ -262,22 +271,24 @@ net.Receive("Gemini:SetGeminiModel", function(_, ply)
     Gemini:SetConfig("ModelName", "Gemini", ModelName)
 end)
 
-local AllowedSetting = {
-    ["Temperature"] = true,
-    ["TopP"] = true,
-    ["TopK"] = true,
-    ["MaxTokens"] = true,
-    ["SafetyHarassment"] = true,
-    ["SafetyHateSpeech"] = true,
-    ["SafetySexuallyExplicit"] = true,
-    ["SafetyDangerousContent"] = true
-}
 net.Receive("Gemini:SetGeminiSetting", function(_, ply)
     if ( not Gemini:CanUse(ply, "gemini_config_set") ) then return end
 
     local SettingName = net.ReadString()
-    if ( AllowedSetting[SettingName] == nil ) then return end
+    if ( GeminiConfigAllowedInAVeryGoodTable[SettingName] == nil ) then return end
 
     local SettingValue = net.ReadType(Gemini.Util.DefaultNetworkType[SettingName])
     Gemini:SetConfig(SettingName, "Gemini", SettingValue)
+end)
+
+net.Receive("Gemini:SetGeminiGeneration", function(_, ply)
+    if ( not Gemini:CanUse(ply, "gemini_config_set") ) then return end
+
+    local GenerationTable = net.ReadTable()
+    if ( not istable(GenerationTable) ) then return end
+
+    for SettingName, SettingValue in pairs(GenerationTable) do
+        if ( GeminiConfigAllowedInAVeryGoodTable[SettingName] == nil ) then continue end
+        Gemini:SetConfig(SettingName, "Gemini", SettingValue)
+    end
 end)

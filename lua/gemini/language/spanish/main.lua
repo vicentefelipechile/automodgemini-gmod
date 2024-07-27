@@ -139,7 +139,7 @@ local SandboxHooks = {
             local IsDead = remaininghealth <= 0
             local Result = IsDead and ( "esta muerto (" .. remaininghealth .. " de vida)" ) or ( "tiene " .. remaininghealth .. " de vida" )
 
-            return {ply:Name(), math.Round(damagetaken, 0), AttackerName, Result}
+            return {ply:Name(), AttackerName, math.Round(damagetaken, 0), Result}
         end
     },
     ["PlayerChangedTeam"] = {
@@ -200,13 +200,17 @@ local SandboxHooks = {
     ["OnPhysgunPickup"] = {
         ["Function"] = function(ply, ent)
             local EntPos = ent:GetPos()
-            return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+            local PhraseEnt = ent:IsPlayer() and "al jugador" or "la entidad"
+
+            return {ply:Name(), PhraseEnt, GetEntityName(ent), Gemini:VectorToString(EntPos)}
         end
     },
     ["PhysgunDrop"] = {
         ["Function"] = function(ply, ent)
             local EntPos = ent:GetPos()
-            return {ply:Name(), GetEntityName(ent), Gemini:VectorToString(EntPos)}
+            local PhraseEnt = ent:IsPlayer() and "al jugador" or "la entidad"
+
+            return {ply:Name(), PhraseEnt, GetEntityName(ent), Gemini:VectorToString(EntPos)}
         end
     },
     ["PlayerSay"] = {

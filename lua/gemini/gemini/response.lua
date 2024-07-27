@@ -2,6 +2,10 @@
                          Gemini Automod - Response Object
 ----------------------------------------------------------------------------]]-- BG
 
+-- When i was coding this Object, i added cache to the objects to avoid unnecessary calculations
+-- that was my worse mistake, the cache isn't stored on the new object, it's stored on the metatable.
+-- Thank god i was able to fix it.
+
 --[[------------------------
     Safety Rating Object
 ------------------------]]--
@@ -126,25 +130,18 @@ PART.__index = PART
 
 
 local CONTENT = {
-    __cache = {},
     parts = {},
     role = "model"
 }
 
 function CONTENT:GetParts()
-    if self.__cache["parts"] then
-        return self.__cache["parts"]
-    end
-
     local parts = {}
 
     for index, part in ipairs(self.parts) do
         table.insert(parts, setmetatable(part, PART))
     end
 
-    self.__cache["parts"] = parts
-
-    return self.__cache["parts"]
+    return parts
 end
 
 function CONTENT:GetFirstPart()
@@ -195,24 +192,17 @@ local CITATIONSOURCES = {
 CITATIONSOURCES.__index = CITATIONSOURCES
 
 local CITATIONMETADATA = {
-    __cache = {},
     citationSources = {}
 }
 
 function CITATIONMETADATA:GetSources()
-    if self.__cache["sources"] then
-        return self.__cache["sources"]
-    end
-
     local sources = {}
 
     for index, source in ipairs(self.citationSources) do
         table.insert(sources, setmetatable(source, CITATIONSOURCES))
     end
 
-    self.__cache["sources"] = sources
-
-    return self.__cache["sources"]
+    return sources
 end
 
 CITATIONMETADATA.__index = CITATIONMETADATA
@@ -224,7 +214,6 @@ CITATIONMETADATA.__index = CITATIONMETADATA
 ------------------------]]-- BG
 
 local CANDIDATE = {
-    __cache = {},
     content = {},
     finishReason = FINISH_REASON_UNSPECIFIED,
     safetyRatings = {},
@@ -234,17 +223,11 @@ local CANDIDATE = {
 }
 
 function CANDIDATE:GetContent()
-    if self.__cache["content"] then
-        return self.__cache["content"]
-    end
-
     if table.IsEmpty(self.content) then
         return nil
     end
 
-    self.__cache["content"] = setmetatable(self.content, CONTENT)
-
-    return self.__cache["content"]
+    return setmetatable(self.content, CONTENT)
 end
 
 function CANDIDATE:GetFinishReason()
@@ -252,33 +235,21 @@ function CANDIDATE:GetFinishReason()
 end
 
 function CANDIDATE:GetSafetyRatings()
-    if self.__cache["safetyRatings"] then
-        return self.__cache["safetyRatings"]
-    end
-
     local safetyRatings = {}
 
     for index, safetyRating in ipairs(self.safetyRatings) do
         table.insert(safetyRatings, setmetatable(safetyRating, SAFETYRATING))
     end
 
-    self.__cache["safetyRatings"] = safetyRatings
-
-    return self.__cache["safetyRatings"]
+    return safetyRatings
 end
 
 function CANDIDATE:GetCitationMetadata()
-    if self.__cache["citationMetadata"] then
-        return self.__cache["citationMetadata"]
-    end
-
     if not istable(self.citationMetadata) then
         return nil
     end
 
-    self.__cache["citationMetadata"] = setmetatable(self.citationMetadata, CITATIONMETADATA)
-
-    return self.__cache["citationMetadata"]
+    return setmetatable(self.citationMetadata, CITATIONMETADATA)
 end
 CANDIDATE.GetCitationMetadata = CANDIDATE.GetCitationMetaData
 
@@ -305,7 +276,6 @@ CANDIDATE.__index = CANDIDATE
 ------------------------]]--
 
 local GENERATECONTENTRESPONSE = {
-    __cache = {},
     code = 0,
     body = {},
     headers = {}
@@ -324,10 +294,6 @@ function GENERATECONTENTRESPONSE:GetHeaders()
 end
 
 function GENERATECONTENTRESPONSE:GetMetadata()
-    if self.__cache["metadata"] then
-        return self.__cache["metadata"]
-    end
-
     if not table.IsEmpty(self.body) then
         return nil
     end
@@ -336,16 +302,10 @@ function GENERATECONTENTRESPONSE:GetMetadata()
         return nil
     end
 
-    self.__cache["metadata"] = setmetatable({self.body["usageMetadata"]}, USAGEMETADATA)
-
-    return self.__cache["metadata"]
+    return setmetatable({self.body["usageMetadata"]}, USAGEMETADATA)
 end
 
 function GENERATECONTENTRESPONSE:GetPromptFeedback()
-    if self.__cache["promptFeedback"] then
-        return self.__cache["promptFeedback"]
-    end
-
     if not table.IsEmpty(self.body) then
         return nil
     end
@@ -354,16 +314,10 @@ function GENERATECONTENTRESPONSE:GetPromptFeedback()
         return nil
     end
 
-    self.__cache["promptFeedback"] = setmetatable({self.body["promptFeedback"]}, PROMPTFEEDBACK)
-
-    return self.__cache["promptFeedback"]
+    return setmetatable({self.body["promptFeedback"]}, PROMPTFEEDBACK)
 end
 
 function GENERATECONTENTRESPONSE:GetCandidates()
-    if self.__cache["candidates"] then
-        return self.__cache["candidates"]
-    end
-
     if not table.IsEmpty(self.body) then
         return nil
     end
@@ -378,9 +332,7 @@ function GENERATECONTENTRESPONSE:GetCandidates()
         table.insert(candidates, setmetatable(candidate, CANDIDATE))
     end
 
-    self.__cache["candidates"] = candidates
-
-    return self.__cache["candidates"]
+    return candidates
 end
 GENERATECONTENTRESPONSE.GetCandidate = GENERATECONTENTRESPONSE.GetCandidates
 

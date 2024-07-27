@@ -23,6 +23,7 @@ if SERVER then
     resource.AddFile("resource/fonts/Frutiger Roman.ttf")
     resource.AddFile("materials/gemini/gcloud.png")
     resource.AddFile("materials/gemini/gcloud_big.png")
+    resource.AddFile("materials/gemini/gemini_icon.png")
 
     util.AddNetworkString("Gemini:ReplicateConfig")
     util.AddNetworkString("Gemini:SetConfig")
@@ -58,8 +59,6 @@ local VERIFICATION_TYPE = {
 PRIVATE_CONFIG = true
 
 function Gemini:GeneratePrint(cfg)
-    if not istable(cfg) then return print end
-
     cfg.prefix = cfg.prefix or "[Gemini] "
     cfg.prefix_clr = cfg.prefix_clr or color_white
     cfg.color = cfg.color or color_white
@@ -88,6 +87,16 @@ Gemini.Print = function(self, ...)
     LocalPrint(...)
 end
 
+local DebugPrint = Gemini:GeneratePrint({
+    color = COLOR_STATE,
+    func = function() return Gemini:IsDebug() end,
+    prefix = "[Gemini-Debug] "
+})
+
+Gemini.Debug = function(self, ...)
+    DebugPrint(...)
+end
+
 local FuncMatchRegEx = {
     "Gemini:(.*)%(",
     "(.*)%.(.*)%(",
@@ -96,8 +105,8 @@ local FuncMatchRegEx = {
 }
 
 local LuaRun = {["@lua_run"] = true, ["@LuaCmd"] = true}
-function Gemini:Error(Message, Value, Expected)
-    local Data = debug.getinfo(3)
+function Gemini:Error(Message, Value, Expected, OneMore)
+    local Data = debug.getinfo(3 + (OneMore and 1))
 
     local FilePath = LuaRun[ Data["source"] ] and "Console" or "lua/" .. string.match(Data["source"], "lua/(.*)")
     local File = ( FilePath == "Console" ) and "Console" or file.Read(FilePath, "GAME")
@@ -128,6 +137,37 @@ function Gemini:Error(Message, Value, Expected)
 - Error Message: %s
   
 ========  Gemini ThrowError  ========]], ErrorPath, ErrorLine, ErrorFunc, ErrorArg, Expected, Message))
+end
+
+function Gemini:Checker(InfoTable)
+    if not istable(InfoTable) then
+        self:Error([[The first argument of Gemini:Checker() must be a table.]], InfoTable, "table")
+    elseif table.IsEmpty(InfoTable) then
+        self:Error([[The first argument of Gemini:Checker() must not be empty.]], InfoTable, "table")
+    end
+
+    local ValueToCheck = InfoTable[1]
+    local ExpectedType = InfoTable[2]
+    local ArgumentPos = InfoTable[3]
+
+    if not VERIFICATION_TYPE[ ExpectedType ] then
+        self:Error([[The second argument of Gemini:Checker() must be a valid type.]], ExpectedType, "a valid type")
+    elseif not isnumber(ArgumentPos) then
+        self:Error([[The third argument of Gemini:Checker() must be a number.]], ArgumentPos, "number")
+    end
+
+    -- Verification
+    local LuaDataInfo = debug.getinfo(2)
+
+    if not VERIFICATION_TYPE[ ExpectedType ](ValueToCheck) then
+        local Phrase = "The " .. string.CardinalToOrdinal(ArgumentPos) .. " argument of the function " .. LuaDataInfo["name"] .. "() must be a " .. ExpectedType .. "."
+        self:Error(Phrase, ValueToCheck, ExpectedType, true)
+    end
+
+    if ExpectedType == "string" and ( ValueToCheck == "" ) then
+        local Phrase = "The " .. string.CardinalToOrdinal(ArgumentPos) .. " argument of the function " .. LuaDataInfo["name"] .. "() must not be empty."
+        self:Error(Phrase, ValueToCheck, ExpectedType, true)
+    end
 end
 
 
@@ -195,11 +235,7 @@ elseif CLIENT then
 end
 
 function Gemini:ConvertValue(Value)
-    if not isstring(Value) then
-        self:Error([[The first argument of Gemini:ConvertValue() must be a string.]], Value, "string")
-    elseif ( Value == "" ) then
-        self:Error([[The first argument of Gemini:ConvertValue() must not be empty, maybe the Convar isn't valid.]], Value, "string")
-    end
+    self:Checker({Value, "string", 1})
 
     local ValueType = "string"
     for TypeName, Regex in pairs(RegexFindType) do
@@ -212,17 +248,8 @@ function Gemini:ConvertValue(Value)
 end
 
 function Gemini:FromConvar(Name, Category)
-    if not isstring(Name) then
-        self:Error([[The first argument of Gemini:FromConvar() must be a string.]], Name, "string")
-    elseif ( Name == "" ) then
-        self:Error([[The first argument of Gemini:FromConvar() must not be empty.]], Name, "string")
-    end
-
-    if not isstring(Category) then
-        self:Error([[The second argument of Gemini:FromConvar() must be a string.]], Category, "string")
-    elseif ( Category == "" ) then
-        self:Error([[The second argument of Gemini:FromConvar() must not be empty.]], Category, "string")
-    end
+    self:Checker({Name, "string", 1})
+    self:Checker({Category, "string", 2})
 
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
@@ -246,21 +273,8 @@ function Gemini:FromConvar(Name, Category)
 end
 
 function Gemini:ToConvar(Name, Category, Value)
-    if not isstring(Name) then
-        self:Error([[The first argument of Gemini:ToConvar() must be a string.]], Name, "string")
-    end
-
-    if ( Name == "" ) then
-        self:Error([[The first argument of Gemini:ToConvar() must not be empty.]], Name, "string")
-    end
-
-    if not isstring(Category) then
-        self:Error([[The second argument of Gemini:ToConvar() must be a string.]], Category, "string")
-    end
-
-    if ( Category == "" ) then
-        self:Error([[The second argument of Gemini:ToConvar() must not be empty.]], Category, "string")
-    end
+    self:Checker({Name, "string", 1})
+    self:Checker({Category, "string", 2})
 
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
@@ -288,11 +302,7 @@ function Gemini:GetPlayerInfo(Player, ConvarName)
         self:Error([[The first argument of Gemini:GetPlayerInfo() must be a valid player.]], Player, "Player")
     end
 
-    if not isstring(ConvarName) then
-        self:Error([[The second argument of Gemini:GetPlayerInfo() must be a string.]], ConvarName, "string")
-    elseif ( ConvarName == "" ) then
-        self:Error([[The second argument of Gemini:GetPlayerInfo() must not be empty.]], ConvarName, "string")
-    end
+    self:Checker({ConvarName, "string", 2})
 
     local InfoValue = Player:GetInfo(ConvarName)
     local InfoType = "string"
@@ -307,22 +317,9 @@ function Gemini:GetPlayerInfo(Player, ConvarName)
 end
 
 
-function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
-    if not isstring(Name) then
-        self:Error([[The first argument of Gemini:CreateConfig() must be a string.]], Name, "string")
-    end
-
-    if ( Name == "" ) then
-        self:Error([[The first argument of Gemini:CreateConfig() must not be empty.]], Name, "string")
-    end
-
-    if not isstring(Category) then
-        self:Error([[The second argument of Gemini:CreateConfig() must be a string.]], Category, "string")
-    end
-
-    if ( Category == "" ) then
-        self:Error([[The second argument of Gemini:CreateConfig() must not be empty.]], Category, "string")
-    end
+function Gemini:CreateConfig(Name, Category, Verification, Default, Visibility)
+    self:Checker({Name, "string", 1})
+    self:Checker({Category, "string", 2})
 
     if not isfunction(Verification) then
         self:Error([[The third argument of Gemini:CreateConfig() must be a function.]], Verification, "function")
@@ -356,7 +353,7 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Private)
         end
 
         if not Verification(ConvertedValue) then
-            self:Print("The value doesn't match the verification function. Skipping...")
+            self:Debug("The value doesn't match the verification function. Skipping...")
             return
         end
 
@@ -371,21 +368,8 @@ function Gemini:GetConfig(Name, Category, SkipValidation)
         return self:FromConvar(Name, Category)
     end
 
-    if not isstring(Name) then
-        self:Error([[The first argument of Gemini:GetConfig() must be a string.]], Name, "string")
-    end
-
-    if ( Name == "" ) then
-        self:Error([[The first argument of Gemini:GetConfig() must not be empty.]], Name, "string")
-    end
-
-    if not isstring(Category) then
-        self:Error([[The second argument of Gemini:GetConfig() must be a string.]], Category, "string")
-    end
-
-    if ( Category == "" ) then
-        self:Error([[The second argument of Gemini:GetConfig() must not be empty.]], Category, "string")
-    end
+    self:Checker({Name, "string", 1})
+    self:Checker({Category, "string", 2})
 
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
@@ -403,21 +387,8 @@ end
 
 
 function Gemini:SetConfig(Name, Category, Value)
-    if not isstring(Name) then
-        self:Error([[The first argument of Gemini:SetConfig() must be a string.]], Name, "string")
-    end
-
-    if ( Name == "" ) then
-        self:Error([[The first argument of Gemini:SetConfig() must not be empty.]], Name, "string")
-    end
-
-    if not isstring(Category) then
-        self:Error([[The second argument of Gemini:SetConfig() must be a string.]], Category, "string")
-    end
-
-    if ( Category == "" ) then
-        self:Error([[The second argument of Gemini:SetConfig() must not be empty.]], Category, "string")
-    end
+    self:Checker({Name, "string", 1})
+    self:Checker({Category, "string", 2})
 
     local FormatCategory = string.lower( string.gsub(Category, "%W", "") )
     local FormatName = string.lower( string.gsub(Name, "%W", "") )
@@ -431,7 +402,7 @@ function Gemini:SetConfig(Name, Category, Value)
     end
 
     if not GeminiCFG[FormatCategory][FormatName]["Verification"](Value) then
-        self:Print("The value doesn't match the verification function. Skipping...")
+        self:Debug("The value doesn't match the verification function. Skipping...")
         return
     end
 
@@ -454,21 +425,8 @@ function Gemini:ResetConfig(Name, Category, SkipValidation)
         return
     end
 
-    if not isstring(Name) then
-        self:Error([[The first argument of Gemini:ResetConfig() must be a string.]], Name, "string")
-    end
-
-    if ( Name == "" ) then
-        self:Error([[The first argument of Gemini:ResetConfig() must not be empty.]], Name, "string")
-    end
-
-    if not isstring(Category) then
-        self:Error([[The second argument of Gemini:ResetConfig() must be a string.]], Category, "string")
-    end
-
-    if ( Category == "" ) then
-        self:Error([[The second argument of Gemini:ResetConfig() must not be empty.]], Category, "string")
-    end
+    self:Checker({Name, "string", 1})
+    self:Checker({Category, "string", 2})
 
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
@@ -518,17 +476,18 @@ function Gemini:LoadAllConfig()
     for Category, ConfigsTable in pairs(Configs) do
         for Name, Config in pairs(ConfigsTable) do
             if not GeminiCFG[Category] then
-                self:Print([[The category doesn't exist.]], Category, "string")
+                self:Debug([[The category doesn't exist.]], Category, "string")
                 continue
             end
 
             if not GeminiCFG[Category][Name] then
-                self:Print([[The config doesn't exist.]], Name, "string")
+                self:Debug([[The config doesn't exist.]], Name, "string")
                 continue
             end
 
             if ( GeminiCFG[Category][Name]["Type"] ~= Config["Type"] ) then
-                self:Error([[The value type doesn't match the config type.]], Config["Value"], "any")
+                self:Debug([[The value type doesn't match the config type.]], Config["Value"], "any")
+                continue
             end
 
             GeminiCFG[Category][Name]["Convar"]:SetString( Config["Value"] )
@@ -578,7 +537,6 @@ function Gemini:PreInit()
         include("gemini/sv_train.lua")          self:Print("File \"gemini/sv_train.lua\" has been loaded.")
         include("gemini/sv_playground.lua")     self:Print("File \"gemini/sv_playground.lua\" has been loaded.")
         include("gemini/sv_formatter.lua")      self:Print("File \"gemini/sv_formatter.lua\" has been loaded.")
-        include("gemini/sv_image.lua")          self:Print("File \"gemini/sv_image.lua\" has been loaded.")
     else
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
@@ -626,12 +584,6 @@ function Gemini:Init()
             self:Error([[The function "FormatterPoblate" has been replaced by another third-party addon!!!]], self.FormatterPoblate, "function")
         end
 
-        if isfunction(self.ImagePoblate) then
-            self:ImagePoblate()
-        else
-            self:Error([[The function "ImagePoblate" has been replaced by another third-party addon!!!]], self.ImagePoblate, "function")
-        end
-
         -- AddCSLua file to all files inside "gemini/module"
         local LuaCSFiles, LuaSubFolder = file.Find("gemini/module/*", "LUA")
         for _, File in ipairs(LuaCSFiles) do
@@ -667,10 +619,10 @@ function Gemini:PostInit()
     Print("==================================]]==")
     print("")
 
-    if not file.Exists("gemini/configs.json", "DATA") then
-        Gemini:SaveAllConfig()
-    else
+    if file.Exists("gemini/configs.json", "DATA") then
         Gemini:LoadAllConfig()
+    else
+        Gemini:SaveAllConfig()
     end
 
     hook.Run("Gemini:PostInit")
@@ -741,10 +693,13 @@ end)
        Credits Command
 ------------------------]]--
 
-concommand.Add("gemini_credits", function()
+concommand.Add("gemini_credits", function(ply)
     Gemini:Print("==== Gemini Automod ====")
     Gemini:Print("Version:   ", Gemini.Version)
     Gemini:Print("Author:    ", Gemini.Author)
-    Gemini:Print("(DEV) URL: ", Gemini.URL)
+    if Gemini:IsDebug() and (SERVER or Gemini:CanUse("gemini_automod")) then
+        Gemini:Print("URL:       ", Gemini.URL)
+        Gemini:Print("EndPoint:  ", Gemini.EndPoint)
+    end
     Gemini:Print("==== Gemini Automod ====")
 end)

@@ -196,9 +196,7 @@ function Gemini:LoggerFindPlayerLogs(ply, Limit, OnlyLogs)
         self:Error([[The first argument of Gemini:LoggerFindPlayerLogs() is not a Player or number]], ply, "Player or number")
     end
 
-    if not isnumber(Limit) then
-        self:Error([[The second argument of Gemini:LoggerFindPlayerLogs() is not a number]], Limit, "number")
-    end
+    self:Checker({Limit, "number", 2})
 
     local UserID = isnumber(ply) and ply or Gemini:LoggerPlayerToID(ply)
 
@@ -209,6 +207,8 @@ function Gemini:LoggerFindPlayerLogs(ply, Limit, OnlyLogs)
 end
 
 function Gemini:LoggerGetLogsLimit(Limit)
+    self:Checker({Limit, "number", 1})
+
     return sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSLIMIT"), Limit) )
 end
 
