@@ -1,0 +1,9 @@
+project = "LDoc"
+title = "LDoc documentation"
+description = "A Lua documentation tool"
+format = "discount"
+backtick_references = false
+file = "ldoc.lua"
+dir = "lua/gemini"
+readme = "manual.md"
+style = "!new"
