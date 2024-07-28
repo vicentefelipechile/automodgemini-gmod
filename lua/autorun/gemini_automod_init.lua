@@ -441,21 +441,22 @@ function Gemini:GetConfig(Name, Category, FromServer)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
 
+    --[[ TO DO
     if ( FromServer == true ) then
         local GlobalTable = string.Explode("^", GetGlobal2String("Gemini:" .. Category .. "." .. Name, "") )
         if ( #GlobalTable > 2 ) then
-            self:Error([[The global variable is not valid.]], GlobalTable, "string")
+            self:Error([[The global variable is not valid.]+], GlobalTable, "string")
         elseif ( #GlobalTable < 1 ) then
-            self:Error([[The global variable is empty.]], GlobalTable, "string")
+            self:Error([[The global variable is empty.]+], GlobalTable, "string")
         end
 
         local GlobalType, GlobalValue = GlobalTable[1], GlobalTable[2]
 
         if ( GlobalType == "" ) then
-            self:Error([[The category doesn't exist.]], Category, "string")
+            self:Error([[The category doesn't exist.]+], Category, "string")
         end
     end
-
+    --]]
 
     if not GeminiCFG[Category] then
         self:Error([[The category doesn't exist.]], Category, "string")
