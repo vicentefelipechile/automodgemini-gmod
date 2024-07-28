@@ -8,7 +8,8 @@ local CurrentModel = CurrentModel or {}
 local MODULE = { ["Icon"] = "icon16/cog.png" }
 
 local GENERATION_ICON = "icon16/page_white_gear.png"
-local CONFIG_ICON = "gemini/gemini_icon.png"
+local GEMINI_ICON = "gemini/gemini_icon.png"
+local CONFIG_ICON = "icon16/cog.png"
 
 local function FN(n)
     return string.Comma(n, ".")
@@ -106,8 +107,34 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel:DockMargin( 5, 5, 5, 5 )
 
     --[[------------------------
-               Gemini
+               General
     ------------------------]]--
+
+    self.ConfigPanel.General = vgui.Create( "DScrollPanel", self.ConfigPanel )
+    self.ConfigPanel.General:Dock( FILL )
+    self.ConfigPanel.General:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.General.Paint = BackgroundPaint
+
+    self.ConfigPanel.General.LanguageTitle = vgui.Create( "DLabel", self.ConfigPanel.General )
+    self.ConfigPanel.General.LanguageTitle:Dock( TOP )
+    self.ConfigPanel.General.LanguageTitle:DockMargin( 10, 10, 10, 0 )
+    self.ConfigPanel.General.LanguageTitle:SetHeight( 40 )
+    self.ConfigPanel.General.LanguageTitle:SetText( Gemini:GetPhrase("Config.Language") )
+    self.ConfigPanel.General.LanguageTitle:SetFont("Frutiger:Big")
+
+    self.ConfigPanel.General.Language = vgui.Create( "DComboBox", self.ConfigPanel.General )
+    self.ConfigPanel.General.Language:Dock( TOP )
+    self.ConfigPanel.General.Language:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.General.Language.Paint = SmallBackgroundPaint
+    self.ConfigPanel.General.Language.OnMenuOpened = DComboBoxPaint
+
+    for _, Language in ipairs( Gemini:GetLanguages() ) do
+        self.ConfigPanel.General.Language:AddChoice( Language["Name"], Language["Code"] )
+    end
+
+    self.ConfigPanel.General.Language:SetValue( Gemini:GetConfig("Language", "General", true) )
+
+    self.Items["General"] = self.ConfigPanel:AddSheet("General", self.ConfigPanel.General, CONFIG_ICON)
 
     --[[------------------------
                Gemini
@@ -343,7 +370,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.EmptyContent:DockMargin( 0, 140, 0, 0 )
     self.ConfigPanel.Gemini.EmptyContent.Paint = Gemini.Util.ReturnNoneFunction
 
-    self.Items["Gemini"] = self.ConfigPanel:AddSheet("Gemini", self.ConfigPanel.Gemini, CONFIG_ICON)
+    self.Items["Gemini"] = self.ConfigPanel:AddSheet("Gemini", self.ConfigPanel.Gemini, GEMINI_ICON)
 
     --[[------------------------
             Google Cloud

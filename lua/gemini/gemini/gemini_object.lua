@@ -310,7 +310,7 @@ function GEMINI_OOP:MakeRequest()
         ["method"] = self.__httpmethod,
         ["body"] = RequestBody,
         ["success"] = function(Code, Body, Headers)
-            if not self.__silent then
+            if not self.__silent or Gemini:IsDebug() then
                 Gemini:GetHTTPDescription(Code)
             end
 
@@ -403,6 +403,7 @@ function Gemini:NewRequest()
     local NewRequest = table_Copy(GEMINI_OOP)
     NewRequest.__requestbody["generationConfig"] = Gemini:GeminiGetGeneration()
     NewRequest.__requestbody["safetySettings"] = Gemini:GeminiGetSafety()
+    NewRequest.__silent = false
 
     return NewRequest
 end

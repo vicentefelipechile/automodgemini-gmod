@@ -1,10 +1,14 @@
-include("enum_color.lua")
-
 --[[----------------------------------------------------------------------------
                               Google Gemini Automod
 ----------------------------------------------------------------------------]]--
 
+--[[------------------------
+         Gemini Init
+------------------------]]--
+
 if Gemini and ( Gemini.Version == nil ) then print("Error: Something else is using the Gemini name.") return end
+
+include("enum_color.lua")
 
 local GeminiCFG = GeminiCFG or {["general"] = {}}
 Gemini = Gemini or {
@@ -15,8 +19,10 @@ Gemini = Gemini or {
     EndPoint = "https://generativelanguage.googleapis.com/v1beta/models"
 }
 
+
+
 --[[------------------------
-       Main Functions
+       Server Preload
 ------------------------]]--
 
 if SERVER then
@@ -34,8 +40,11 @@ if SERVER then
 end
 include("gemini/sh_enum.lua")
 
-local FCVAR_PRIVATE = {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
-local FCVAR_PUBLIC = SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or {FCVAR_ARCHIVE, FCVAR_USERINFO}
+
+
+--[[------------------------
+       Local Variables
+------------------------]]--
 
 local print = print
 local EmptyFunc = function() end
@@ -45,6 +54,11 @@ local isentity = isentity
 local isnumber = isnumber
 local istable = istable
 local isbool = isbool
+
+local SetGlobal2Int = SetGlobal2Int
+local SetGlobal2String = SetGlobal2String
+local SetGlobal2Float = SetGlobal2Float
+local SetGlobal2Bool = SetGlobal2Bool
 
 local VERIFICATION_TYPE = {
     ["string"] = isstring,
@@ -56,46 +70,45 @@ local VERIFICATION_TYPE = {
     end
 }
 
-PRIVATE_CONFIG = true
+local TypeToGlobal = {
+    ["string"] = SetGlobal2String,
+    ["float"] = SetGlobal2Float,
+    ["boolean"] = SetGlobal2Bool,
+    ["number"] = SetGlobal2Int
+}
 
-function Gemini:GeneratePrint(cfg)
-    cfg.prefix = cfg.prefix or "[Gemini] "
-    cfg.prefix_clr = cfg.prefix_clr or color_white
-    cfg.color = cfg.color or color_white
-    cfg.func = cfg.func or EmptyFunc
-
-    return function(...)
-        local args = {...}
-        local str = ""
-
-        for _, arg in ipairs(args) do
-            str = str .. tostring(arg) .. " "
+local VISIBILITY_TYPE = {
+    ["PRIVATE"] = function(Name, Category, Value)
+        return {FCVAR_ARCHIVE, FCVAR_PROTECTED, FCVAR_DONTRECORD}
+    end,
+    ["PUBLIC"] = function(Name, Category, Value)
+        return
+            SERVER and {FCVAR_ARCHIVE, FCVAR_REPLICATED} or
+            {FCVAR_ARCHIVE, FCVAR_USERINFO}
+    end,
+    ["REPLICATED"] = function(Name, Category, Value)
+        if SERVER then
+            if isnumber(Value) then
+                local IsFloat = math.Round(Value, 0) == Value
+                if IsFloat then
+                    TypeToGlobal["float"]("Gemini:" .. Category .. "." .. Name, Value)
+                else
+                    TypeToGlobal["number"]("Gemini:" .. Category .. "." .. Name, Value)
+                end
+            else
+                TypeToGlobal[ type(Value) ]("Gemini:" .. Category .. "." .. Name, Value)
+            end
         end
 
-        str = string.TrimRight(str)
-
-        local response = cfg.func(args)
-        if ( response == false ) then return end
-
-        MsgC(cfg.prefix_clr, cfg.prefix, cfg.color, str .. "\n")
+        return {FCVAR_ARCHIVE, FCVAR_REPLICATED}
     end
-end
+}
 
 
-local LocalPrint = Gemini:GeneratePrint({color = COLOR_STATE})
-Gemini.Print = function(self, ...)
-    LocalPrint(...)
-end
 
-local DebugPrint = Gemini:GeneratePrint({
-    color = COLOR_STATE,
-    func = function() return Gemini:IsDebug() end,
-    prefix = "[Gemini-Debug] "
-})
-
-Gemini.Debug = function(self, ...)
-    DebugPrint(...)
-end
+--[[------------------------
+      Error Validation
+------------------------]]--
 
 local FuncMatchRegEx = {
     "Gemini:(.*)%(",
@@ -104,7 +117,11 @@ local FuncMatchRegEx = {
     "self:(.*)%("
 }
 
-local LuaRun = {["@lua_run"] = true, ["@LuaCmd"] = true}
+local LuaRun = {
+    ["@lua_run"] = true, -- Server
+    ["@LuaCmd"] = true -- Client
+}
+
 function Gemini:Error(Message, Value, Expected, OneMore)
     local Data = debug.getinfo(3 + (OneMore and 1))
 
@@ -170,6 +187,51 @@ function Gemini:Checker(InfoTable)
     end
 end
 
+
+
+--[[------------------------
+       Print Function
+------------------------]]--
+
+function Gemini:GeneratePrint(cfg)
+    cfg.prefix = cfg.prefix or "[Gemini] "
+    cfg.prefix_clr = cfg.prefix_clr or color_white
+    cfg.color = cfg.color or color_white
+    cfg.func = cfg.func or EmptyFunc
+
+    return function(...)
+        local args = {...}
+        local str = ""
+
+        for _, arg in ipairs(args) do
+            str = str .. tostring(arg) .. " "
+        end
+
+        str = string.TrimRight(str)
+
+        local response = cfg.func(args)
+        if ( response == false ) then return end
+
+        MsgC(cfg.prefix_clr, cfg.prefix, cfg.color, str .. "\n")
+    end
+end
+
+
+local LocalPrint = Gemini:GeneratePrint({color = COLOR_STATE})
+local DebugPrint = Gemini:GeneratePrint({
+    color = COLOR_STATE,
+    func = function() return Gemini:IsDebug() end,
+    prefix = "[Gemini-Debug] "
+})
+
+Gemini.Print = function(self, ...) LocalPrint(...) end
+Gemini.Debug = function(self, ...) DebugPrint(...) end
+
+
+
+--[[------------------------
+      Convar Functions
+------------------------]]--
 
 local RegexFindType = {
     ["number"] = "(%d+%.?%d*)[nf]",
@@ -329,10 +391,19 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Visibility)
         self:Error([[The fourth argument of Gemini:CreateConfig() must be the same type as the return of the third argument.]], Default, "any")
     end
 
-    local Flags = ( Private == true ) and FCVAR_PRIVATE or FCVAR_PUBLIC
+    if ( Visibility == nil ) then
+        Visibility = self.VISIBILITY_TYPE.PUBLIC
+    else
+        if not isfunction(Visibility) then
+            self:Error([[The fifth argument of Gemini:CreateConfig() must be a function.]], Visibility, "function")
+        end
+    end
+
     local Value = self:ToConvar(Name, Category, Default)
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
+
+    local Flags = Visibility(Category, Name, Value)
 
     GeminiCFG[Category] = GeminiCFG[Category] or {}
     GeminiCFG[Category][Name] = {
@@ -363,16 +434,28 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Visibility)
 end
 
 
-function Gemini:GetConfig(Name, Category, SkipValidation)
-    if ( SkipValidation == true ) then
-        return self:FromConvar(Name, Category)
-    end
-
+function Gemini:GetConfig(Name, Category, FromServer)
     self:Checker({Name, "string", 1})
     self:Checker({Category, "string", 2})
 
     Category = string.lower( string.gsub(Category, "%W", "") )
     Name = string.lower( string.gsub(Name, "%W", "") )
+
+    if ( FromServer == true ) then
+        local GlobalTable = string.Explode("^", GetGlobal2String("Gemini:" .. Category .. "." .. Name, "") )
+        if ( #GlobalTable > 2 ) then
+            self:Error([[The global variable is not valid.]], GlobalTable, "string")
+        elseif ( #GlobalTable < 1 ) then
+            self:Error([[The global variable is empty.]], GlobalTable, "string")
+        end
+
+        local GlobalType, GlobalValue = GlobalTable[1], GlobalTable[2]
+
+        if ( GlobalType == "" ) then
+            self:Error([[The category doesn't exist.]], Category, "string")
+        end
+    end
+
 
     if not GeminiCFG[Category] then
         self:Error([[The category doesn't exist.]], Category, "string")
@@ -496,6 +579,11 @@ function Gemini:LoadAllConfig()
 end
 
 
+
+--[[------------------------
+       Initialization
+------------------------]]--
+
 function Gemini:PreInit()
     local Print = self:GeneratePrint({prefix = ""})
 
@@ -506,12 +594,10 @@ function Gemini:PreInit()
     self:Print("Generating Default Config " .. (SERVER and "[SV]" or "[CL]"))
 
     self.VERIFICATION_TYPE = VERIFICATION_TYPE
+    self.VISIBILITY_TYPE = VISIBILITY_TYPE
 
-    if SERVER then
-        self:CreateConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, PRIVATE_CONFIG)
-    end
-
-    self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false)
+    self:CreateConfig("Enabled", "General", self.VERIFICATION_TYPE.bool, true, self.VISIBILITY_TYPE.REPLICATED)
+    self:CreateConfig("Debug", "General", self.VERIFICATION_TYPE.bool, false, self.VISIBILITY_TYPE.REPLICATED)
     self:CreateConfig("Language", "General", self.VERIFICATION_TYPE.string, "Spanish")
 
     self.IsDebug = function()
@@ -548,7 +634,6 @@ function Gemini:PreInit()
     hook.Run("Gemini:PreInit")
     Gemini:Init()
 end
-
 
 function Gemini:Init()
     file.CreateDir("gemini")
@@ -680,7 +765,7 @@ concommand.Add("gemini_reload", function(ply)
 
         net.Start("Gemini:ReplicateConfig")
         net.Broadcast()
-    elseif Gemini:CanUse("gemini_config") then
+    elseif Gemini:CanUse("gemini_config_set") then
         net.Start("Gemini:ReplicateConfig")
         net.SendToServer()
     else

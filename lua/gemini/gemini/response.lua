@@ -234,6 +234,10 @@ function CANDIDATE:GetFinishReason()
     return self.finishReason
 end
 
+function CANDIDATE:IsStop()
+    return self.finishReason == STOP
+end
+
 function CANDIDATE:GetSafetyRatings()
     local safetyRatings = {}
 

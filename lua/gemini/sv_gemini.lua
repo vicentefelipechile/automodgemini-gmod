@@ -22,7 +22,7 @@ Gemini:CreateConfig("Temperature",  "Gemini", Gemini.VERIFICATION_TYPE.range,  0
 Gemini:CreateConfig("TopP",         "Gemini", Gemini.VERIFICATION_TYPE.range,  1)
 Gemini:CreateConfig("TopK",         "Gemini", Gemini.VERIFICATION_TYPE.number, 1)
 Gemini:CreateConfig("MaxTokens",    "Gemini", Gemini.VERIFICATION_TYPE.number, 2048)
-Gemini:CreateConfig("APIKey",       "Gemini", Gemini.VERIFICATION_TYPE.string, "YOUR_API_KEY", true)
+Gemini:CreateConfig("APIKey",       "Gemini", Gemini.VERIFICATION_TYPE.string, "YOUR_API_KEY", Gemini.VISIBILITY_TYPE.PRIVATE)
 
 Gemini:CreateConfig("SafetyHarassment", "Gemini", OnlyThreeSafety, 2)
 Gemini:CreateConfig("SafetyHateSpeech", "Gemini", OnlyThreeSafety, 2)

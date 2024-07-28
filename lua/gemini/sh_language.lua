@@ -3,6 +3,7 @@
 ----------------------------------------------------------------------------]]--
 
 local CurrentLanguage = {}
+local LanguageList = {}
 
 --[[------------------------
         Configuration
@@ -89,7 +90,7 @@ function Gemini:LanguagePhraseExists(PhraseName)
 end
 
 function Gemini:LanguagePoblate()
-    local LanguageTarget = string.lower( Gemini:GetConfig("Language", "General", true) )
+    local LanguageTarget = string.lower( Gemini:GetConfig("Language", "General") )
     local LangFile, _ = file.Find("gemini/language/" .. LanguageTarget .. "/*.lua", "LUA")
 
     for _, FileName in ipairs(LangFile) do
@@ -99,6 +100,11 @@ function Gemini:LanguagePoblate()
     end
 
     include("gemini/language/" .. LanguageTarget .. "/main.lua")
+
+    local _, ExistingLanguages = file.Find("gemini/language/*", "LUA")
+    for _, Language in ipairs(ExistingLanguages) do
+        table.insert(LanguageList, Language)
+    end
 
     if CLIENT then return end
 
@@ -123,4 +129,8 @@ function Gemini:LanguagePoblate()
             end
         end)
     end
+end
+
+function Gemini:GetLanguages()
+    return table.Copy(LanguageList)
 end
