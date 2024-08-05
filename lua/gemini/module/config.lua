@@ -324,10 +324,22 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     local CurrentModelSelected = "models/" .. GetGlobal2String("Gemini:ModelName", "nil")
     local CurrentModelExists = false
-    for _, ModelTbl in ipairs( Gemini:GeminiGetModels() ) do
-        if not string.StartsWith( ModelTbl["name"], ModelPrefix ) then continue end
+    -- local OnDebugMode = not ( Gemini:CanUse("gemini_config_set") and Gemini:IsDebug() )
+    local OnDebugMode = false
 
-        self.ConfigPanel.Gemini.ModelName:AddChoice( ModelTbl["name"], ModelTbl )
+    local function AllowModel(name)
+        if OnDebugMode then
+            return true
+        else
+            return string.StartWith( name, ModelPrefix )
+        end
+    end
+
+    for _, ModelTbl in ipairs( Gemini:GeminiGetModels() ) do
+        if not AllowModel( ModelTbl["name"] ) then continue end
+
+        local IsADebugOnlyModel = not string.StartWith( ModelTbl["name"], ModelPrefix )
+        self.ConfigPanel.Gemini.ModelName:AddChoice( ModelTbl["displayName"] .. ( IsADebugOnlyModel and " (Debug)" or "" ), ModelTbl )
 
         if ( ModelTbl["name"] == CurrentModelSelected ) then
             CurrentModelExists = true
@@ -339,7 +351,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         CurrentModel = DefaultModelTbl
         self.ConfigPanel.Gemini.ModelName:SetValue( CurrentModel["displayName"] )
     else
-        self.ConfigPanel.Gemini.ModelName:SetValue( CurrentModel["name"] )
+        self.ConfigPanel.Gemini.ModelName:SetValue( CurrentModel["displayName"] )
     end
 
     self.ConfigPanel.Gemini.ModelInfo.ModelNameOutput:SetText( "> " .. CurrentModel["displayName"] )

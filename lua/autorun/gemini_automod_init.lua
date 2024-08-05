@@ -1,5 +1,5 @@
 --[[----------------------------------------------------------------------------
-                              Google Gemini Automod
+                         Google Gemini Automod (v{{ script_version_name }})
 ----------------------------------------------------------------------------]]--
 
 --[[------------------------
@@ -12,7 +12,7 @@ include("enum_color.lua")
 
 local GeminiCFG = GeminiCFG or {["general"] = {}}
 Gemini = Gemini or {
-    Version = "1.0",
+    Version = "v1.0",
     Author = "vicentefelipechile",
     Name = "Gemini",
     URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
@@ -65,6 +65,7 @@ local VERIFICATION_TYPE = {
     ["number"] = isnumber,
     ["table"] = istable,
     ["bool"] = isbool,
+    ["boolean"] = isbool,
     ["range"] = function(v)
         return isnumber(v) and ( v >= 0 ) and ( v <= 1 )
     end
@@ -123,7 +124,7 @@ local LuaRun = {
 }
 
 function Gemini:Error(Message, Value, Expected, OneMore)
-    local Data = debug.getinfo(3 + (OneMore and 1))
+    local Data = debug.getinfo( 3 + ( OneMore and 1 or 0 ) )
 
     local FilePath = LuaRun[ Data["source"] ] and "Console" or "lua/" .. string.match(Data["source"], "lua/(.*)")
     local File = ( FilePath == "Console" ) and "Console" or file.Read(FilePath, "GAME")
@@ -354,7 +355,7 @@ function Gemini:ToConvar(Name, Category, Value)
     return ConvertedValue
 end
 
-function Gemini:GetPlayerInfo(Player, ConvarName)
+function Gemini:GetPlayerInfo(Player, ConvarName, ...)
     ConvarName = CLIENT and Player or ConvarName
     Player = CLIENT and LocalPlayer() or Player
 
@@ -365,6 +366,11 @@ function Gemini:GetPlayerInfo(Player, ConvarName)
     end
 
     self:Checker({ConvarName, "string", 2})
+
+    -- if "..." then format the string ConvarName
+    if (...) then
+        ConvarName = string.format(ConvarName, ...)
+    end
 
     local InfoValue = Player:GetInfo(ConvarName)
     local InfoType = "string"
@@ -377,6 +383,7 @@ function Gemini:GetPlayerInfo(Player, ConvarName)
 
     return FromConvarConverterCL[ InfoType ](InfoValue)
 end
+Gemini.GetPlayerConfig = Gemini.GetPlayerInfo
 
 
 function Gemini:CreateConfig(Name, Category, Verification, Default, Visibility)
@@ -494,6 +501,10 @@ function Gemini:SetConfig(Name, Category, Value)
         self:Error([[The value type doesn't match the config type.]], Value, "any")
     end
 
+    if CLIENT and GeminiCFG[FormatCategory][FormatName]["Convar"]:IsFlagSet(FCVAR_REPLICATED) then
+        self:Debug("You can't the value of a replicated convar.")
+    end
+
     local ConvarValue = self:ToConvar(FormatName, FormatCategory, Value)
     GeminiCFG[FormatCategory][FormatName]["Convar"]:SetString( ConvarValue )
 
@@ -574,6 +585,10 @@ function Gemini:LoadAllConfig()
                 continue
             end
 
+            -- Is a replicated convar
+            local Convar = GeminiCFG[Category][Name]["Convar"]
+            if CLIENT and Convar:IsFlagSet(FCVAR_REPLICATED) then continue end
+
             GeminiCFG[Category][Name]["Convar"]:SetString( Config["Value"] )
         end
     end
@@ -618,7 +633,6 @@ function Gemini:PreInit()
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
         include("gemini/sv_sandbox.lua")        self:Print("File \"gemini/sv_sandbox.lua\" has been loaded.")
         include("gemini/sv_logger.lua")         self:Print("File \"gemini/sv_logger.lua\" has been loaded.")
-        include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
         include("gemini/sv_httpcode.lua")       self:Print("File \"gemini/sv_httpcode.lua\" has been loaded.")
         include("gemini/sv_gemini.lua")         self:Print("File \"gemini/sv_gemini.lua\" has been loaded.")
         include("gemini/sv_train.lua")          self:Print("File \"gemini/sv_train.lua\" has been loaded.")
@@ -626,10 +640,10 @@ function Gemini:PreInit()
         include("gemini/sv_formatter.lua")      self:Print("File \"gemini/sv_formatter.lua\" has been loaded.")
     else
         include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
-        include("gemini/sh_util.lua")           self:Print("File \"gemini/sh_util.lua\" has been loaded.")
         include("gemini/sh_language.lua")       self:Print("File \"gemini/sh_language.lua\" has been loaded.")
     end
 
+    include("gemini/sh_enum.lua")               self:Print("File \"gemini/sh_enum.lua\" has been loaded.")
     include("gemini/sh_rules.lua")              self:Print("File \"gemini/sh_rules.lua\" has been loaded.")
 
     hook.Run("Gemini:PreInit")
@@ -784,8 +798,10 @@ concommand.Add("gemini_credits", function(ply)
     Gemini:Print("Version:   ", Gemini.Version)
     Gemini:Print("Author:    ", Gemini.Author)
     if Gemini:IsDebug() and (SERVER or Gemini:CanUse("gemini_automod")) then
+        Gemini:Print("DEVELOPER MODE ENABLED")
         Gemini:Print("URL:       ", Gemini.URL)
         Gemini:Print("EndPoint:  ", Gemini.EndPoint)
+        Gemini:Print("DEVELOPER MODE ENABLED")
     end
     Gemini:Print("==== Gemini Automod ====")
 end)

@@ -401,9 +401,9 @@ end)
 
 function Gemini:NewRequest()
     local NewRequest = table_Copy(GEMINI_OOP)
-    NewRequest.__requestbody["generationConfig"] = Gemini:GeminiGetGeneration()
-    NewRequest.__requestbody["safetySettings"] = Gemini:GeminiGetSafety()
-    NewRequest.__silent = false
+    NewRequest.__requestbody["generationConfig"] = self:GeminiGetGeneration()
+    NewRequest.__requestbody["safetySettings"] = self:GeminiGetSafety()
+    NewRequest.__silent = not self:GetConfig("Debug", "General")
 
     return NewRequest
 end

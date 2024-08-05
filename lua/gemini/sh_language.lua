@@ -125,7 +125,7 @@ function Gemini:LanguagePoblate()
             PlayersInvolved = table.GetKeys(PlayersInvolved)
             if ( #PlayersInvolved >= 1 ) then
                 local Log = string.format(Phrase, unpack(Args))
-                hook.Run("Gemini.Log", Log, unpack(PlayersInvolved))
+                hook.Run("Gemini:Log", Log, unpack(PlayersInvolved))
             end
         end)
     end

@@ -246,9 +246,9 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.SettingsPanel.AskLogsButton.DoClick = function()
         local PlayerID = Gemini:GetConfig("PlayerTarget", "Logger")
-
         PlayerID = ( PlayerID ~= 0 ) and PlayerID or nil
 
+        local Between = Gemini:GetConfig("BetweenLogs", "Logger")
         local LogsMax = Gemini:GetConfig("MaxLogs", "Logger")
         local LogsAmount = math.min(LogsMax, 200)
 
