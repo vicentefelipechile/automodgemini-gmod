@@ -8,6 +8,7 @@ util.AddNetworkString("Gemini:SendGeminiModules")
 util.AddNetworkString("Gemini:SetGeminiModel")
 util.AddNetworkString("Gemini:SetGeminiSetting")
 util.AddNetworkString("Gemini:SetGeminiGeneration")
+util.AddNetworkString("Gemini:SetAPIKey")
 
 local function OnlyThreeSafety(value)
     return isnumber(value) and ( value == math.floor(value) ) and ( value >= 1 ) and ( value <= 4 )
@@ -58,36 +59,9 @@ end
 
 
 --[[------------------------
-       Retreive Models
-------------------------]]--
-
-local function BroadcastGeminiModels(ply)
-    local Models = util.TableToJSON( Gemini:GetModels() )
-    local ModelsCompressed = util.Compress(Models)
-    local ModelsSize = #ModelsCompressed
-
-    local NetSend = ( isentity(ply) and ply:IsPlayer() ) and net.Send or net.Broadcast
-
-    net.Start("Gemini:SendGeminiModules")
-        net.WriteUInt(ModelsSize, Gemini.Util.DefaultNetworkUInt)
-        net.WriteData(ModelsCompressed, ModelsSize)
-    NetSend(ply)
-end
-
-hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", BroadcastGeminiModels)
-hook.Add("Gemini:ModelsReloaded", "Gemini:SendGeminiModules", BroadcastGeminiModels)
-
-
-
---[[------------------------
        Gemini Functions
 ------------------------]]--
 
---[[--
-    Returns a table with the generation configuration using by default the values of the Gemini config.
-    @param ResponseWithJson[type=boolean] If the response should be in JSON format.
-    @return A table with the generation configuration.
---]]--
 function Gemini:GeminiGetGeneration(ResponseWithJson)
     return {
         ["temperature"] = self:GetConfig("Temperature", "Gemini"),
@@ -100,10 +74,6 @@ function Gemini:GeminiGetGeneration(ResponseWithJson)
 end
 
 
---[[--
-    Returns a table with the safety settings using by default the values of the Gemini config.
-    @return A table with the safety settings.
---]]--
 function Gemini:GeminiGetSafety()
     local SafetySettings = {}
 
@@ -118,12 +88,6 @@ function Gemini:GeminiGetSafety()
 end
 
 
---[[--
-    Get a list of formated logs from a player.
-    @param Player The player to get the logs. it can be a player entity or a ID from Logger module.
-    @param Amount[type=number] The amount of logs to get.
-    @return A string with the logs.
---]]--
 function Gemini:GeminiGetPlayerLogs(Player, Amount)
     local Logs = self:LoggerFindPlayerLogs(Player, Amount, true)
     local FormatedLogs = ""
@@ -135,10 +99,6 @@ function Gemini:GeminiGetPlayerLogs(Player, Amount)
 end
 
 
---[[--
-    Create a Candidate object with default values using the Gemini config.
-    @return The Candidate object.
---]]--
 function Gemini:GeminiCreateCandidate()
     return {
         ["generationConfig"] = self:GeminiGetGeneration(),
@@ -148,13 +108,6 @@ function Gemini:GeminiCreateCandidate()
 end
 
 
---[[--
-    Create a body request for the Gemini API.
-    @param UserMessage[type=string] The message that the user sent.
-    @param Logs[type=string|number] The logs to attach to the request. If it's a number, it will get the logs from the player.
-    @param Gamemode[type=string] The gamemode that the user is playing.
-    @return The Candidate object.
---]]--
 function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
     if isnumber(Logs) then
         local TableLogs = self:LoggerGetLogsLimit(Logs)
@@ -182,12 +135,6 @@ function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
 end
 
 
---[[--
-    Generate a prompt using the Gemini API.
-    @param Prompt[type=string] The prompt to generate.
-    @param Success[type=function] The function to call when the prompt is generated.
-    @param LogsAmount[type=number] The amount of logs to attach to the request.
---]]--
 function Gemini:GenerateSimplePrompt(Prompt, Success, LogsAmount) -- BG
     self:Checker({Prompt, "string", 1})
 
@@ -295,6 +242,22 @@ hook.Add("PostGamemodeLoaded", "Gemini:GeminiSetGlobal", function()
     SetGlobal2Bool("Gemini:APIKeyEnabled", Gemini:GetConfig("APIKey", "Gemini") ~= "YOUR_API_KEY")
 end)
 
+local function BroadcastGeminiModels(ply)
+    local Models = util.TableToJSON( Gemini:GetModels() )
+    local ModelsCompressed = util.Compress(Models)
+    local ModelsSize = #ModelsCompressed
+
+    local NetSend = ( isentity(ply) and ply:IsPlayer() ) and net.Send or net.Broadcast
+
+    net.Start("Gemini:SendGeminiModules")
+        net.WriteUInt(ModelsSize, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(ModelsCompressed, ModelsSize)
+    NetSend(ply)
+end
+
+hook.Add("PlayerInitialSpawn", "Gemini:SendGeminiModules", BroadcastGeminiModels)
+hook.Add("Gemini:ModelsReloaded", "Gemini:SendGeminiModules", BroadcastGeminiModels)
+
 
 
 --[[------------------------
@@ -328,4 +291,14 @@ net.Receive("Gemini:SetGeminiGeneration", function(_, ply)
         if ( GeminiConfigAllowedInAVeryGoodTable[SettingName] == nil ) then continue end
         Gemini:SetConfig(SettingName, "Gemini", SettingValue)
     end
+end)
+
+net.Receive("Gemini:SetAPIKey", function(_, ply)
+    if ( not Gemini:CanUse(ply, "gemini_config_set") ) then return end
+
+    local APIKey = net.ReadString()
+    Gemini:SetConfig("APIKey", "Gemini", APIKey)
+
+    net.Start("Gemini:SetAPIKey")
+    net.Broadcast()
 end)

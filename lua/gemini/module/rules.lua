@@ -2,6 +2,8 @@
                    Google Gemini Automod - Rules Menu
 ----------------------------------------------------------------------------]]--
 
+local ACE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/ace/1.35.4/ace.min.js"
+
 local BackgroundColor = Color( 39, 39, 39)
 local BackgroundPaint = function(SubSelf, w, h)
     draw.RoundedBox( 0, 0, 0, w, h, BackgroundColor )
@@ -33,9 +35,25 @@ local AllowedFormatters = {
     ["ServerInfo"] = true,
 }
 
+local PromptFormatterColor = Color( 75, 75, 75)
+local function PromptFormatterPaint(self, w, h)
+    draw.RoundedBox( 8, 0, 0, w, h, PromptFormatterColor )
+end
+
 --[[------------------------
        Extra Functions
 ------------------------]]--
+
+function MODULE:AceCore()
+    if not file.Exists("gemini/ace.txt", "DATA") then
+        http.Fetch(ACE_CDN, function(Body)
+            file.Write("gemini/ace.txt", Body)
+        end)
+        return false
+    end
+
+    return true
+end
 
 -- https://github.com/WilliamVenner/SQLWorkbench/blob/master/lua/sqlworkbench/menu.lua#L421-L592
 function MODULE:GetAceScript(File)
@@ -59,7 +77,7 @@ function MODULE:ApplyFormat(Text, Formatter)
 end
 
 --[[------------------------
-       Train Functions
+       HTML Functions
 ------------------------]]--
 
 function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
@@ -75,7 +93,9 @@ function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
 
     local Embedding = self:GetAceScript("embedding")
 
-    local Ace = self:GetAceScript("ace.js")
+    -- local Ace = self:GetAceScript("ace.js")
+    local Ace = file.Read("gemini/ace.txt", "DATA")
+
     local Extension = self:GetAceScript("ext-language_tools.js")
     local Theme = self:GetAceScript("theme-monokai.js")
     local Mode = self:GetAceScript("mode-markdown.js")
@@ -95,8 +115,59 @@ function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
     })
 end
 
+--[[------------------------
+      Editor Functions
+------------------------]]--
+
+local OffsetX, OffsetY = 12, 42
+function MODULE:CreatePromptFormatter(RootPanel)
+    if IsValid( self.PromptFormatterMenu ) then
+        self.PromptFormatterMenu:Remove()
+    end
+
+    self.PromptFormatterMenu = vgui.Create("DFrame", RootPanel)
+    self.PromptFormatterMenu:SetSize( 300, 200 )
+    self.PromptFormatterMenu:SetMinimumSize( 250, 150 )
+    self.PromptFormatterMenu:Center()
+    self.PromptFormatterMenu:SetScreenLock(true)
+    self.PromptFormatterMenu:SetSizable(true)
+    self.PromptFormatterMenu:SetTitle( Gemini:GetPhrase("Rules.ToolBar.Formatter") )
+    self.PromptFormatterMenu.Paint = PromptFormatterPaint
+
+    self.PromptFormatterMenu.Editor = vgui.Create("DHTML", self.PromptFormatterMenu)
+    self.PromptFormatterMenu.Editor:Dock( FILL )
+    self.PromptFormatterMenu.Editor:DockMargin( 4, 4, 4, 4 )
+    self.PromptFormatterMenu.Editor:SetTall( 100 )
+    self.PromptFormatterMenu.Editor:SetAllowLua(true)
+    self.PromptFormatterMenu.Editor:SetHTML( self:CompileHTML(Gemini:GetPhrase("Rules.Formatter.Use"), false, true ) )
+    self.PromptFormatterMenu.Editor:Call([[SetEditorOption("showGutter", false)]])
+    self.PromptFormatterMenu.Editor:Call([[SetEditorOption("showPrintMargin", false)]])
+
+    self.PromptFormatterMenu.ApplyButton = vgui.Create("DButton", self.PromptFormatterMenu)
+    self.PromptFormatterMenu.ApplyButton:SetSize( 100, 30 )
+    self.PromptFormatterMenu.ApplyButton:SetPos( OffsetX, 200 - OffsetY )
+    self.PromptFormatterMenu.ApplyButton:SetText( Gemini:GetPhrase("Config.Apply") )
+    self.PromptFormatterMenu.ApplyButton:SetZPos( 100 )
+
+    self.PromptFormatterMenu.OnSizeChanged = function(SubSelf, w, h)
+        self.PromptFormatterMenu.ApplyButton:SetPos( OffsetX, h - OffsetY )
+    end
+end
+
+function MODULE:ClosePromptFormatter()
+    if IsValid( self.PromptFormatterMenu ) then
+        self.PromptFormatterMenu:Remove()
+    end
+end
+
+
+--[[------------------------
+       Main Functions
+------------------------]]--
+
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     if not Gemini:CanUse("gemini_rules") then return false end
+    if not self:AceCore() then return false end
 
     local CanEdit = Gemini:CanUse("gemini_rules_set")
     self:CompileHTML(nil, not CanEdit, true)
@@ -154,27 +225,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerInfoPanel.Panel.TextEditor:Call([[SetEditorOption("showPrintMargin", false)]])
 
     if CanEdit then
-        self.ServerInfoPanel.Panel.PromptPanel = vgui.Create( "DPanel", self.ServerInfoPanel.Panel )
-        self.ServerInfoPanel.Panel.PromptPanel:Dock( BOTTOM )
-        self.ServerInfoPanel.Panel.PromptPanel:SetTall( 100 )
-        self.ServerInfoPanel.Panel.PromptPanel.Paint = BackgroundPaint
-
-        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine = vgui.Create( "DPanel", self.ServerInfoPanel.Panel.PromptPanel )
-        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine:Dock( TOP )
-        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine:SetTall( 16 )
-        self.ServerInfoPanel.Panel.PromptPanel.HorizontalLine.Paint = HorizontalLine
-
-        self.ServerInfoPanel.Panel.PromptPanel.Editor = vgui.Create( "DHTML", self.ServerInfoPanel.Panel.PromptPanel )
-        self.ServerInfoPanel.Panel.PromptPanel.Editor:Dock( FILL )
-        self.ServerInfoPanel.Panel.PromptPanel.Editor:SetTall( 100 )
-        self.ServerInfoPanel.Panel.PromptPanel.Editor:SetAllowLua(true)
-        self.ServerInfoPanel.Panel.PromptPanel.Editor:SetHTML( self:CompileHTML(Gemini:GetPhrase("Rules.Formatter.Use"), not CanEdit, true ) )
-        self.ServerInfoPanel.Panel.PromptPanel.Editor:Call([[SetEditorOption("showGutter", false)]])
-        self.ServerInfoPanel.Panel.PromptPanel.Editor:Call([[SetEditorOption("showPrintMargin", false)]])
-
-        self.ServerInfoPanel.Panel.PromptPanel:SetVisible( false )
-
-
         self.ServerInfoPanel.ToolBar = vgui.Create( "DPanel", self.ServerInfoPanel )
         self.ServerInfoPanel.ToolBar:Dock( LEFT )
         self.ServerInfoPanel.ToolBar:SetWide( 115 )
@@ -199,13 +249,8 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self.ServerInfoPanel.ToolBar.PromptButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Formatter") )
         self.ServerInfoPanel.ToolBar.PromptButton:SetIcon( "icon16/application_edit.png" )
 
-        local TextEditorHeight = self.ServerInfoPanel.Panel.TextEditor:GetTall()
         self.ServerInfoPanel.ToolBar.PromptButton.DoClick = function()
-            self.ServerInfoPanel.Panel.PromptPanel:SetVisible( not self.ServerInfoPanel.Panel.PromptPanel:IsVisible() )
-
-            if not self.ServerInfoPanel.Panel.PromptPanel:IsVisible() then
-                self.ServerInfoPanel.Panel.TextEditor:SetTall( TextEditorHeight )
-            end
+            self:CreatePromptFormatter(RootPanel)
         end
     end
 
@@ -261,6 +306,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     end
 
     self.MainSheet:AddSheet( Gemini:GetPhrase("Rules.Rules"), self.ServerRulesPanel, "icon16/page_white_text.png" )
+end
+
+function MODULE:OnLostFocus()
+    self:ClosePromptFormatter()
 end
 
 

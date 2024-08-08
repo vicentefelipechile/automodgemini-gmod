@@ -85,6 +85,7 @@ Gemini:CreateConfig("AttachContext", "Playground", Gemini.VERIFICATION_TYPE.bool
 function MODULE:ResetPrompt()
     table.Empty(PromptHistory)
     self.PromptPanel.PromptHistory:Clear()
+    PromptExists = false
 
     -- if not Gemini:CanUse("gemini_playground") then return end
 
@@ -93,7 +94,7 @@ function MODULE:ResetPrompt()
 end
 
 function MODULE:PoblatePrompt()
-    if PromptExists then return end
+    if not PromptExists then return end
 
     local PromptHistoryCopy = table.Copy(PromptHistory)
     table.Empty(PromptHistory)
@@ -172,7 +173,7 @@ function MODULE:AddMessagePrompt(Role, Text)
         PromptRightPanel:SizeToChildren(false, true)
         PromptMessage:SizeToChildren(false, true)
 
-        timer.Simple(0.1, function()
+        timer.Simple(0.01, function()
             if IsValid(PromptMessage) then
                 self.PromptPanel.PromptHistory:ScrollToChild(PromptMessage)
             end
@@ -191,6 +192,7 @@ function MODULE:AddMessagePrompt(Role, Text)
     self.PromptPanel.PromptHistory:AddItem(HorizontalLine)
 
     table.insert(PromptHistory, { ["Role"] = Role, ["Text"] = Text })
+    PromptExists = true
 end
 
 function MODULE:SendMessagePrompt(Text)
@@ -213,7 +215,7 @@ end
 function MODULE:AskLogs()
     self.LAST_REQUEST = CurTime()
 
-    local Status = net.Start("Gemini:AskLogs:Playground")
+    local Status = net.Start("Gemini:PlaygroundAskLogs")
     net.SendToServer()
 
     if ( Status == true ) then
@@ -521,14 +523,14 @@ function MODULE:OnFocus()
 end
 
 function MODULE:OnLostFocus()
-    self:ResetPrompt()
+    -- self:ResetPrompt()
 end
 
 --[[------------------------
            Network
 ------------------------]]--
 
-net.Receive("Gemini:AskLogs:Playground", function(len)
+net.Receive("Gemini:PlaygroundAskLogs", function(len)
     local Success = net.ReadBool()
     local Message = net.ReadString()
     local Logs = {}
@@ -541,15 +543,6 @@ net.Receive("Gemini:AskLogs:Playground", function(len)
     end
 
     MODULE:RetrieveNetwork(Success, Message, Logs)
-end)
-
-net.Receive("Gemini:PlaygroundSendMessage", function(len)
-    local Message = net.ReadString()
-    local Argument = net.ReadString()
-
-    Message = Argument ~= "" and string.format( Gemini:GetPhrase(Message), Argument ) or Gemini:GetPhrase(Message)
-
-    MODULE:SetMessageLog( Message )
 end)
 
 net.Receive("Gemini:PlaygroundMakeRequest", function(len)
@@ -565,8 +558,25 @@ net.Receive("Gemini:PlaygroundMakeRequest", function(len)
     end
 end)
 
+net.Receive("Gemini:PlaygroundResetRequest", function(len)
+    if IsValid(MODULE.PromptPanel) then
+        MODULE:SetMessageLog( Gemini:GetPhrase("Playground.Prompt.Reseted") )
+        MODULE:ResetPrompt()
+    end
+end)
+
 --[[------------------------
        Register Module
 ------------------------]]--
 
 Gemini:ModuleCreate(Gemini:GetPhrase("Playground"), MODULE)
+
+hook.Add("Gemini:SendMessage", "Gemini:ReceivePlaygroundMessage", function(Message, index, Argument)
+    if ( index ~= "Playground" ) then return end
+
+    if IsValid(MODULE.PromptPanel) then
+        Message = ( Argument ~= "" ) and string.format( Gemini:GetPhrase(Message), Argument ) or Gemini:GetPhrase(Message)
+
+        MODULE:SetMessageLog( Message )
+    end
+end)

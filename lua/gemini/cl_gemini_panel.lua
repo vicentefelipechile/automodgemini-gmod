@@ -171,12 +171,13 @@ function GEMINIPANEL:PoblateItems()
 end
 
 function GEMINIPANEL:Init()
-    self:SetSize(math.max(ScrW() * 0.78, 800), math.max(ScrH() * 0.64, 500))
+    self:SetSize(math.max(ScrW() * 0.078, 800), math.max(ScrH() * 0.064, 500))
     self:MakePopup()
     self:SetTitle( Gemini:GetPhrase("Panel.Title") )
     self:ShowCloseButton(true)
     self:SetDraggable(true)
     self:DockPadding(5, 5, 5, 5)
+    self:SetZPos(100)
 
     self:SetKeyboardInputEnabled(false)
 

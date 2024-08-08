@@ -145,6 +145,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini:DockMargin( 10, 10, 10, 10 )
     self.ConfigPanel.Gemini.Paint = BackgroundPaint
 
+    self.ConfigPanel.Gemini.VBar.Paint = Gemini.Util.ReturnNoneFunction
+    self.ConfigPanel.Gemini.VBar.btnGrip.Paint = ScrollbarPaint
+    self.ConfigPanel.Gemini.VBar:SetHideButtons( true )
+
     self.ConfigPanel.Gemini.APIKeyTitle = vgui.Create( "DLabel", self.ConfigPanel.Gemini )
     self.ConfigPanel.Gemini.APIKeyTitle:Dock( TOP )
     self.ConfigPanel.Gemini.APIKeyTitle:DockMargin( 10, 10, 10, 0 )
@@ -172,6 +176,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     local OldText = self.ConfigPanel.Gemini.APIKey:GetText()
     self.ConfigPanel.Gemini.APIKeyEnabled.OnChange = function( SubSelf, bVal )
         self.ConfigPanel.Gemini.APIKey:SetEnabled( bVal )
+        self.ConfigPanel.Gemini.ApiKeyButton:SetEnabled( bVal )
 
         if ( bVal == true ) then
             self.ConfigPanel.Gemini.APIKey:SetText("")
@@ -184,6 +189,22 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.Gemini.APIKeyExplanation:Dock( TOP )
     self.ConfigPanel.Gemini.APIKeyExplanation:DockMargin( 10, 0, 10, 10 )
     self.ConfigPanel.Gemini.APIKeyExplanation:SetText( Gemini:GetPhrase("Config.APIKey.Note") )
+
+    self.ConfigPanel.Gemini.ApiKeyButton = vgui.Create( "DButton", self.ConfigPanel.Gemini )
+    self.ConfigPanel.Gemini.ApiKeyButton:Dock( TOP )
+    self.ConfigPanel.Gemini.ApiKeyButton:DockMargin( 10, 0, 10, 10 )
+    self.ConfigPanel.Gemini.ApiKeyButton:SetWide( 100 )
+    self.ConfigPanel.Gemini.ApiKeyButton:SetText( Gemini:GetPhrase("Config.Apply") )
+    self.ConfigPanel.Gemini.ApiKeyButton:SetEnabled( not APIKeyIsSetted )
+
+    self.ConfigPanel.Gemini.ApiKeyButton.DoClick = function( SubSelf )
+        if not Gemini:CanUse("gemini_config_set") then return end
+
+        local APIKEY = self.ConfigPanel.Gemini.APIKey:GetText()
+        net.Start("Gemini:SetAPIKey")
+            net.WriteString( APIKEY )
+        net.SendToServer()
+    end
 
 
     local HorizonalLine = vgui.Create( "DPanel", self.ConfigPanel.Gemini )
@@ -553,5 +574,12 @@ hook.Add("Gemini:ModelsReceived", "Gemini:ConfigPostEntity", function(Models)
             CurrentModel = ModelTbl
             break
         end
+    end
+end)
+
+net.Receive("Gemini:SetAPIKey", function()
+    if IsValid(MODULE.ConfigPanel) then
+        MODULE.ConfigPanel.Gemini.APIKey:SetEnabled( false )
+        MODULE.ConfigPanel.Gemini.APIKey:SetText( Gemini:GetPhrase("Config.APIKey.Disabled") )
     end
 end)

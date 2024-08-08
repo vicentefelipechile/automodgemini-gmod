@@ -11,8 +11,11 @@ local GeminiDermaSkin = GeminiDermaSkin or {}
 local ColorCyan = Color( 0, 165, 157)
 
 -- Button
-local ButtonHoverColor = Color( 1, 78, 129, 255)
+local ButtonHoverColor = Color( 1, 78, 129)
 local ButtonNoHoverColor = Color( 70, 70, 70)
+local ButtonDisabledColor = Color( 60, 60, 60)
+local ButtonDisabledOutlineColor = Color( 37, 59, 56)
+local ButtonDisabledTextColor = Color( 180, 180, 180)
 
 -- DPanel
 local PanelBackgroundColor = Color( 41, 41, 41, 255)
@@ -36,10 +39,16 @@ function Gemini:ReloadDermaSkin()
     -- Button
     GeminiDermaSkin.Colours.Button.Normal = color_white
     GeminiDermaSkin.Colours.Button.Hover = color_white
+    GeminiDermaSkin.Colours.Button.Down = color_white
+    GeminiDermaSkin.Colours.Button.Disabled = ButtonDisabledTextColor
     GeminiDermaSkin.PaintButton = function(DermaSkin, SubSelf, w, h)
-        if SubSelf:IsHovered() then
-            draw.RoundedBox( 0, 0, 0, w, h, ButtonHoverColor )
-            draw.RoundedBox( 0, 0, h - 2, w, 2, ColorCyan )
+        if SubSelf:IsEnabled() then -- Enabled
+            if SubSelf:IsHovered() then
+                draw.RoundedBox( 0, 0, 0, w, h, ButtonHoverColor )
+                draw.RoundedBox( 0, 0, h - 2, w, 2, ColorCyan )
+            else
+                draw.RoundedBox( 0, 0, 0, w, h, ButtonNoHoverColor )
+            end
         else
             draw.RoundedBox( 0, 0, 0, w, h, ButtonNoHoverColor )
         end

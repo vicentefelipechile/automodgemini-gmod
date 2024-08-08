@@ -53,11 +53,7 @@ function Gemini:CurrentLanguage()
 end
 
 function Gemini:LanguageCreate(LanguageTarget)
-    if not isstring(LanguageTarget) then
-        self:Error([[The first argument of Gemini:LanguageCreate() is not a string.]], LanguageTarget, "string")
-    elseif (LanguageTarget == "") then
-        self:Error([[The first argument of Gemini:LanguageCreate() is an empty string.]], LanguageTarget, "string")
-    end
+    self:Checker({LanguageTarget, "string", 1})
 
     CurrentLanguage = table.Copy(LANG_MODULE)
     CurrentLanguage.Name = LanguageTarget
@@ -65,26 +61,18 @@ function Gemini:LanguageCreate(LanguageTarget)
     return CurrentLanguage
 end
 
-function Gemini:GetPhrase(PhraseName, SkipValidation)
-    if ( SkipValidation == true ) then
-        return CurrentLanguage:GetPhrase(PhraseName)
+function Gemini:GetPhrase(PhraseName)
+    if ( CurrentLanguage == nil ) then
+        return PhraseName
     end
 
-    if not isstring(PhraseName) then
-        self:Error([[The first argument of Gemini:GetPhrase() is not a string]], PhraseName, "string")
-    elseif (PhraseName == "") then
-        self:Error([[The first argument of Gemini:GetPhrase() is an empty string]], PhraseName, "string")
-    end
+    self:Checker({PhraseName, "string", 1})
 
     return CurrentLanguage:GetPhrase(PhraseName)
 end
 
 function Gemini:LanguagePhraseExists(PhraseName)
-    if not isstring(PhraseName) then
-        self:Error([[The first argument of Gemini:LanguagePhraseExists() is not a string]], PhraseName, "string")
-    elseif (PhraseName == "") then
-        self:Error([[The first argument of Gemini:LanguagePhraseExists() is an empty string]], PhraseName, "string")
-    end
+    self:Checker({PhraseName, "string", 1})
 
     return CurrentLanguage:PhraseExists(PhraseName)
 end

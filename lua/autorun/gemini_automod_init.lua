@@ -133,7 +133,9 @@ function Gemini:Error(Message, Value, Expected, OneMore)
     local ErrorLine = "\t\t" .. Data["currentline"]
     local ErrorPath = "\t" .. FilePath
     local ErrorFunc = nil
-    local ErrorArg = "\t" .. tostring(Value) .. " (" .. type(Value) .. ")"
+
+    local AddQuota = ( type(Expected) == "string" ) and "\"" or ""
+    local ErrorArg = "\t" .. AddQuota .. tostring(Value) .. AddQuota .. " (" .. type(Value) .. ")"
 
     for _, regex in ipairs(FuncMatchRegEx) do
         ErrorFunc = string.match(Line, regex)
@@ -239,36 +241,19 @@ local RegexFindType = {
     ["boolean"] = "(%d)b",
 }
 
-local ToConvarConverter = {}
-local FromConvarConverter = {}
-local FromConvarConverterCL = {
-    ["string"] = function(Value)
-        return Value
-    end,
-    ["number"] = function(Value)
-        Value = string.match(Value, RegexFindType["number"])
-        return tonumber(Value)
-    end,
-    ["boolean"] = function(Value)
-        return Value == "1b"
-    end
-}
-
-if SERVER then
-
-    ToConvarConverter = {
+local FromConvarConverter = {
+    ["CLIENT"] = {
         ["string"] = function(Value)
             return Value
         end,
         ["number"] = function(Value)
-            return tostring(Value)
+            return tonumber( string.match(Value, RegexFindType["number"]) )
         end,
         ["boolean"] = function(Value)
-            return ( Value == true ) and 1 or 0
+            return Value == "1b"
         end
-    }
-
-    FromConvarConverter = {
+    },
+    ["SERVER"] = {
         ["string"] = function(Value)
             return Value
         end,
@@ -279,10 +264,10 @@ if SERVER then
             return Value == "1"
         end
     }
+}
 
-elseif CLIENT then
-
-    ToConvarConverter = {
+local ToConvarConverter = {
+    ["CLIENT"] = {
         ["string"] = function(Value)
             return Value
         end,
@@ -292,22 +277,35 @@ elseif CLIENT then
         ["boolean"] = function(Value)
             return ( Value == true ) and "1b" or "0b"
         end
+    },
+    ["SERVER"] = {
+        ["string"] = function(Value)
+            return Value
+        end,
+        ["number"] = function(Value)
+            return tostring(Value)
+        end,
+        ["boolean"] = function(Value)
+            return ( Value == true ) and 1 or 0
+        end
     }
-
-    FromConvarConverter = FromConvarConverterCL
-end
+}
 
 function Gemini:ConvertValue(Value)
     self:Checker({Value, "string", 1})
 
-    local ValueType = "string"
-    for TypeName, Regex in pairs(RegexFindType) do
-        if string.match(Value, Regex) then
-            ValueType = TypeName break
-        end
+    local ValueType, ValueSuffix = "string", string.match(Value, "%a$")
+    local TargetSide = "SERVER"
+
+    if ( ValueSuffix == "n" ) and string.match(Value, "%d+") then
+        ValueType = "number"
+        TargetSide = "CLIENT"
+    elseif ( ValueSuffix == "b") and string.match(Value, "(%d)b") then
+        ValueType = "boolean"
+        TargetSide = "CLIENT"
     end
 
-    return FromConvarConverter[ ValueType ](Value)
+    return FromConvarConverter[ TargetSide ][ ValueType ](Value)
 end
 
 function Gemini:FromConvar(Name, Category)
@@ -330,9 +328,7 @@ function Gemini:FromConvar(Name, Category)
     end
 
     local ValueType = GeminiCFG[Category][Name]["Type"]
-    local Value = FromConvarConverter[ ValueType ](CvarValue)
-
-    return Value
+    return FromConvarConverter[ SERVER and "SERVER" or "CLIENT" ][ ValueType ](CvarValue)
 end
 
 function Gemini:ToConvar(Name, Category, Value)
@@ -346,45 +342,32 @@ function Gemini:ToConvar(Name, Category, Value)
         GeminiCFG[Category] = {}
     end
 
-    local ValueType = type(Value)
-    if ( ToConvarConverter[ ValueType ] == nil ) then
+    local ValueType, TargetSide = type(Value), SERVER and "SERVER" or "CLIENT"
+    if ( ToConvarConverter[ TargetSide ][ ValueType ] == nil ) then
         self:Error([[The value type is not supported.]], Value, "a valid Value type")
     end
 
-    local ConvertedValue = ToConvarConverter[ ValueType ](Value)
-    return ConvertedValue
+    return ToConvarConverter[ TargetSide ][ ValueType ](Value)
 end
 
-function Gemini:GetPlayerInfo(Player, ConvarName, ...)
-    ConvarName = CLIENT and Player or ConvarName
-    Player = CLIENT and LocalPlayer() or Player
+function Gemini:GetPlayerConfig(Player, Name, Category)
+    if CLIENT then return self:GetConfig(Name, Category) end
 
     if not isentity(Player) then
-        self:Error([[The first argument of Gemini:GetPlayerInfo() must be a valid player.]], Player, "Player")
+        self:Error([[The first argument of Gemini:GetPlayerConfig() must be a valid player.]], Player, "player")
     elseif not Player:IsPlayer() then
-        self:Error([[The first argument of Gemini:GetPlayerInfo() must be a valid player.]], Player, "Player")
+        self:Error([[The first argument of Gemini:GetPlayerConfig() must be a valid player.]], Player, "player")
     end
 
-    self:Checker({ConvarName, "string", 2})
+    self:Checker({Name, "string", 2})
+    self:Checker({Category, "string", 3})
 
-    -- if "..." then format the string ConvarName
-    if (...) then
-        ConvarName = string.format(ConvarName, ...)
-    end
+    Category = string.lower( string.gsub(Category, "%W", "") )
+    Name = string.lower( string.gsub(Name, "%W", "") )
 
-    local InfoValue = Player:GetInfo(ConvarName)
-    local InfoType = "string"
-
-    for RegType, Regex in pairs(RegexFindType) do
-        if string.match(InfoValue, Regex) then
-            InfoType = RegType break
-        end
-    end
-
-    return FromConvarConverterCL[ InfoType ](InfoValue)
+    return self:ConvertValue( Player:GetInfo( "gemini_" .. Category .. "_" .. Name ) )
 end
-Gemini.GetPlayerConfig = Gemini.GetPlayerInfo
-
+Gemini.GetPlayerInfo = Gemini.GetPlayerConfig
 
 function Gemini:CreateConfig(Name, Category, Verification, Default, Visibility)
     self:Checker({Name, "string", 1})
@@ -420,11 +403,12 @@ function Gemini:CreateConfig(Name, Category, Verification, Default, Visibility)
     }
 
     -- Warning
+    local TargetSide = SERVER and "SERVER" or "CLIENT"
     cvars.AddChangeCallback("gemini_" .. Category .. "_" .. Name, function(_, _, NewValue)
         local ConvertedValue = nil
 
-        if ToConvarConverter[ GeminiCFG[Category][Name]["Type"] ] then
-            ConvertedValue = ToConvarConverter[ GeminiCFG[Category][Name]["Type"] ](NewValue)
+        if ToConvarConverter[ TargetSide ][ GeminiCFG[Category][Name]["Type"] ] then
+            ConvertedValue = ToConvarConverter[ TargetSide ][ GeminiCFG[Category][Name]["Type"] ](NewValue)
         else
             self:Print("The value type is not supported.")
             return

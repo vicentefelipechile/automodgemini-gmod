@@ -2,42 +2,22 @@
                     Google Gemini Automod - Playground Module
 ----------------------------------------------------------------------------]]--
 
-util.AddNetworkString("Gemini:PlaygroundSendMessage")
 util.AddNetworkString("Gemini:PlaygroundMakeRequest")
 util.AddNetworkString("Gemini:PlaygroundResetRequest")
-util.AddNetworkString("Gemini:AskLogs:Playground")
+util.AddNetworkString("Gemini:PlaygroundAskLogs")
 
 local PlayerUsingPlayground = {}
-
-local AttachContext = "gemini_playground_attachcontext"
 
 --[[------------------------
        Util Functions
 ------------------------]]--
-
-function Gemini:PlaygroundSendMessage(ply, Message, Argument)
-    if not ( IsValid(ply) and ply:IsPlayer() ) then
-        self:Error("The first argument of Gemini:PlaygroundSendMessage() must be a player.", ply, "player")
-    end
-
-    if not isstring(Message) then
-        self:Error("The second argument of Gemini:PlaygroundSendMessage() must be a string.", Message, "string")
-    elseif ( Message == "" ) then
-        self:Error("The second argument of Gemini:PlaygroundSendMessage() must not be empty.", Message, "string")
-    end
-
-    net.Start("Gemini:PlaygroundSendMessage")
-        net.WriteString(Message)
-        net.WriteString(Argument or "")
-    net.Send(ply)
-end
 
 function Gemini:PlaygroundClearHistory(ply)
     PlayerUsingPlayground[ply] = nil
 end
 
 function Gemini:PlaygroundGetLogsFromPlayer(ply)
-    local Logs = self:LoggerGetLogsUsingPlayerSettings(ply, "playground")
+    local Logs = self:GetLogsFromPlayerSettings(ply, "Playground")
 
     local LogsTable = {}
     for _, LogInfo in ipairs(Logs) do
@@ -56,13 +36,13 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
 
     local NewRequest = self:NewRequest()
 
-    if PlayerUsingPlayground[ply] then
+    if ( PlayerUsingPlayground[ply] ~= nil ) then
         local content = NewRequest:AddContent(Prompt, "user")
         table.insert(PlayerUsingPlayground[ply]["contents"], content)
 
         NewRequest:SetBody( PlayerUsingPlayground[ply] )
     else
-        local PlayerWantToAttachContext = self:GetPlayerInfo(ply, AttachContext)
+        local PlayerWantToAttachContext = self:GetPlayerConfig(ply, "AttachContext", "Playground")
         if PlayerWantToAttachContext then
             local Logs = self:LogsToText( self:PlaygroundGetLogsFromPlayer(ply) )
 
@@ -88,7 +68,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
             local BlockReason = "Enum.BlockReason." .. Response:GetBlockReason()
 
             self:Print( self:GetPhrase(BlockReason) )
-            self:PlaygroundSendMessage(ply, BlockReason)
+            self:SendMessage(ply, BlockReason, "Playground")
 
             self:PlaygroundClearHistory(ply)
             return
@@ -111,7 +91,7 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
         if ( CompressSize > Gemini.Util.MaxBandwidth ) then
             self:Print("The response from Gemini API is too large to send to the client. Size: ", CompressSize, " bytes")
 
-            self:PlaygroundSendMessage(ply, "Gemini.Error.TooBig")
+            self:SendMessage(ply, "Gemini.Error.TooBig", "Playground")
             self:PlaygroundClearHistory(ply)
             return
         end
@@ -127,48 +107,47 @@ function Gemini:PlaygroundMakeRequest(Prompt, ply) -- BG
         net.Send(ply)
     end)
 
-    self:PlaygroundSendMessage(ply, "Gemini.Requested")
+    self:SendMessage(ply, "Gemini.Requested", "Playground")
 end
 
 --[[------------------------
       Network Functions
 ------------------------]]--
 
-function Gemini.PlaygroundReceivePetition(len, ply)
+net.Receive("Gemini:PlaygroundMakeRequest", function(len, ply)
     local Prompt = net.ReadString()
 
     if not Gemini:CanUse(ply, "gemini_playground") then
-        Gemini:PlaygroundSendMessage(ply, "Gemini.Error.NoPermission")
+        Gemini:SendMessage(ply, "Gemini.Error.NoPermission", "Playground")
     else
         Gemini:PlaygroundMakeRequest(Prompt, ply)
     end
-end
+end)
 
-function Gemini.PlaygroundResetRequest(len, ply)
+net.Receive("Gemini:PlaygroundResetRequest", function(len, ply)
     Gemini:PlaygroundClearHistory(ply)
-    Gemini:PlaygroundSendMessage(ply, "Playground.Prompt.Reseted")
-end
+    Gemini:SendMessage(ply, "Playground.Prompt.Reseted", "Playground")
 
-function Gemini.PlaygroundPlayerAskLogs(len, ply)
+    net.Start("Gemini:PlaygroundResetRequest")
+    net.Send(ply)
+end)
+
+net.Receive("Gemini:PlaygroundAskLogs", function(len, ply)
     if not Gemini:CanUse(ply, "gemini_playground") then return end
 
-    local Logs = Gemini:LoggerGetLogsUsingPlayerSettings(ply, "playground")
+    local Logs = Gemini:GetLogsFromPlayerSettings(ply, "Playground")
 
     local LogsCompressed = util.Compress( util.TableToJSON(Logs) )
     local LogsSize = #LogsCompressed
 
-    net.Start("Gemini:AskLogs:Playground")
+    net.Start("Gemini:PlaygroundAskLogs")
         net.WriteBool(true)
         net.WriteString("Logger.LogsSended")
 
         net.WriteUInt(LogsSize, Gemini.Util.DefaultNetworkUIntBig)
         net.WriteData(LogsCompressed, LogsSize)
     net.Send(ply)
-end
-
-net.Receive("Gemini:PlaygroundMakeRequest", Gemini.PlaygroundReceivePetition)
-net.Receive("Gemini:PlaygroundResetRequest", Gemini.PlaygroundResetRequest)
-net.Receive("Gemini:AskLogs:Playground", Gemini.PlaygroundPlayerAskLogs)
+end)
 
 
 concommand.Add("gemini_displaychats", function()

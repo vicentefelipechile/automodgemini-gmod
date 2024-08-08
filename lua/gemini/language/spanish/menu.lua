@@ -1,6 +1,15 @@
 --[[----------------------------------------------------------------------------
                           Gemini Automod - Spanish Menu
 ----------------------------------------------------------------------------]]--
+local function InitCap(str)
+    if SERVER then return str end
+    return str:gsub("^%l", string.upper)
+end
+
+local GetPhrase = function(phrase)
+    if SERVER then return phrase end
+    return language.GetPhrase(phrase)
+end
 
 local MenuPhrases = {
     ["GeminiMenu"] = "Gemini Automod",
@@ -8,6 +17,13 @@ local MenuPhrases = {
     ["Rules"] = "Reglas",
 
     ["Config"] = "Configuración",
+    ["Config.Apply"] = "Aplicar",
+    ["Config.Cancel"] = "Cancelar",
+    ["Config.Yes"] = InitCap( GetPhrase("openurl.yes") ),
+    ["Config.No"] = InitCap( GetPhrase("openurl.no") ),
+    ["Config.Enable"] = InitCap( GetPhrase("addon.enable") ),
+    ["Config.Disable"] = InitCap( GetPhrase("addon.disable") ),
+
     ["Config.Title"] = "Configuración",
     ["Config.Default.DisplayName"] = "Sin modelo seleccionado",
     ["Config.Default.Description"] = "El modelo actual no esta seleccionado, por favor selecciona un modelo.",
@@ -102,7 +118,7 @@ local MenuPhrases = {
     ["Rules.ServerInfo"] = "Información",
     ["Rules.ToolBar.Save"] = "Guardar",
     ["Rules.ToolBar.Formatter"] = "Convertidor",
-    ["Rules.Formatter.Use"] = "// Escribe aqui una instruccion para darle formato a la informacion de arriba",
+    ["Rules.Formatter.Use"] = "// Escribe aqui una instruccion para darle formato a la informacion",
     ["Rules.Formatter.Apply"] = "Convertir Formato"
 }
 

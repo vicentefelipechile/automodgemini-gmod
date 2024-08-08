@@ -70,52 +70,28 @@ end
 ------------------------]]--
 
 if SERVER then
-    function Gemini:SendMessage(ply, msg, index)
+    function Gemini:SendMessage(ply, msg, index, extra)
         if not IsValid(ply) then
             self:Error("The first argument of Gemini:SendMessage() must be a player.", ply, "player")
         end
 
-        if not isstring(msg) then
-            self:Error("The second argument of Gemini:SendMessage() must be a string.", msg, "string")
-        elseif ( msg == "" ) then
-            self:Error("The second argument of Gemini:SendMessage() must not be empty.", msg, "string")
-        end
+        self:Checker({msg, "string", 2})
 
         net.Start("Gemini:SendMessage")
             net.WriteString(msg)
-
-            if (index ~= nil) then
-                net.WriteString(index)
-            end
+            net.WriteString(index or "")
+            net.WriteString(extra or "")
         net.Send(ply)
     end
 
-    function Gemini:BroadcastMessage(index, msg, extra)
-        if not isstring(index) then
-            self:Error("The first argument of Gemini:BroadcastMessage() must be a string.", index, "string")
-        elseif ( index == "" ) then
-            self:Error("The first argument of Gemini:BroadcastMessage() must not be empty.", index, "string")
-        end
-
-        if not isstring(msg) then
-            self:Error("The second argument of Gemini:BroadcastMessage() must be a string.", msg, "string")
-        elseif ( msg == "" ) then
-            self:Error("The second argument of Gemini:BroadcastMessage() must not be empty.", msg, "string")
-        end
+    function Gemini:BroadcastMessage(msg, index, extra)
+        self:Checker({msg, "string", 1})
+        self:Checker({index, "string", 2})
 
         net.Start("Gemini:BroadcastMessage")
-            net.WriteString(index)
             net.WriteString(msg)
-
-            if (extra ~= nil) then
-                if not isstring(extra) then
-                    self:Error("The third argument of Gemini:BroadcastMessage() must be a string.", extra, "string")
-                elseif ( extra == "" ) then
-                    self:Error("The third argument of Gemini:BroadcastMessage() must not be empty.", extra, "string")
-                end
-
-                net.WriteString(extra)
-            end
+            net.WriteString(index)
+            net.WriteString(extra or "")
         net.Broadcast()
     end
 else

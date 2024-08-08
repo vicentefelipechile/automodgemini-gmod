@@ -5,13 +5,6 @@
 local sql_Query = sql.Query
 local sql_TableExists = sql.TableExists
 
-local PlayerTarget = "gemini_%s_playertarget"
-local MaxLogs = "gemini_%s_maxlogs"
-local BetweenLogs = "gemini_%s_betweenlogs"
-local BetweenLogsMin = "gemini_%s_betweenlogsmin"
-local BetweenLogsMax = "gemini_%s_betweenlogsmax"
-local DefaultAlternative = "logger"
-
 local Formating = function(str, ...)
     return sql_Query( string.format(str, ...) )
 end
@@ -250,24 +243,24 @@ function Gemini:GetLogs(Limit, FormatedLogs)
         or
         self:LoggerGetSQL("GETALLLOGSLIMIT")
 
-    return sql_Query(QuerySyntax, Limit) or {}
+    return Formating(QuerySyntax, Limit) or {}
 end
 
 function Gemini:GetLogsFromPlayerSettings(ply, AlternativeInfo)
-    AlternativeInfo = AlternativeInfo or DefaultAlternative
+    AlternativeInfo = AlternativeInfo or "Logger"
 
-    local IsBetween = self:GetPlayerInfo(ply, BetweenLogs, AlternativeInfo)
-    local Limit = math.min( self:GetConfig("MaxLogsRequest", "Logger"), self:GetPlayerInfo(ply, MaxLogs, AlternativeInfo) )
+    local IsBetween = self:GetPlayerConfig(ply, "BetweenLogs", AlternativeInfo)
+    local Limit = math.min( self:GetConfig("MaxLogsRequest", "Logger"), self:GetPlayerConfig(ply, "MaxLogs", AlternativeInfo) )
     local Logs = {}
 
     if IsBetween then
-        local Min = self:GetPlayerInfo(ply, BetweenLogsMin, AlternativeInfo)
-        local Max = self:GetPlayerInfo(ply, BetweenLogsMax, AlternativeInfo)
+        local Min = self:GetPlayerConfig(ply, "BetweenLogsMin", AlternativeInfo)
+        local Max = self:GetPlayerConfig(ply, "BetweenLogsMax", AlternativeInfo)
         Logs = sql_Query( string.format(self:LoggerGetSQL("GETALLLOGSRANGE"), Min, Max, Limit) )
 
         Logs = ( Logs == nil ) and {} or Logs
     else
-        local PlayerID = self:GetPlayerInfo(ply, PlayerTarget, AlternativeInfo)
+        local PlayerID = self:GetPlayerConfig(ply, "PlayerTarget", AlternativeInfo)
 
         if ( PlayerID == 0 ) then
             Logs = self:GetLogs(Limit)
@@ -336,7 +329,7 @@ net.Receive("Gemini:AskLogs", function(len, ply)
 
     local Logs = {}
     if InitialLogs then
-        Logs = Gemini:GetLogs( Gemini:GetPlayerInfo(ply, "gemini_logger_requestinitiallogs") )
+        Logs = Gemini:GetLogs( Gemini:GetPlayerConfig(ply, "RequestInitialLogs", "Logger") )
     else
         Logs = Gemini:GetLogsFromPlayerSettings(ply)
     end
@@ -373,3 +366,13 @@ hook.Add("PlayerDisconnected", "Gemini:LoggerAsynchronousLogs", function(ply)
 
     LoggerStopAsynchronousLogs(0, ply)
 end)
+
+
+
+sql.m_strError = nil -- This is required to invoke __newindex
+
+setmetatable(sql, { __newindex = function( t, k, v )
+    if k == "m_strError" and v then
+        print("[SQL Error] " .. v )
+    end
+end } )
