@@ -85,6 +85,20 @@ FrutigerFontData.shadow = false
 FrutigerFontData.blursize = 2
 surface.CreateFont("Frutiger:Small-Blur", FrutigerFontData)
 
+local GoogleSans = {
+    font = "Google Sans",
+    size = 24,
+    weight = 500,
+    antialias = true,
+    shadow = false,
+    blursize = 0
+}
+
+surface.CreateFont("GoogleSans:Normal", GoogleSans)
+
+GoogleSans.size = 54
+surface.CreateFont("GoogleSans:Big", GoogleSans)
+
 
 --[[------------------------
           Functions

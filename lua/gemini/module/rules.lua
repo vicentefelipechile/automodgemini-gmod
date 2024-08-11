@@ -402,6 +402,7 @@ end
 
 function MODULE:OnFocus()
     if IsValid(self.MainSheet) and Gemini:CanUse("gemini_rules") then
+        DELAY_TOSHOW = CurTime() + 3
         net.Start("Gemini:RequestServerData")
         net.SendToServer()
     end

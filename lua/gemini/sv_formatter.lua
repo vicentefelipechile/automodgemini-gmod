@@ -256,7 +256,7 @@ net.Receive("Gemini:FormatterServerInfo", function(len, ply)
         local ContentText = Candidates:GetTextContent()
         if not ContentText then return end
 
-        ContentText = ContentText:gsub("```\n", ""):gsub("\n```", "")
+        ContentText = ContentText:gsub("```\n", ""):gsub("\n```", ""):gsub("%$SERVER_NAME%$", GetHostName())
 
         file.Write("gemini/debug/formatter_response_content.json", ContentText)
 

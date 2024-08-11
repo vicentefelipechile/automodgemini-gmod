@@ -63,7 +63,7 @@ local SandboxHooks = {
     ["DoPlayerDeath"] = {
         ["Function"] = function(victim, attacker, dmg)
             if not DamageType[dmg:GetDamageType()] then
-                Gemini:Print("Daño desconocido: ", dmg:GetDamageType())
+                Gemini:Debug("Daño desconocido: ", dmg:GetDamageType())
             end
 
             local DmgType = DamageType[dmg:GetDamageType()] or game.GetAmmoName(dmg:GetAmmoType()) and "una bala de " .. game.GetAmmoName(dmg:GetAmmoType()) or "algo que no se puede determinar"

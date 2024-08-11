@@ -120,8 +120,8 @@ function Gemini:GeminiCreateBodyRequest(UserMessage, Logs, Gamemode)
 
     local Candidate = self:GeminiCreateCandidate()
     local MainPrompt = CurrentLanguage.GeneratePrompt(
-        self:GetServerInfo(),
-        self:GetRules(),
+        self:GetServerInformation(),
+        self:GetServerRules(),
         UserMessage, Logs, Gamemode
     )
 

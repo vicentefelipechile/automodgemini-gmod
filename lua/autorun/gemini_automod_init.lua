@@ -27,10 +27,10 @@ Gemini.FullyLoaded = false
 ------------------------]]--
 
 if SERVER then
-    resource.AddFile("resource/fonts/Frutiger Roman.ttf")
-    resource.AddFile("materials/gemini/gcloud.png")
-    resource.AddFile("materials/gemini/gcloud_big.png")
-    resource.AddFile("materials/gemini/gemini_icon.png")
+    resource.AddSingleFile("resource/fonts/Frutiger-Roman.ttf")
+    resource.AddSingleFile("resource/fonts/GoogleSans-Regular.ttf")
+    resource.AddSingleFile("materials/gemini/gemini_icon.png")
+    resource.AddSingleFile("materials/gemini/gemini_logo.png")
 
     util.AddNetworkString("Gemini:ReplicateConfig")
     util.AddNetworkString("Gemini:SetConfig")

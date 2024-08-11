@@ -49,8 +49,8 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.OutputMSG = vgui.Create("DTextEntry", OurTab)
-    self.OutputMSG:SetSize(OurTab:GetWide() - 40, 20)
-    self.OutputMSG:SetPos(10, OurTab:GetTall() - 68)
+    self.OutputMSG:SetSize(OurTab:GetWide() - ( 40 + 200 + 400 ), 20)
+    self.OutputMSG:SetPos(630, OurTab:GetTall() - 68)
     self.OutputMSG:SetEditable(false)
 
     --[[------------------------
@@ -58,7 +58,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.TrainingList = vgui.Create("DPanel", OurTab)
-    self.TrainingList:SetSize(200, OurTab:GetTall() - 110)
+    self.TrainingList:SetSize(200, OurTab:GetTall() - 82)
     self.TrainingList:SetPos(10, 35)
     self.TrainingList.Paint = BorderBackgroundPaint
 
@@ -89,7 +89,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.TrainingMenu = vgui.Create("DScrollPanel", OurTab)
-    self.TrainingMenu:SetSize(400, OurTab:GetTall() - 85)
+    self.TrainingMenu:SetSize(400, OurTab:GetTall() - 57)
     self.TrainingMenu:SetPos(220, 10)
     self.TrainingMenu.Paint = BorderBackgroundPaint
 
