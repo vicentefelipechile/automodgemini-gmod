@@ -25,6 +25,7 @@ return [[
         
         <script>
             var editor = ace.edit("editor")
+            let editorcontentenabled = true
             
             editor.setTheme("ace/theme/monokai")
             editor.session.setMode("ace/mode/markdown")
@@ -35,12 +36,37 @@ return [[
                 enableLiveAutocompletion: true,
                 wrap: true
             })
+            
+            function SetEditorContent(content) {
+                // get the current position
+                const pos = editor.session.selection.toJSON()
+
+                editor.setValue(content)
+
+                // set the position
+                editor.session.selection.fromJSON(pos)
+            }
+
+            function TriggerEditorContent() {
+                const content = editor.getValue()
+                gmod.TriggerEditorContent(content)
+            }
+
+            // On change event
+            editor.on("change", function() {
+                if (!editorcontentenabled) {return};
+                gmod.EditorTextChanged(editor.getValue())
+            })
         </script>
 
         <script type="text/javascript"> $GmodScript$ </script>
         <script type="text/javascript">
             function SetEditorOption(Option, Value) {
                 editor.setOption(Option, Value)
+            }
+
+            function GetEditorContent(toIndex) {
+                gmod.SetContentTextTable(toIndex, editor.getValue())
             }
         </script>
     </body>

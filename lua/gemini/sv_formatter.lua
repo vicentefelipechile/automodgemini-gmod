@@ -2,19 +2,22 @@
                  Google Gemini Automod - Gemini Formatter Module
 ----------------------------------------------------------------------------]]--
 
-util.AddNetworkString("Gemini:GeminiFormatter:ServerInfo")
+util.AddNetworkString("Gemini:FormatterServerInfo")
 
 local MethodGenerateContent = "models/%s:generateContent"
 local HTTPRegExp = "https?://[%w-_%.%?%.:/%+=&]+"
 local FormatterTypes = FormatterTypes or {}
 
 local FormatterFolderPath = "gemini/formatter/"
+local DefaultFormatter = DefaultFormatter or ""
 
 --[[------------------------
           Settings
 ------------------------]]--
 
 Gemini:CreateConfig("Source", "Formatter", Gemini.VERIFICATION_TYPE.string, "https://google.com")
+Gemini:CreateConfig("Temperature", "Formatter", Gemini.VERIFICATION_TYPE.number, 0.4)
+Gemini:CreateConfig("MaxOutputTokens", "Formatter", Gemini.VERIFICATION_TYPE.number, 1024)
 
 function Gemini:FormatterPoblate()
     file.CreateDir("gemini/formatter")
@@ -50,6 +53,8 @@ function Gemini:Formatter(InputText, Formatter)
     local NewRequest = Gemini:NewRequest()
     NewRequest:AddContent(FormatterTarget, "user")
     NewRequest:SetMethod( string.format(MethodGenerateContent, self:GetConfig("ModelName", "Gemini")) )
+    NewRequest:SetGenerationConfig("temperature", self:GetConfig("Temperature", "Formatter"))
+    NewRequest:SetGenerationConfig("maxOutputTokens", self:GetConfig("MaxOutputTokens", "Formatter"))
 
     file.Write("gemini/formatter_request.json", util.TableToJSON(NewRequest:GetBody(), true))
 
@@ -216,57 +221,47 @@ function Gemini:BroadcastFormatterToPlayer(ply, Formatter, Text)
     net.Send(ply)
 end
 
-net.Receive("Gemini:Formatter", function(len, ply)
+
+--[[------------------------
+    Server Info Formatter
+------------------------]]--
+
+net.Receive("Gemini:FormatterServerInfo", function(len, ply)
     if not (
-        Gemini:CanUse(ply, "gemini_rules_set") or
         Gemini:CanUse(ply, "gemini_config_set") or
-        ( hook.Run("Gemini:PlayerRequestFormatter", ply) == true )
-    )
-    then
-        Gemini:SendMessage(ply, "You do not have permission to request a formatter", "Gemini:Formatter")
-        return
+        Gemini:CanUse(ply, "gemini_rules_set")
+    ) then
+        Gemini:SendMessage(ply, "You do not have permission to use this command", "Formatter")
     end
 
-    local Formatter = net.ReadString()
+    local FormatText = net.ReadString()
+    local RulesCompressedSize = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
+    local RulesText = util.Decompress( net.ReadData(RulesCompressedSize) )
 
-    if not FormatterTypes[Formatter] then
-        Gemini:SendMessage(ply, "Error: The formatter does not exist", "Gemini:Formatter")
-        Gemini:Error("The formatter does not exist", Formatter, "string")
-    end
+    RulesText = RulesText .. "\n\n\n---- Formatter ----\n" .. FormatText
 
-    local CompressedSize = net.ReadUInt( Gemini.Util.DefaultNetworkUInt )
-    local CompressedText = util.Decompress( net.ReadData( CompressedSize ) )
-
-    local NewPromise = Gemini:Formatter(CompressedText, Formatter)
+    local NewPromise = Gemini:Formatter(RulesText, "ServerInfo")
     NewPromise:Then(function(Response)
         file.Write("gemini/debug/formatter_response.json", util.TableToJSON(Response:GetBody(), true))
-
-        local Code = Response:GetCode()
-        if ( Code == 429 ) then Gemini:SendMessage(ply, "Gemini.Error.RateLimit", "Formatter") return end
-        if ( Code ~= 200 ) then Gemini:SendMessage(ply, "Gemini.Error.ServerError", "Formatter") return end
 
         local Candidates = Response:GetFirstCandidate()
         if not Candidates then
             local BlockReason = "Enum.BlockReason." .. Response:GetBlockReason()
 
             Gemini:Print( Gemini:GetPhrase(BlockReason) )
-            Gemini:SendMessage(ply, BlockReason, "Formatter")
-
+            Gemini:SendMessage(ply, BlockReason, "Playground")
             return
         end
 
         local ContentText = Candidates:GetTextContent()
-        if not ContentText then
-            local MessageError = Candidates:IsStop() and "Gemini.Error.FailedRequest" or "Enum.FinishReason." .. Candidates:GetFinishReason()
+        if not ContentText then return end
 
-            Gemini:Print( Gemini:GetPhrase(MessageError) )
-            Gemini:SendMessage(ply, MessageError, "Formatter")
-        end
+        ContentText = ContentText:gsub("```\n", ""):gsub("\n```", "")
 
-        Gemini:BroadcastFormatterToPlayer(ply, Formatter, ContentText)
-    end):Catch(function(Error)
-        Gemini:Print("There was an error with the formatter request")
-        Gemini:SendMessage(ply, Error, "Formatter")
+        file.Write("gemini/debug/formatter_response_content.json", ContentText)
+
+        Gemini:SetServerInfo(ContentText)
+        Gemini:BroadcastServerInfo()
     end)
 end)
 

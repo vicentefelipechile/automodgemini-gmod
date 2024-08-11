@@ -16,6 +16,14 @@ local MenuPhrases = {
     ["Credits"] = "Creditos",
     ["Rules"] = "Reglas",
 
+    ["Language.English"] = "Ingles",
+    ["Language.Spanish"] = "Español",
+    ["Language.French"] = "Francés",
+    ["Language.Russian"] = "Ruso",
+    ["Language.German"] = "Alemán",
+    ["Language.Turkish"] = "Turco",
+    ["Language.Portuguese"] = "Portugués",
+
     ["Config"] = "Configuración",
     ["Config.Apply"] = "Aplicar",
     ["Config.Cancel"] = "Cancelar",
@@ -23,6 +31,9 @@ local MenuPhrases = {
     ["Config.No"] = InitCap( GetPhrase("openurl.no") ),
     ["Config.Enable"] = InitCap( GetPhrase("addon.enable") ),
     ["Config.Disable"] = InitCap( GetPhrase("addon.disable") ),
+
+    ["Config.Language"] = "Idioma",
+    ["Config.Language.Note"] = "Nota: El servidor debe ser reiniciado para que se apliquen los cambios.",
 
     ["Config.Title"] = "Configuración",
     ["Config.Default.DisplayName"] = "Sin modelo seleccionado",
@@ -117,9 +128,11 @@ local MenuPhrases = {
     ["Rules.Rules"] = "Reglas",
     ["Rules.ServerInfo"] = "Información",
     ["Rules.ToolBar.Save"] = "Guardar",
-    ["Rules.ToolBar.Formatter"] = "Convertidor",
-    ["Rules.Formatter.Use"] = "// Escribe aqui una instruccion para darle formato a la informacion",
-    ["Rules.Formatter.Apply"] = "Convertir Formato"
+    ["Rules.ToolBar.Formatter"] = "Formateador",
+    ["Rules.ToolBar.ChangesNoSaved"] = "Cambios sin guardar",
+    ["Rules.ToolBar.ChangesSaved"] = "¡Los cambios han sido guardados!",
+    ["Rules.Formatter.Use"] = "Reemplaza este texto con una instruccion para darle formato",
+    ["Rules.Formatter.Apply"] = "Aplicar formato"
 }
 
 return MenuPhrases

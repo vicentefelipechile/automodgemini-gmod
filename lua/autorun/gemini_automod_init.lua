@@ -19,6 +19,7 @@ Gemini = Gemini or {
     EndPoint = "https://generativelanguage.googleapis.com/v1beta/models"
 }
 
+Gemini.FullyLoaded = false
 
 
 --[[------------------------
@@ -721,6 +722,8 @@ function Gemini:PostInit()
             end)
         end)
     end
+
+    Gemini.FullyLoaded = true
 end
 
 Gemini:PreInit()

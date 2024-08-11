@@ -24,6 +24,10 @@ local DefaultModelTbl = {
 
 local HTMLCONFIG = include("config/gemini_spread.html.lua")
 
+local function InitCap(str)
+    return str:gsub("^%l", string.upper)
+end
+
 --[[------------------------
       Generation Config
 ------------------------]]--
@@ -122,17 +126,22 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ConfigPanel.General.LanguageTitle:SetText( Gemini:GetPhrase("Config.Language") )
     self.ConfigPanel.General.LanguageTitle:SetFont("Frutiger:Big")
 
+    self.ConfigPanel.General.LanguageNote = vgui.Create( "DLabel", self.ConfigPanel.General )
+    self.ConfigPanel.General.LanguageNote:Dock( TOP )
+    self.ConfigPanel.General.LanguageNote:DockMargin( 10, 0, 10, 0 )
+    self.ConfigPanel.General.LanguageNote:SetText( Gemini:GetPhrase("Config.Language.Note") )
+
     self.ConfigPanel.General.Language = vgui.Create( "DComboBox", self.ConfigPanel.General )
     self.ConfigPanel.General.Language:Dock( TOP )
-    self.ConfigPanel.General.Language:DockMargin( 10, 10, 10, 10 )
+    self.ConfigPanel.General.Language:DockMargin( 10, 5, 10, 10 )
     self.ConfigPanel.General.Language.Paint = SmallBackgroundPaint
     self.ConfigPanel.General.Language.OnMenuOpened = DComboBoxPaint
 
     for _, Language in ipairs( Gemini:GetLanguages() ) do
-        self.ConfigPanel.General.Language:AddChoice( Language["Name"], Language["Code"] )
+        self.ConfigPanel.General.Language:AddChoice( Gemini:GetPhrase("Language." .. InitCap(Language)), Language )
     end
 
-    self.ConfigPanel.General.Language:SetValue( Gemini:GetConfig("Language", "General", true) )
+    self.ConfigPanel.General.Language:SetValue( Gemini:GetPhrase("Language." .. InitCap(Gemini:GetConfig("Language", "General", true) )) )
 
     self.Items["General"] = self.ConfigPanel:AddSheet("General", self.ConfigPanel.General, CONFIG_ICON)
 

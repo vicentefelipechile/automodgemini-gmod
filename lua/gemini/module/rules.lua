@@ -40,6 +40,8 @@ local function PromptFormatterPaint(self, w, h)
     draw.RoundedBox( 8, 0, 0, w, h, PromptFormatterColor )
 end
 
+local ContentTextTable = {}
+
 --[[------------------------
        Extra Functions
 ------------------------]]--
@@ -81,7 +83,7 @@ end
 ------------------------]]--
 
 function MODULE:CompileHTML(InitialValue, ReadOnly, UseCache)
-    InitialValue = InitialValue or "# Test Script"
+    InitialValue = string.JavascriptSafe(InitialValue or "# Test Script"):gsub("\\n", "\n")
     ReadOnly = tostring(ReadOnly)
 
     if UseCache and ( COMPILED_HTML ~= "" ) then
@@ -122,7 +124,8 @@ end
 local OffsetX, OffsetY = 12, 42
 function MODULE:CreatePromptFormatter(RootPanel)
     if IsValid( self.PromptFormatterMenu ) then
-        self.PromptFormatterMenu:Remove()
+        self.PromptFormatterMenu:Center()
+        return
     end
 
     self.PromptFormatterMenu = vgui.Create("DFrame", RootPanel)
@@ -142,12 +145,44 @@ function MODULE:CreatePromptFormatter(RootPanel)
     self.PromptFormatterMenu.Editor:SetHTML( self:CompileHTML(Gemini:GetPhrase("Rules.Formatter.Use"), false, true ) )
     self.PromptFormatterMenu.Editor:Call([[SetEditorOption("showGutter", false)]])
     self.PromptFormatterMenu.Editor:Call([[SetEditorOption("showPrintMargin", false)]])
+    self.PromptFormatterMenu.Editor:Call([[editorcontentenabled = false]])
+
+    self.PromptFormatterMenu.Editor:AddFunction("gmod", "SetContentTextTable", function(index, content)
+        ContentTextTable[index] = content
+    end)
 
     self.PromptFormatterMenu.ApplyButton = vgui.Create("DButton", self.PromptFormatterMenu)
     self.PromptFormatterMenu.ApplyButton:SetSize( 100, 30 )
     self.PromptFormatterMenu.ApplyButton:SetPos( OffsetX, 200 - OffsetY )
     self.PromptFormatterMenu.ApplyButton:SetText( Gemini:GetPhrase("Config.Apply") )
     self.PromptFormatterMenu.ApplyButton:SetZPos( 100 )
+
+    self.PromptFormatterMenu.ApplyButton.DoClick = function(SubSelf)
+        self.ServerInfoPanel.Panel.TextEditor:Call([[GetEditorContent("ServerInfoText")]])
+        self.PromptFormatterMenu.Editor:Call([[GetEditorContent("FormatText")]])
+
+        timer.Simple(.01, function()
+            local ServerInfo = ContentTextTable["ServerInfoText"]
+            local ServerInfoCompressed = util.Compress(ServerInfo)
+            local ServerInfoSize = #ServerInfoCompressed
+
+            local FormatText = ContentTextTable["FormatText"]
+
+            if ServerInfoSize > Gemini.Util.MaxBandwidth then
+                Gemini:Error("The text is too large to be sent", ServerInfoSize, Gemini.Util.MaxBandwidth)
+            end
+
+            net.Start("Gemini:FormatterServerInfo")
+                net.WriteString(FormatText)
+                net.WriteUInt(ServerInfoSize, Gemini.Util.DefaultNetworkUInt)
+                net.WriteData(ServerInfoCompressed, ServerInfoSize)
+            net.SendToServer()
+
+            self:ClosePromptFormatter()
+        end)
+
+        SubSelf:SetEnabled(false)
+    end
 
     self.PromptFormatterMenu.OnSizeChanged = function(SubSelf, w, h)
         self.PromptFormatterMenu.ApplyButton:SetPos( OffsetX, h - OffsetY )
@@ -165,6 +200,7 @@ end
        Main Functions
 ------------------------]]--
 
+local DELAY_TOSHOW = 0
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     if not Gemini:CanUse("gemini_rules") then return false end
     if not self:AceCore() then return false end
@@ -201,16 +237,27 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerInfoPanel.Panel.TextEditor:Dock( FILL )
 
     -- Main Functions
-    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
-        gui.HideGameUI()
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SetContentTextTable", function(index, content)
+        ContentTextTable[index] = content
     end)
 
-    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SetClipboardText", function(text)
-        SetClipboardText(text)
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "TriggerEditorContent", function(text)
+        if not Gemini:CanUse("gemini_rules_set") then return end
+
+        Gemini:SetServerInformation(text)
+
+        self.ServerInfoPanel.ToolBar.TextHint:SetText( Gemini:GetPhrase("Rules.ToolBar.ChangesSaved") )
+        timer.Simple(4, function()
+            if IsValid(self.ServerInfoPanel) and self.ServerInfoPanel.ToolBar.TextHint:GetText() == Gemini:GetPhrase("Rules.ToolBar.ChangesSaved") then
+                self.ServerInfoPanel.ToolBar.TextHint:SetText( "" )
+            end
+        end)
     end)
 
-    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "SaveServerInfoLua", function(text)
-        Gemini:SetServerInfoClient(text)
+    self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "EditorTextChanged", function(NewText)
+        if DELAY_TOSHOW > CurTime() then return end
+
+        self.ServerInfoPanel.ToolBar.TextHint:SetText( Gemini:GetPhrase("Rules.ToolBar.ChangesNoSaved") )
     end)
 
     self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "InfoFullyLoaded", function()
@@ -219,9 +266,10 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         if not CanEdit then return end
 
         self.ServerInfoPanel.ToolBar.SaveButton:SetEnabled( CanEdit )
+        self.ServerInfoPanel.ToolBar.PromptButton:SetEnabled( CanEdit )
     end)
 
-    self.ServerInfoPanel.Panel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInfo(), not CanEdit, true) )
+    self.ServerInfoPanel.Panel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerInformation(), not CanEdit, true) )
     self.ServerInfoPanel.Panel.TextEditor:Call([[SetEditorOption("showPrintMargin", false)]])
 
     if CanEdit then
@@ -239,7 +287,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self.ServerInfoPanel.ToolBar.SaveButton:SetIcon( "icon16/disk.png" )
 
         self.ServerInfoPanel.ToolBar.SaveButton.DoClick = function()
-            self.ServerInfoPanel.TextEditor:Call([[gmod.SaveServerInfoJS()]])
+            self.ServerInfoPanel.Panel.TextEditor:Call([[TriggerEditorContent()]])
         end
 
         self.ServerInfoPanel.ToolBar.PromptButton = vgui.Create( "DButton", self.ServerInfoPanel.ToolBar )
@@ -247,11 +295,22 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         self.ServerInfoPanel.ToolBar.PromptButton:DockMargin( 4, 4, 4, 4 )
         self.ServerInfoPanel.ToolBar.PromptButton:SetTall( 28 )
         self.ServerInfoPanel.ToolBar.PromptButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Formatter") )
+        self.ServerInfoPanel.ToolBar.PromptButton:SetEnabled( false )
         self.ServerInfoPanel.ToolBar.PromptButton:SetIcon( "icon16/application_edit.png" )
 
         self.ServerInfoPanel.ToolBar.PromptButton.DoClick = function()
-            self:CreatePromptFormatter(RootPanel)
+            self:CreatePromptFormatter(OurTab)
         end
+
+        self.ServerInfoPanel.ToolBar.TextHint = vgui.Create( "DLabel", self.ServerInfoPanel.ToolBar )
+        self.ServerInfoPanel.ToolBar.TextHint:Dock( BOTTOM )
+        self.ServerInfoPanel.ToolBar.TextHint:DockMargin( 4, 4, 4, 4 )
+        self.ServerInfoPanel.ToolBar.TextHint:SetTall( 64 )
+        self.ServerInfoPanel.ToolBar.TextHint:SetText( "" )
+        self.ServerInfoPanel.ToolBar.TextHint:SetContentAlignment( 5 )
+        self.ServerInfoPanel.ToolBar.TextHint:SetAutoStretchVertical( true )
+        self.ServerInfoPanel.ToolBar.TextHint:SetWrap( true )
+        self.ServerInfoPanel.ToolBar.TextHint:SetTextColor( color_white )
     end
 
     self.MainSheet:AddSheet( Gemini:GetPhrase("Rules.ServerInfo"), self.ServerInfoPanel, "icon16/information.png" )
@@ -268,14 +327,6 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerRulesPanel.TextEditor:SetVisible( false )
 
     -- Main Functions
-    self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SuppressConsole", function()
-        gui.HideGameUI()
-    end)
-
-    self.ServerRulesPanel.TextEditor:AddFunction("gmod", "SetClipboardText", function(text)
-        SetClipboardText(text)
-    end)
-
     self.ServerRulesPanel.TextEditor:AddFunction("gmod", "RulesFullyLoaded", function()
         self.ServerRulesPanel.TextEditor.FullyLoaded = true
         self.ServerRulesPanel.ActionPanel.SaveButton:SetEnabled( CanEdit )
@@ -287,7 +338,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
         Gemini:SetServerRulesClient(text)
     end)
 
-    self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetRules(), not CanEdit, true) )
+    self.ServerRulesPanel.TextEditor:SetHTML( self:CompileHTML(Gemini:GetServerRules(), not CanEdit, true) )
 
     self.ServerRulesPanel.ActionPanel = vgui.Create( "DPanel", self.ServerRulesPanel )
     self.ServerRulesPanel.ActionPanel:Dock( BOTTOM )
@@ -306,6 +357,17 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     end
 
     self.MainSheet:AddSheet( Gemini:GetPhrase("Rules.Rules"), self.ServerRulesPanel, "icon16/page_white_text.png" )
+
+
+    local OldSetActiveButton = self.MainSheet.SetActiveButton
+    self.MainSheet.SetActiveButton = function(SubSelf, SubButton)
+        OldSetActiveButton(SubSelf, SubButton)
+
+        SubSelf:OnActiveTabChanged(SubButton:GetParent())
+    end
+    self.MainSheet.OnActiveTabChanged = function(SubSelf, NewPanel)
+        self:ClosePromptFormatter()
+    end
 end
 
 function MODULE:OnLostFocus()
@@ -319,13 +381,9 @@ Gemini:ModuleCreate(Gemini:GetPhrase("Rules"), MODULE)
         Asynchronous
 ------------------------]]--
 
-hook.Add("Gemini:ReceivedServerRules", "Gemini:RulesPanel", function(Rules, ServerInfo)
-    if IsValid(MODULE.ServerInfoPanel.Panel) then
-        MODULE.ServerInfoPanel.Panel.TextEditor:Call(string.format(ReplaceAceEditor, ServerInfo))
-    end
-
-    if IsValid(MODULE.ServerRulesPanel) then
-        MODULE.ServerRulesPanel.TextEditor:Call(string.format(ReplaceAceEditor, Rules))
+hook.Add("Gemini:ServerInformationUpdated", "Gemini:ServerInformationPanel", function(Information)
+    if IsValid(MODULE.ServerInfoPanel) then
+        MODULE.ServerInfoPanel.Panel.TextEditor:Call("SetEditorContent(`" .. Information .. "`)")
     end
 end)
 
@@ -337,6 +395,8 @@ hook.Add("Gemini:Formatter", "Gemini:Rules", function(Formatter, Text)
     if not AllowedFormatters[Formatter] then return end
 
     if IsValid(MODULE.ServerInfoPanel.Panel) and MODULE.ServerInfoPanel.Panel.TextEditor.FullyLoaded then
+        DELAY_TOSHOW = CurTime() + 3
+
         MODULE.ServerInfoPanel.Panel.TextEditor:Call(string.format(ReplaceAceEditor, Text))
     end
 end)

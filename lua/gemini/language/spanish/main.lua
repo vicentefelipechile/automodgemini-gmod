@@ -2,13 +2,15 @@
                             Gemini Automod - Spanish
 ----------------------------------------------------------------------------]]--
 
+local SERVER_SIDE = true
+
 local LANG = Gemini:LanguageCreate("Spanish")
 LANG:Require("gemini.lua")
 LANG:Require("menu.lua")
-LANG:Require("damage.lua", true)
-LANG:Require("sandbox.lua", true)
-LANG:Require("darkrp.lua", true)
-LANG:Require("prompts.lua", true)
+LANG:Require("damage.lua", SERVER_SIDE)
+LANG:Require("sandbox.lua", SERVER_SIDE)
+LANG:Require("darkrp.lua", SERVER_SIDE)
+LANG:Require("prompts.lua", SERVER_SIDE)
 
 --[[------------------------
         Extra Phrases

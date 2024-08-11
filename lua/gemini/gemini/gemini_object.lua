@@ -5,7 +5,7 @@
 include("response.lua")
 
 -- localize global functions
-local util_IsBinaryModuleInstalled = util.IsBinaryModuleInstalled -- Yes, this order is made on purpose
+local util_IsBinaryModuleInstalled = util.IsBinaryModuleInstalled -- Yes, this order was made on purpose
 local table_IsSequential = table.IsSequential
 local util_TableToJSON = util.TableToJSON
 local util_JSONToTable = util.JSONToTable
@@ -166,7 +166,7 @@ function GEMINI_OOP:AddContent(Part, Role)
 end
 
 function GEMINI_OOP:GetContents()
-    return table_Copy(self.__requestbody["contents"])
+    return self.__requestbody["contents"]
 end
 
 function GEMINI_OOP:ClearContent()
@@ -178,7 +178,7 @@ function GEMINI_OOP:ClearBody()
 end
 
 function GEMINI_OOP:GetBody()
-    return table_Copy(self.__requestbody)
+    return self.__requestbody
 end
 
 function GEMINI_OOP:SetBody(NewBody)
@@ -208,11 +208,21 @@ function GEMINI_OOP:SetSafetySettings(SafetySettings, Level)
 end
 
 function GEMINI_OOP:GetSafetySettings()
-    return table_Copy(self.__requestbody["safetySettings"])
+    return self.__requestbody["safetySettings"]
 end
 
 function GEMINI_OOP:ClearSafetySettings()
     self.__requestbody["safetySettings"] = {}
+end
+
+function GEMINI_OOP:SetGenerationConfig(Key, DaValue)
+    Gemini:Checker({Key, "string", 1})
+
+    self.__requestbody["generationConfig"][Key] = DaValue
+end
+
+function GEMINI_OOP:GetGenerationConfig()
+    return istable(self.__requestbody["generationConfig"]) and self.__requestbody["generationConfig"] or nil
 end
 
 function GEMINI_OOP:SetVersion(Version)
@@ -353,6 +363,7 @@ local function RetrieveModels()
     LoadAllModels:ClearBody()
     LoadAllModels:SetMethod("models")
     LoadAllModels:SetHTTPMethod("GET")
+    LoadAllModels:SetVersion("v1")
     LoadAllModels:Silent()
 
     local AllModelsPromise = LoadAllModels:MakeRequest()

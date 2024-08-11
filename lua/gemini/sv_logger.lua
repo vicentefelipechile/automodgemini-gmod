@@ -298,7 +298,7 @@ hook.Add("Gemini:Log", "Gemini:Log", function(...)
 end)
 
 function Gemini:LoggerSendAsynchronousLogs()
-    local LastLog = Gemini:LoggerGetLogsLimit(1)[1]
+    local LastLog = Gemini:GetLogs(1)[1]
 
     local ID = LastLog["geminilog_id"]
     local Log = LastLog["geminilog_log"]
