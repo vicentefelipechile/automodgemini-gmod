@@ -14,7 +14,8 @@ end
           Variables
 ------------------------]]--
 
-Gemini.Util.MaxBandwidth = (2 ^ 16) - 1024 -- 63KB
+-- Old (2 ^ 16) - 1024 = 63KB
+Gemini.Util.MaxBandwidth = (2 ^ 13) -- 8KB
 Gemini.Util.DefaultNetworkUInt = 16
 Gemini.Util.DefaultNetworkUIntBig = 32
 

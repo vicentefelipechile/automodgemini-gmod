@@ -669,7 +669,6 @@ function Gemini:Init()
             self:Error([[The function "FormatterPoblate" has been replaced by another third-party addon!!!]], self.FormatterPoblate, "function")
         end
 
-        -- AddCSLua file to all files inside "gemini/module"
         local LuaCSFiles, LuaSubFolder = file.Find("gemini/module/*", "LUA")
         for _, File in ipairs(LuaCSFiles) do
             AddCSLuaFile("gemini/module/" .. File)

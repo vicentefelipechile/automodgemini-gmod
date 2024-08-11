@@ -129,10 +129,13 @@ local MenuPhrases = {
     ["Rules.ServerInfo"] = "Información",
     ["Rules.ToolBar.Save"] = "Guardar",
     ["Rules.ToolBar.Formatter"] = "Formateador",
-    ["Rules.ToolBar.ChangesNoSaved"] = "Cambios sin guardar",
-    ["Rules.ToolBar.ChangesSaved"] = "¡Los cambios han sido guardados!",
+    ["Rules.ToolBar.ChangesNotSaved"] = "Cambios sin guardar",
+    ["Rules.ToolBar.ChangesSaved"] = "Los cambios han sido guardados",
+    ["Rules.ToolBar.Reload"] = "Actualizar",
+    ["Rules.ToolBar.Reloaded"] = "Se ha actualizado la información",
     ["Rules.Formatter.Use"] = "Reemplaza este texto con una instruccion para darle formato",
-    ["Rules.Formatter.Apply"] = "Aplicar formato"
+    ["Rules.Formatter.Apply"] = "Aplicar formato",
+    ["Rules.Formatter.Applied"] = "Formato aplicado con exito"
 }
 
 return MenuPhrases

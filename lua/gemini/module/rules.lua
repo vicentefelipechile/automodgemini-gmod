@@ -201,6 +201,22 @@ end
 ------------------------]]--
 
 local DELAY_TOSHOW = 0
+function MODULE:SetEditorHint(Text, Delay)
+    if not IsValid(self.MainSheet) then return end
+    if DELAY_TOSHOW > CurTime() then return end
+
+    self.ServerInfoPanel.ToolBar.TextHint:SetText( Gemini:GetPhrase(Text) )
+
+    if timer.Exists("Gemini:Rules:EditorHint") then
+        timer.Remove("Gemini:Rules:EditorHint")
+    end
+
+    timer.Create("Gemini:Rules:EditorHint", Delay or 3, 1, function()
+        if not IsValid(self.MainSheet) then return end
+        self.ServerInfoPanel.ToolBar.TextHint:SetText("")
+    end)
+end
+
 function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     if not Gemini:CanUse("gemini_rules") then return false end
     if not self:AceCore() then return false end
@@ -244,20 +260,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "TriggerEditorContent", function(text)
         if not Gemini:CanUse("gemini_rules_set") then return end
 
+        self:SetEditorHint("Rules.ToolBar.ChangesSaved", 4)
+        DELAY_TOSHOW = CurTime() + 2
         Gemini:SetServerInformation(text)
-
-        self.ServerInfoPanel.ToolBar.TextHint:SetText( Gemini:GetPhrase("Rules.ToolBar.ChangesSaved") )
-        timer.Simple(4, function()
-            if IsValid(self.ServerInfoPanel) and self.ServerInfoPanel.ToolBar.TextHint:GetText() == Gemini:GetPhrase("Rules.ToolBar.ChangesSaved") then
-                self.ServerInfoPanel.ToolBar.TextHint:SetText( "" )
-            end
-        end)
     end)
 
     self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "EditorTextChanged", function(NewText)
-        if DELAY_TOSHOW > CurTime() then return end
-
-        self.ServerInfoPanel.ToolBar.TextHint:SetText( Gemini:GetPhrase("Rules.ToolBar.ChangesNoSaved") )
+        self:SetEditorHint("Rules.ToolBar.ChangesNotSaved")
     end)
 
     self.ServerInfoPanel.Panel.TextEditor:AddFunction("gmod", "InfoFullyLoaded", function()
@@ -288,6 +297,23 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
         self.ServerInfoPanel.ToolBar.SaveButton.DoClick = function()
             self.ServerInfoPanel.Panel.TextEditor:Call([[TriggerEditorContent()]])
+        end
+
+        self.ServerInfoPanel.ToolBar.ReloadButton = vgui.Create( "DButton", self.ServerInfoPanel.ToolBar )
+        self.ServerInfoPanel.ToolBar.ReloadButton:Dock( TOP )
+        self.ServerInfoPanel.ToolBar.ReloadButton:DockMargin( 4, 4, 4, 4 )
+        self.ServerInfoPanel.ToolBar.ReloadButton:SetTall( 28 )
+        self.ServerInfoPanel.ToolBar.ReloadButton:SetText( Gemini:GetPhrase("Rules.ToolBar.Reload") )
+        self.ServerInfoPanel.ToolBar.ReloadButton:SetIcon( "icon16/arrow_refresh.png" )
+
+        self.ServerInfoPanel.ToolBar.ReloadButton.DoClick = function()
+            if not Gemini:CanUse("gemini_rules") then return end
+
+            net.Start("Gemini:RequestServerData")
+            net.SendToServer()
+
+            self:SetEditorHint("Rules.ToolBar.Reloaded")
+            DELAY_TOSHOW = CurTime() + 3
         end
 
         self.ServerInfoPanel.ToolBar.PromptButton = vgui.Create( "DButton", self.ServerInfoPanel.ToolBar )
@@ -374,6 +400,13 @@ function MODULE:OnLostFocus()
     self:ClosePromptFormatter()
 end
 
+function MODULE:OnFocus()
+    if IsValid(self.MainSheet) and Gemini:CanUse("gemini_rules") then
+        net.Start("Gemini:RequestServerData")
+        net.SendToServer()
+    end
+end
+
 
 Gemini:ModuleCreate(Gemini:GetPhrase("Rules"), MODULE)
 
@@ -383,6 +416,7 @@ Gemini:ModuleCreate(Gemini:GetPhrase("Rules"), MODULE)
 
 hook.Add("Gemini:ServerInformationUpdated", "Gemini:ServerInformationPanel", function(Information)
     if IsValid(MODULE.ServerInfoPanel) then
+        MODULE:SetEditorHint("Rules.ToolBar.Reloaded")
         MODULE.ServerInfoPanel.Panel.TextEditor:Call("SetEditorContent(`" .. Information .. "`)")
     end
 end)
@@ -395,6 +429,7 @@ hook.Add("Gemini:Formatter", "Gemini:Rules", function(Formatter, Text)
     if not AllowedFormatters[Formatter] then return end
 
     if IsValid(MODULE.ServerInfoPanel.Panel) and MODULE.ServerInfoPanel.Panel.TextEditor.FullyLoaded then
+        MODULE:SetEditorHint("Rules.Formatter.Applied")
         DELAY_TOSHOW = CurTime() + 3
 
         MODULE.ServerInfoPanel.Panel.TextEditor:Call(string.format(ReplaceAceEditor, Text))

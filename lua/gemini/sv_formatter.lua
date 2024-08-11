@@ -260,8 +260,10 @@ net.Receive("Gemini:FormatterServerInfo", function(len, ply)
 
         file.Write("gemini/debug/formatter_response_content.json", ContentText)
 
-        Gemini:SetServerInfo(ContentText)
-        Gemini:BroadcastServerInfo()
+        Gemini:SetServerInformation(ContentText)
+    end):Catch(function(Error)
+        Gemini:Print(Error)
+        Gemini:SendMessage(ply, Error, "Formatter")
     end)
 end)
 

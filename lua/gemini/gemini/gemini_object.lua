@@ -216,8 +216,6 @@ function GEMINI_OOP:ClearSafetySettings()
 end
 
 function GEMINI_OOP:SetGenerationConfig(Key, DaValue)
-    Gemini:Checker({Key, "string", 1})
-
     self.__requestbody["generationConfig"][Key] = DaValue
 end
 

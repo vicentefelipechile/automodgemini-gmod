@@ -5,20 +5,11 @@
 if SERVER then
     util.AddNetworkString("Gemini:SetServerRules")
     util.AddNetworkString("Gemini:SetServerInformation")
+    util.AddNetworkString("Gemini:RequestServerData")
 end
 
 local function GetDate()
     return os.date("%H:%M:%S")
-end
-
-local function CompressDataText(Text)
-    local CompressedText = util.Compress(Text)
-    if #CompressedText > Gemini.Util.MaxBandwidth then
-        Gemini:Error("The string is too big to be sended", #CompressedText, "X<=" .. Gemini.Util.MaxBandwidth)
-    end
-
-    net.WriteUInt(#CompressedText, Gemini.Util.DefaultNetworkUInt)
-    net.WriteData(CompressedText, #CompressedText)
 end
 
 --[[------------------------
@@ -57,49 +48,57 @@ function Gemini:SaveServerData()
     file.Write("gemini/serverdata.txt", util.TableToJSON(ServerData, true))
 end
 
-function Gemini:SetServerInformation(Information, NoLoop)
+function Gemini:SetServerInformation(Information, OnlySet)
     self:Checker({Information, "string", 1})
 
     ServerData["Information"] = Information
 
-    if
-        ( CLIENT and ( NoLoop ~= true ) and self:CanUse("gemini_rules_set") ) or
-        SERVER
-    then
-        net.Start("Gemini:SetServerInformation")
-            CompressDataText(Information)
+    if ( OnlySet == true ) then return end
 
-        if SERVER then
-            net.Broadcast()
-            self:SaveServerData()
-            hook.Run("Gemini:ServerInformationUpdated", Information)
-        else
-            net.SendToServer()
-        end
+    if #Information > Gemini.Util.MaxBandwidth then
+        self:Error("Information is too big to be sended", #Information, "x<=" .. Gemini.Util.MaxBandwidth)
+    end
+
+    if CLIENT and self:CanUse("gemini_rules_set") then
+        net.Start("Gemini:SetServerInformation")
+            net.WriteString(Information)
+        net.SendToServer()
+
+    elseif SERVER then
+        net.Start("Gemini:SetServerInformation")
+            net.WriteString(Information)
+        net.Broadcast()
+
+        self:SaveServerData()
+        hook.Run("Gemini:ServerInformationUpdated", Information)
     end
 
     self:Debug("Server info has been set", GetDate())
 end
 
-function Gemini:SetServerRules(Rules, NoLoop)
+function Gemini:SetServerRules(Rules, OnlySet)
     self:Checker({Rules, "string", 1})
 
     ServerData["Rules"] = Rules
 
-    if
-        ( CLIENT and ( NoLoop ~= true ) and self:CanUse("gemini_rules_set") ) or
-        SERVER
-    then
-        net.Start("Gemini:SetServerRules")
-            CompressDataText(Rules)
+    if ( OnlySet == true ) then return end
 
-        if SERVER then
-            net.Broadcast()
-            self:SaveServerData()
-            hook.Run("Gemini:ServerRulesUpdated", Rules)
-        else
-            net.SendToServer()
-        end
+    if #Rules > Gemini.Util.MaxBandwidth then
+        self:Error("Rules are too big to be sended", #Rules, "x<=" .. Gemini.Util.MaxBandwidth)
+    end
+
+    if ( CLIENT and self:CanUse("gemini_rules_set") ) then
+        net.Start("Gemini:SetServerRules")
+            net.WriteString(Rules)
+        net.SendToServer()
+
+    elseif SERVER then
+        net.Start("Gemini:SetServerRules")
+            net.WriteString(Rules)
+        net.Broadcast()
+
+        self:SaveServerData()
+        hook.Run("Gemini:ServerRulesUpdated", Rules)
     end
 
     self:Debug("Server rules have been set", GetDate())
@@ -127,21 +126,29 @@ function Gemini:LoadServerData()
     ServerData = util.JSONToTable(file.Read("gemini/serverdata.txt", "DATA"))
 end
 
-hook.Add("Gemini:PostInit", "Gemini:LoadServerData", function()
-    Gemini:LoadServerData()
-end)
+if SERVER then
+    hook.Add("Gemini:PostInit", "Gemini:LoadServerData", function()
+        Gemini:LoadServerData()
 
-hook.Add("Gemini:PlayerFullyConnected", "Gemini:SendServerData", function(ply)
-    if CLIENT then return end
+        net.Start("Gemini:SetServerRules")
+            net.WriteString(ServerData["Rules"])
+        net.Broadcast()
 
-    net.Start("Gemini:SetServerRules")
-        CompressDataText(ServerData["Rules"])
-    net.Send(ply)
+        net.Start("Gemini:SetServerInformation")
+            net.WriteString(ServerData["Information"])
+        net.Broadcast()
+    end)
 
-    net.Start("Gemini:SetServerInformation")
-        CompressDataText(ServerData["Information"])
-    net.Send(ply)
-end)
+    hook.Add("Gemini:PlayerFullyConnected", "Gemini:SendServerData", function(ply)
+        net.Start("Gemini:SetServerRules")
+            net.WriteString(ServerData["Rules"])
+        net.Send(ply)
+
+        net.Start("Gemini:SetServerInformation")
+            net.WriteString(ServerData["Information"])
+        net.Send(ply)
+    end)
+end
 
 --[[------------------------
       Network Functions
@@ -149,30 +156,49 @@ end)
 
 if CLIENT then
     net.Receive("Gemini:SetServerRules", function()
-        local Rules = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+        local Rules = net.ReadString()
         Gemini:SetServerRules(Rules, true)
 
         hook.Run("Gemini:ServerRulesUpdated", Rules)
     end)
 
     net.Receive("Gemini:SetServerInformation", function()
-        local Information = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+        local Information = net.ReadString()
         Gemini:SetServerInformation(Information, true)
 
+        hook.Run("Gemini:ServerInformationUpdated", Information)
+    end)
+
+    net.Receive("Gemini:RequestServerData", function()
+        local Rules = net.ReadString()
+        local Information = net.ReadString()
+
+        Gemini:SetServerRules(Rules, true)
+        Gemini:SetServerInformation(Information, true)
+        hook.Run("Gemini:ServerRulesUpdated", Rules)
         hook.Run("Gemini:ServerInformationUpdated", Information)
     end)
 else
     net.Receive("Gemini:SetServerRules", function(_, ply)
         if not Gemini:CanUse(ply, "gemini_rules_set") then return end
 
-        local Rules = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+        local Rules = net.ReadString()
         Gemini:SetServerRules(Rules)
     end)
 
     net.Receive("Gemini:SetServerInformation", function(_, ply)
         if not Gemini:CanUse(ply, "gemini_rules_set") then return end
 
-        local Information = net.ReadData( net.ReadUInt(Gemini.Util.DefaultNetworkUInt) )
+        local Information = net.ReadString()
         Gemini:SetServerInformation(Information)
+    end)
+
+    net.Receive("Gemini:RequestServerData", function(_, ply)
+        if not Gemini:CanUse(ply, "gemini_rules") then return end
+
+        net.Start("Gemini:RequestServerData")
+            net.WriteString(ServerData["Rules"])
+            net.WriteString(ServerData["Information"])
+        net.Send(ply)
     end)
 end
