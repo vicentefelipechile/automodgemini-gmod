@@ -2,6 +2,8 @@
                        Google Gemini Automod - Enum Module
 ----------------------------------------------------------------------------]]--
 
+module( "GEMINI_ENUM", package.seeall )
+
 --[[------------------------
         Harm Category
 ------------------------]]--

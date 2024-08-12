@@ -39,17 +39,17 @@ Gemini:CreateConfig("SafetyDangerousContent", "Gemini", OnlyThreeSafety, 2)
 local CurrentLanguage = CurrentLanguage or {}
 
 local SAFETY_ENUM = {
-    [1] = "BLOCK_NONE",
-    [2] = "BLOCK_ONLY_HIGH",
-    [3] = "BLOCK_MEDIUM_AND_ABOVE",
-    [4] = "BLOCK_LOW_AND_ABOVE"
+    [1] = GEMINI_ENUM.BLOCK_NONE,
+    [2] = GEMINI_ENUM.BLOCK_ONLY_HIGH,
+    [3] = GEMINI_ENUM.BLOCK_MEDIUM_AND_ABOVE,
+    [4] = GEMINI_ENUM.BLOCK_LOW_AND_ABOVE
 }
 
 local SAFETY_TYPE = {
-    ["HARM_CATEGORY_HARASSMENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHarassment", "Gemini") ] end,
-    ["HARM_CATEGORY_HATE_SPEECH"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHateSpeech", "Gemini") ] end,
-    ["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
-    ["HARM_CATEGORY_DANGEROUS_CONTENT"] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyDangerousContent", "Gemini") ] end
+    [GEMINI_ENUM.HARM_CATEGORY_HARASSMENT] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHarassment", "Gemini") ] end,
+    [GEMINI_ENUM.HARM_CATEGORY_HATE_SPEECH] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyHateSpeech", "Gemini") ] end,
+    [GEMINI_ENUM.HARM_CATEGORY_SEXUALLY_EXPLICIT] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetySexuallyExplicit", "Gemini") ] end,
+    [GEMINI_ENUM.HARM_CATEGORY_DANGEROUS_CONTENT] = function() return SAFETY_ENUM[ Gemini:GetConfig("SafetyDangerousContent", "Gemini") ] end
 }
 
 function Gemini:GeminiPoblate()

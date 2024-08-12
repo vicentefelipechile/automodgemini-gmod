@@ -80,10 +80,10 @@ end
 ------------------------]]--
 
 local SAFETY_ENUM = {
-    [1] = {["Name"] = BLOCK_NONE, ["Icon"] = "icon16/page.png"},
-    [2] = {["Name"] = BLOCK_ONLY_HIGH, ["Icon"] = "icon16/page_key.png"},
-    [3] = {["Name"] = BLOCK_MEDIUM_AND_ABOVE, ["Icon"] = "icon16/page_link.png"},
-    [4] = {["Name"] = BLOCK_LOW_AND_ABOVE, ["Icon"] = "icon16/page_find.png"}
+    [1] = {["Name"] = GEMINI_ENUM.BLOCK_NONE, ["Icon"] = "icon16/page.png"},
+    [2] = {["Name"] = GEMINI_ENUM.BLOCK_ONLY_HIGH, ["Icon"] = "icon16/page_key.png"},
+    [3] = {["Name"] = GEMINI_ENUM.BLOCK_MEDIUM_AND_ABOVE, ["Icon"] = "icon16/page_link.png"},
+    [4] = {["Name"] = GEMINI_ENUM.BLOCK_LOW_AND_ABOVE, ["Icon"] = "icon16/page_find.png"}
 }
 
 local SaffetySetting = {

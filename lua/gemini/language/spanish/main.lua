@@ -259,6 +259,21 @@ LANG:PoblateHooks(SandboxHooks)
 ------------------------]]--
 
 local DarkRPModule = LANG:Get("darkrp")
-if DarkRPModule["Verification"]() then
+hook.Add("DarkRPFinishedLoading", "Gemini:DarkRPModule", function()
+    if not DarkRPModule["Verification"]() then return end
+
     LANG:PoblateHooks(DarkRPModule["Hooks"])
-end
+end)
+
+hook.Add("Gemini:PostInit", "Gemini:DarkRPModule", function()
+    if not Gemini.FullyLoaded then return end
+
+    if not DarkRPModule["Verification"]() then return end
+    LANG:PoblateHooks(DarkRPModule["Hooks"])
+end)
+
+--[[------------------------
+   Ulysses Library (ULib)
+------------------------]]--
+
+-- LANG:PoblateHooks(LANG:Get("ulx"))

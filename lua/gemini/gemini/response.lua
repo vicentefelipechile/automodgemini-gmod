@@ -11,8 +11,8 @@
 ------------------------]]--
 
 local SAFETYRATING = {
-    category = HARM_CATEGORY_UNSPECIFIED,
-    probability = HARM_PROBABILITY_UNSPECIFIED,
+    category = GEMINI_ENUM.HARM_CATEGORY_UNSPECIFIED,
+    probability = GEMINI_ENUM.HARM_PROBABILITY_UNSPECIFIED,
     blocked = false,
 }
 
@@ -37,7 +37,7 @@ SAFETYRATING.__index = SAFETYRATING
 ------------------------]]--
 
 local PROMPTFEEDBACK = {
-    blockReason = BLOCK_REASON_UNSPECIFIED,
+    blockReason = GEMINI_ENUM.BLOCK_REASON_UNSPECIFIED,
     safetyRatings = {}
 }
 
@@ -215,7 +215,7 @@ CITATIONMETADATA.__index = CITATIONMETADATA
 
 local CANDIDATE = {
     content = {},
-    finishReason = FINISH_REASON_UNSPECIFIED,
+    finishReason = GEMINI_ENUM.FINISH_REASON_UNSPECIFIED,
     safetyRatings = {},
     citationMetadata = {},
     tokenCount = 0,

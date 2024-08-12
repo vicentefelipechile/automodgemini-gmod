@@ -10,6 +10,7 @@ local Formating = function(str, ...)
 end
 
 local AsynchronousPlayers = {}
+local SERVER_ID = 1
 
 --[[------------------------
         Network Strings
@@ -39,12 +40,16 @@ local LoggerSQL = {
             geminiuser_steamid64 TEXT NOT NULL UNIQUE
         )
     ]],
+    ["GEMINI_USER_SERVER"] = [[
+        INSER INTO gemini_user (geminiuser_steamid, geminiuser_steamid64)
+        VALUES ('STEAM_0:0:0', '7654321')
+    ]],
     ["GEMINI_LOG"] = [[
         CREATE TABLE IF NOT EXISTS gemini_log (
             geminilog_id INTEGER PRIMARY KEY AUTOINCREMENT,
             geminilog_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             geminilog_log TEXT NOT NULL,
-            geminilog_user1 INTEGER NOT NULL,
+            geminilog_user1 INTEGER DEFAULT NULL,
             geminilog_user2 INTEGER DEFAULT NULL,
             geminilog_user3 INTEGER DEFAULT NULL,
             geminilog_user4 INTEGER DEFAULT NULL,
@@ -152,6 +157,7 @@ function Gemini:LoggerCreateTable()
     LoggerSQL["GETONLYLOGS"] = string.Replace(self:LoggerGetSQL("GETONLYLOGS"), "DAY_NAME", self.DayName)
 
     sql_Query(self:LoggerGetSQL("GEMINI_USER"))
+    sql_Query(self:LoggerGetSQL("GEMINI_USER_SERVER"))
     sql_Query(self:LoggerGetSQL("GEMINI_LOG"))
 end
 
@@ -169,8 +175,8 @@ end
       Player Functions
 ------------------------]]--
 
-function Gemini:PlayerToID(ply)
-    if not ( IsValid(ply) and ply:IsPlayer() ) then return nil end
+function Gemini:PlayerToID(ply, DefaultID)
+    if not ( IsValid(ply) and ply:IsPlayer() ) then return DefaultID end
 
     if isnumber(ply.GEMINI_ID) then
         return ply.GEMINI_ID
@@ -281,7 +287,7 @@ end
 ------------------------]]--
 
 function Gemini:AddNewLog(LogString, LogUser1, LogUser2, LogUser3, LogUser4)
-    LogUser1 = self:PlayerToID(LogUser1)
+    LogUser1 = self:PlayerToID(LogUser1, SERVER_ID)
     LogUser2 = self:PlayerToID(LogUser2)
     LogUser3 = self:PlayerToID(LogUser3)
     LogUser4 = self:PlayerToID(LogUser4)
@@ -366,13 +372,3 @@ hook.Add("PlayerDisconnected", "Gemini:LoggerAsynchronousLogs", function(ply)
 
     LoggerStopAsynchronousLogs(0, ply)
 end)
-
-
-
-sql.m_strError = nil -- This is required to invoke __newindex
-
-setmetatable(sql, { __newindex = function( t, k, v )
-    if k == "m_strError" and v then
-        print("[SQL Error] " .. v )
-    end
-end } )

@@ -50,7 +50,8 @@ local DarkRPModule = {
         ["agendaUpdated"] = {
             ["Phrase"] = [[%s actualizo la agenda a "%s".]],
             ["Function"] = function(ply, agenda, text)
-                return {GetEntityName(ply), text}
+                local AgendaPhrase = ( IsValid(ply) and ply:IsPlayer() ) and ply:Nick() or "El servidor"
+                return {AgendaPhrase, text}
             end
         },
         ["lockdownEnded"] = {

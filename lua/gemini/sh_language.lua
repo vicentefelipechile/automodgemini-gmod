@@ -93,30 +93,6 @@ function Gemini:LanguagePoblate()
     for _, Language in ipairs(ExistingLanguages) do
         table.insert(LanguageList, Language)
     end
-
-    if CLIENT then return end
-
-    for HookName, HookTable in pairs( CurrentLanguage:GetHooks() ) do
-        hook.Add(HookName, "GeminiLanguageHook:" .. CurrentLanguage.Name .. "." .. HookName, function(...)
-            local Args = HookTable["Function"](...)
-            local Phrase = HookTable["Phrase"]
-
-            if ( Args == false ) then return end
-
-            local PlayersInvolved = {}
-            for _, any in ipairs({...}) do
-                if ( isentity(any) and any:IsPlayer() ) then
-                    PlayersInvolved[any] = true
-                end
-            end
-
-            PlayersInvolved = table.GetKeys(PlayersInvolved)
-            if ( #PlayersInvolved >= 1 ) then
-                local Log = string.format(Phrase, unpack(Args))
-                hook.Run("Gemini:Log", Log, unpack(PlayersInvolved))
-            end
-        end)
-    end
 end
 
 function Gemini:GetLanguages()

@@ -12,16 +12,9 @@ local MODULE = {
 function MODULE:Require(FileName, OnlyServer)
     if OnlyServer and CLIENT then return end
 
-    if not isstring(FileName) then
-        Gemini:Error([[The first argument of LANG:Require must be a string.]], FileName, "string")
-    end
-
-    if #FileName == 0 then
-        Gemini:Error([[The first argument of LANG:Require must not be an empty string.]], FileName, "string")
-    end
+    Gemini:Checker({FileName, "string", 1})
 
     local FileValue = include(FileName)
-
     if FileValue == nil then
         Gemini:Error([[The file "]] .. FileName .. [[" doesn't return a value.]], FileName, "any")
     end
@@ -31,13 +24,7 @@ function MODULE:Require(FileName, OnlyServer)
 end
 
 function MODULE:Get(ImportName)
-    if not isstring(ImportName) then
-        Gemini:Error([[The first argument of LANG:Get must be a string.]], ImportName, "string")
-    end
-
-    if #ImportName == 0 then
-        Gemini:Error([[The first argument of LANG:Get must not be an empty string.]], ImportName, "string")
-    end
+    Gemini:Checker({ImportName, "string", 1})
 
     if not self.__imports[ImportName] then
         Gemini:Error([[The module "]] .. ImportName .. [[" does not exist in the language module.]], ImportName, "string")
@@ -47,33 +34,14 @@ function MODULE:Get(ImportName)
 end
 
 function MODULE:AddPhrase(PhraseName, PhraseValue)
-    if not isstring(PhraseName) then
-        Gemini:Error([[The first argument of LANG:AddPhrase must be a string.]], PhraseName, "string")
-    end
-
-    if #PhraseName == 0 then
-        Gemini:Error([[The first argument of LANG:AddPhrase must not be an empty string.]], PhraseName, "string")
-    end
-
-    if not isstring(PhraseValue) then
-        Gemini:Error([[The second argument of LANG:AddPhrase must be a string.]], PhraseValue, "string")
-    end
-
-    if #PhraseValue == 0 then
-        Gemini:Error([[The second argument of LANG:AddPhrase must not be an empty string.]], PhraseValue, "string")
-    end
+    Gemini:Checker({PhraseName, "string", 1})
+    Gemini:Checker({PhraseValue, "string", 2})
 
     self.__phrases[PhraseName] = PhraseValue
 end
 
 function MODULE:GetPhrase(PhraseName)
-    if not isstring(PhraseName) then
-        Gemini:Error([[The first argument of LANG:GetPhrase must be a string.]], PhraseName, "string")
-    end
-
-    if #PhraseName == 0 then
-        Gemini:Error([[The first argument of LANG:GetPhrase must not be an empty string.]], PhraseName, "string")
-    end
+    Gemini:Checker({PhraseName, "string", 1})
 
     return self.__phrases[PhraseName] or PhraseName
 end
@@ -83,12 +51,30 @@ function MODULE:PoblateHooks(HooksTable)
         Gemini:Error([[The first argument of LANG:PoblateHooks must be a table.]], HooksTable, "table")
     end
 
-    for HookName, HookTable in pairs(HooksTable) do
-        if not istable(HookTable) then
-            Gemini:Error([[The value of the table passed to LANG:PoblateHooks must be a table.]], HookTable, "tablw")
+    for HookName, HookData in pairs(HooksTable) do
+        if not istable(HookData) then
+            Gemini:Error([[The value of the table passed to LANG:PoblateHooks must be a table.]], HookData, "table")
         end
 
-        self.__hooks[HookName] = {["Function"] = HookTable["Function"], ["Phrase"] = HookTable["Phrase"]}
+        hook.Add(HookName, "GeminiLanguageHook:" .. self.Name .. "." .. HookName, function(...)
+            local Args = HookData["Function"](...)
+            if ( Args == false ) then return end
+
+            local PlayersInvolved = {}
+            local ThereArePlayers = false
+            for _, any in ipairs({...}) do
+                if ( isentity(any) and any:IsPlayer() ) then
+                    PlayersInvolved[any] = true
+                    ThereArePlayers = true
+                end
+            end
+
+            if not ThereArePlayers then return end
+
+            PlayersInvolved = table.GetKeys(PlayersInvolved)
+            local Log = string.format(HookData["Phrase"], unpack(Args))
+            hook.Run("Gemini:Log", Log, unpack(PlayersInvolved))
+        end)
     end
 end
 
