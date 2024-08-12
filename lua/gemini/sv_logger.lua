@@ -130,6 +130,22 @@ local LoggerSQL = {
         LIMIT
             %s
     ]],
+    ["GETALLLOGSRANGEPLAYER"] = [[
+        SELECT
+            *
+        FROM
+            gemini_log
+        WHERE
+            geminilog_user1 = %s OR
+            geminilog_user2 = %s OR
+            geminilog_user3 = %s OR
+            geminilog_user4 = %s AND
+            geminilog_id BETWEEN %s AND %s
+        ORDER BY
+            geminilog_id DESC
+        LIMIT
+            %s
+    ]],
     ["INSERTLOG"] = [[
         INSERT INTO
             gemini_log (geminilog_log, geminilog_user1, geminilog_user2, geminilog_user3, geminilog_user4)
@@ -240,6 +256,19 @@ function Gemini:GetPlayerLogs(ply, Limit, FormatedLogs)
     return sql_Query(QuerySyntax, PlayerID, PlayerID, PlayerID, PlayerID, Limit) or {}
 end
 Gemini.GetPlayerLog = Gemini.GetPlayerLogs
+
+function Gemini:GetPlayerLogsRange(ply, Min, Max)
+    local P = isnumber(ply) and ply or self:PlayerToID(ply)
+
+    if not isnumber(P) then
+        self:Error("There was an error trying to get the player ID.", P, "number")
+    end
+
+    self:Checker({Min, "number", 2})
+    self:Checker({Max, "number", 3})
+
+    return Formating(self:LoggerGetSQL("GETALLLOGSRANGEPLAYER"), P, P, P, P, Min, Max, self:GetConfig("MaxLogsRequest", "Logger")) or {}
+end
 
 function Gemini:GetLogs(Limit, FormatedLogs)
     self:Checker({Limit, "number", 1})

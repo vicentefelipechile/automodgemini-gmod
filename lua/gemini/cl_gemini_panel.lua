@@ -17,6 +17,7 @@ function Gemini:ModuleCreate(Name, TableModule)
     TableModule["__name"] = Name
     TableModule["OnFocus"] = TableModule["OnFocus"] or Gemini.Util.ReturnNoneFunction
     TableModule["OnLostFocus"] = TableModule["OnLostFocus"] or Gemini.Util.ReturnNoneFunction
+    TableModule["FirstFocus"] = TableModule["FirstFocus"] or Gemini.Util.ReturnNoneFunction
 
     if ( Pos ~= nil ) then
         GeminiModule[Pos] = TableModule
@@ -57,32 +58,37 @@ surface.CreateFont("Frutiger:Normal", FrutigerFontData)
 FrutigerFontData.shadow = true
 surface.CreateFont("Frutiger:Normal-Shadow", FrutigerFontData)
 
-FrutigerFontData.shadow = false
 FrutigerFontData.blursize = 2
+FrutigerFontData.shadow = false
 surface.CreateFont("Frutiger:Normal-Blur", FrutigerFontData)
 
+FrutigerFontData.size = 32
 FrutigerFontData.blursize = 0
 FrutigerFontData.shadow = false
-FrutigerFontData.size = 32
 surface.CreateFont("Frutiger:Big", FrutigerFontData)
 
 FrutigerFontData.shadow = true
 surface.CreateFont("Frutiger:Big-Shadow", FrutigerFontData)
 
-FrutigerFontData.shadow = false
 FrutigerFontData.blursize = 2
+FrutigerFontData.shadow = false
 surface.CreateFont("Frutiger:Big-Blur", FrutigerFontData)
 
-FrutigerFontData.shadow = false
+FrutigerFontData.size = 24
 FrutigerFontData.blursize = 0
+FrutigerFontData.shadow = false
+surface.CreateFont("Frutiger:Medium", FrutigerFontData)
+
 FrutigerFontData.size = 13
+FrutigerFontData.blursize = 0
+FrutigerFontData.shadow = false
 surface.CreateFont("Frutiger:Small", FrutigerFontData)
 
 FrutigerFontData.shadow = true
 surface.CreateFont("Frutiger:Small-Shadow", FrutigerFontData)
 
-FrutigerFontData.shadow = false
 FrutigerFontData.blursize = 2
+FrutigerFontData.shadow = false
 surface.CreateFont("Frutiger:Small-Blur", FrutigerFontData)
 
 local GoogleSans = {
@@ -131,16 +137,16 @@ function GEMINIPANEL:PoblateItems()
 
         if ( Result == false ) then
             NewTab:SetEnabled(false)
-
-            -- Make the button darker
             NewTab.Paint = DisabledModule
-
             continue
         end
 
         NewTab.__MODULE = Module
         NewTab.OnFocus = Module.OnFocus
         NewTab.OnLostFocus = Module.OnLostFocus
+        NewTab.FirstFocus = Module.FirstFocus
+
+        NewTab:FirstFocus()
 
         AtLeastOneTab = true
     end

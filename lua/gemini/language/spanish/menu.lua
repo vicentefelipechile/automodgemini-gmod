@@ -124,6 +124,12 @@ local MenuPhrases = {
     ["Train.InputLogStart.Desc"] = "La id del registro inicial (ej: 1004)",
     ["Train.InputLogEnd"] = "Registro final",
     ["Train.InputLogEnd.Desc"] = "La id del registro final (ej: 1104)",
+    ["Train.DataTrain"] = "Datos de entrenamiento",
+    ["Train.PasteData"] = "Pegar datos",
+    ["Train.Result"] = "Veredicto",
+    ["Train.Result.Guilty"] = "Culpable",
+    ["Train.Result.NotGuilty"] = "No culpable",
+    ["Train.Result.Example"] = "Este jugador ha...",
 
     ["Rules.Rules"] = "Reglas",
     ["Rules.ServerInfo"] = "Información",

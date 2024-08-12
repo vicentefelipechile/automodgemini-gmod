@@ -1,6 +1,6 @@
 --[[----------------------------------------------------------------------------
                       Google Gemini Automod - Train Module
-----------------------------------------------------------------------------]]--
+----------------------------------------------------------------------------]]-- BG
 
 util.AddNetworkString("Gemini:GetTrain")
 
@@ -14,14 +14,19 @@ local TrainSQL = {
     ["GEMINI_TRAIN"] = [[
         CREATE TABLE IF NOT EXISTS gemini_train (
             train_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            train_gamemode TEXT NOT NULL DEFAULT 'default',
-            train_data TEXT NOT NULL,
-            train_result TEXT NOT NULL
+            train_playerid INTEGER NOT NULL,
+            train_start INTEGER NOT NULL,
+            train_end INTEGER NOT NULL,
+            train_result BOOLEAN DEFAULT 0,
+            train_description TEXT,
+            FOREIGN KEY (train_playerid) REFERENCES gemini_user(geminiuser_id),
+            FOREIGN KEY (train_start) REFERENCES gemini_log(gemini_id),
+            FOREIGN KEY (train_end) REFERENCES gemini_log(gemini_id)
         )
     ]],
     ["INSERT"] = [[
         INSERT INTO
-            gemini_train (train_gamemode, train_data, train_result)
+            gemini_train (train_playerid, train_start, train_end)
         VALUES
             ('%s', '%s', '%s')
     ]],
@@ -30,40 +35,15 @@ local TrainSQL = {
             *
         FROM
             gemini_train
-        WHERE
-            train_gamemode = '%s'
     ]],
     ["GETTRAIN"] = [[
         SELECT
-            train_data,
-            train_result
+            *
         FROM
             gemini_train
         WHERE
-            train_id = '%s' AND
-            train_gamemode = '%s'
-        LIMIT
-            %s
+            train_id = '%s'
     ]],
-    ["GETTRAINRANGE"] = [[
-        SELECT
-            train_data,
-            train_result
-        FROM
-            gemini_train
-        WHERE
-            train_id BETWEEN '%s' AND '%s' AND
-            train_gamemode = '%s'
-    ]],
-    ["GETALLTRAIN"] = [[
-        SELECT
-            train_data,
-            train_result
-        FROM
-            gemini_train
-        WHERE
-            train_gamemode = '%s'
-    ]]
 }
 
 -- Sanitize SQL
@@ -82,3 +62,33 @@ end
 function Gemini:TrainPoblate()
     sql_Query(self:TrainGetSQL("GEMINI_TRAIN"))
 end
+
+--[[------------------------
+        Train Module
+------------------------]]--
+
+
+--[[------------------------
+         Networking
+------------------------]]--
+
+net.Receive("Gemini:GetTrain", function(_, ply)
+    if not Gemini:CanUse(ply, "gemini_train") then return end
+
+    local PlayerID = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
+    local LogStart = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
+    local LogEnd = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
+
+    local Logs = Gemini:GetPlayerLogsRange(PlayerID, LogStart, LogEnd)
+    local LogsCompressed = util.Compress(util.TableToJSON(Logs))
+    local LogsLength = #LogsCompressed
+
+    net.Start("Gemini:GetTrain")
+        net.WriteUInt(LogsLength, Gemini.Util.DefaultNetworkUInt)
+        net.WriteData(LogsCompressed, LogsLength)
+    net.Send(ply)
+end)
+
+-- When i was coding this, i feel so ansious
+-- but then, the music reminds me why i'm doing this
+-- and now i feel so grateful for the opportunity

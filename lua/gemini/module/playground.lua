@@ -94,7 +94,7 @@ function MODULE:ResetPrompt()
 end
 
 function MODULE:PoblatePrompt()
-    if not PromptExists then return end
+    if not table.IsEmpty(PromptHistory) then return end
 
     local PromptHistoryCopy = table.Copy(PromptHistory)
     table.Empty(PromptHistory)
@@ -102,14 +102,13 @@ function MODULE:PoblatePrompt()
     for i, v in ipairs(PromptHistoryCopy) do
         self:AddMessagePrompt(v.Role, v.Text)
     end
-
-    PromptExists = true
 end
 
 function MODULE:AddMessagePrompt(Role, Text)
     if not IsValid(self.PromptPanel.PromptHistory) then return end
     if not AllowedRoles[Role] then return end
     Text = string.Trim(Text)
+    PromptExists = true
 
     -- BreakLine
     if ( #PromptHistory ~= 0 ) then
@@ -192,7 +191,6 @@ function MODULE:AddMessagePrompt(Role, Text)
     self.PromptPanel.PromptHistory:AddItem(HorizontalLine)
 
     table.insert(PromptHistory, { ["Role"] = Role, ["Text"] = Text })
-    PromptExists = true
 end
 
 function MODULE:SendMessagePrompt(Text)
@@ -519,11 +517,21 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 end
 
 function MODULE:OnFocus()
-    self:PoblatePrompt()
+    -- self:PoblatePrompt()
 end
 
 function MODULE:OnLostFocus()
     -- self:ResetPrompt()
+end
+
+function MODULE:FirstFocus()
+    if PromptExists then return end
+
+    timer.Simple(0.1, function()
+        if IsValid(self.PromptPanel) then
+            self:PoblatePrompt()
+        end
+    end)
 end
 
 --[[------------------------
