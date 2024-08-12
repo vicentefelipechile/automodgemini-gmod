@@ -43,12 +43,23 @@ function Gemini:VectorToString(vec)
     return string.format("(%s, %s, %s)", math.Round(vec.x, 0), math.Round(vec.y, 0), math.Round(vec.z, 0))
 end
 
-function Gemini:LogsToText(logs)
-    local text = ""
-    for i, log in ipairs(logs) do
-        text = text .. log .. "\n"
+function Gemini:LogsToText(Logs)
+    if not istable(Logs) then
+        self:Error("The first argument of Gemini:LogsToText() must be a table.", Logs, "table")
+    elseif table.IsEmpty(Logs) then
+        self:Error("The table is empty", Logs, "table")
     end
-    return text
+
+    local _, FirstValue = next(Logs)
+    if istable(FirstValue) then
+        local Text = ""
+        for i, LogData in ipairs(Logs) do
+            Text = Text .. LogData["log"] .. "\n"
+        end
+        return Text
+    else
+        return table.concat(Logs, "\n")
+    end
 end
 
 --[[------------------------

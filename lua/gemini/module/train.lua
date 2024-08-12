@@ -37,6 +37,10 @@ local ScrollbarPaint = function(self, w, h)
     end
 end
 
+local ALL_TRAINS = {}
+local GUILTY = true
+local NOT_GUILTY = false
+
 --[[------------------------
        Train Functions
 ------------------------]]--
@@ -44,11 +48,30 @@ end
 function MODULE:GetTrainID()
 end
 
+function MODULE:AddTrainButton(DataTrain)
+    if IsValid(self.TrainingList.List) then
+        local Train = self.TrainingList.List:Add("DButton")
+        Train:SetSize(self.TrainingList.List:GetWide(), 28)
+        Train:SetText(DataTrain["train_name"])
+        Train:Dock(TOP)
+        Train:DockMargin(9, 9, 9, 0)
+        Train:SetIcon("icon16/page_white_edit.png")
+        Train.DoClick = function()
+            self:SetDataTrain(DataTrain["train_playerid"], DataTrain["train_start"], DataTrain["train_end"])
+
+        end
+    end
+end
+
 function MODULE:ClearDataTrain()
     if IsValid(self.TrainingMenu) then
         self.TrainingMenu.InputPlayer:SetText("")
         self.TrainingMenu.InputLogStart:SetText("")
         self.TrainingMenu.InputLogEnd:SetText("")
+
+        self.TrainingMenu.Result:ChooseOptionID(2)
+        self.TrainingMenu.ResultDescription:SetText("")
+        self.TrainingMenu.InputName:SetText("")
     end
 end
 
@@ -58,6 +81,30 @@ function MODULE:SetDataTrain(PlayerID, LogStart, LogEnd)
         self.TrainingMenu.InputLogStart:SetText(LogStart)
         self.TrainingMenu.InputLogEnd:SetText(LogEnd)
     end
+end
+
+function MODULE:UpdateTrainList()
+    if table.IsEmpty(ALL_TRAINS) then return end
+    if not IsValid(self.TrainingList.List) then return end
+
+    for k, Data in ipairs(ALL_TRAINS) do
+        local Train = self.TrainingList.List:Add("DButton")
+        Train:SetSize(self.TrainingList.List:GetWide(), 28)
+        Train:SetText(Data["train_name"])
+        Train:Dock(TOP)
+        Train:DockMargin(9, 4, 9, 0)
+        Train:SetIcon("icon16/page_white_edit.png")
+        Train.DoClick = function()
+            self:SetDataTrain(Data["train_playerid"], Data["train_start"], Data["train_end"])
+            self.TrainingMenu.Result:ChooseOptionID(Data["train_result"] and 1 or 2)
+            self.TrainingMenu.ResultDescription:SetText(Data["train_description"])
+            self.TrainingMenu.InputName:SetText(Data["train_name"])
+
+            self.TrainingMenu.GetLogs:DoClick()
+        end
+    end
+
+    table.Empty(ALL_TRAINS)
 end
 
 --[[------------------------
@@ -72,7 +119,7 @@ function MODULE:UpdateTable(Logs)
             self.HistoryPanel:AddLine(Data["geminilog_log"])
         end
 
-        self:SetOutputMSG( string.format(Gemini:GetPhrase("Logger.Requesting"), #Logs, math.Round(CurTime() - self.TIME_REQUEST, 2)) )
+        self:SetOutputMSG( string.format(Gemini:GetPhrase("Logger.LogsSended"), #Logs, math.Round(CurTime() - self.TIME_REQUEST, 2)) )
     end
 end
 
@@ -120,6 +167,47 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingList.NewTrain:SetIcon("icon16/add.png")
     self.TrainingList.NewTrain.DoClick = function()
         self:ClearDataTrain()
+        self.TrainingMenu.ClearLogs:DoClick()
+    end
+
+    self.TrainingList.SaveTrain = self.TrainingList.List:Add("DButton")
+    self.TrainingList.SaveTrain:SetSize(self.TrainingList.List:GetWide() - 16, 28)
+    self.TrainingList.SaveTrain:SetText(Gemini:GetPhrase("Train.SaveTraining"))
+    self.TrainingList.SaveTrain:SetPos(8, self.TrainingList:GetTall() - 36)
+    self.TrainingList.SaveTrain:SetIcon("icon16/disk.png")
+    self.TrainingList.SaveTrain.DoClick = function()
+        if not Gemini:CanUse("gemini_train") then
+            self:SetOutputMSG(Gemini:GetPhrase("Logger.DontAllowed"))
+            return
+        end
+
+        local PlayerID = self.TrainingMenu.InputPlayer:GetInt()
+        local LogStart = self.TrainingMenu.InputLogStart:GetInt()
+        local LogEnd = self.TrainingMenu.InputLogEnd:GetInt()
+        local Result = self.TrainingMenu.Result:GetOptionData(self.TrainingMenu.Result:GetSelectedID())
+        local Description = self.TrainingMenu.ResultDescription:GetText()
+        local Name = self.TrainingMenu.InputName:GetText()
+
+        if ( PlayerID == nil or LogStart == nil or LogEnd == nil ) then
+            self:SetOutputMSG(Gemini:GetPhrase("Train.NotEnoughData"))
+            return
+        end
+
+        if ( Description == "" or Name == "" ) then
+            self:SetOutputMSG(Gemini:GetPhrase("Train.NotEnoughData"))
+            return
+        end
+
+        net.Start("Gemini:AddNewTrain")
+            net.WriteUInt(PlayerID, Gemini.Util.DefaultNetworkUInt)
+            net.WriteUInt(LogStart, Gemini.Util.DefaultNetworkUInt)
+            net.WriteUInt(LogEnd, Gemini.Util.DefaultNetworkUInt)
+            net.WriteBool(Result)
+            net.WriteString(Description)
+            net.WriteString(Name)
+        net.SendToServer()
+
+        self:SetOutputMSG(Gemini:GetPhrase("Train.SavedTraining"))
     end
 
     --[[------------------------
@@ -127,7 +215,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     ------------------------]]--
 
     self.TrainingMenu = vgui.Create("DScrollPanel", OurTab)
-    self.TrainingMenu:SetSize(300, OurTab:GetTall() - 57)
+    self.TrainingMenu:SetSize(320, OurTab:GetTall() - 57)
     self.TrainingMenu:SetPos(220, 10)
     self.TrainingMenu.Paint = BorderBackgroundPaint
 
@@ -137,14 +225,13 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
 
     self.TrainingMenu.InputPlayerTitle = vgui.Create("DLabel", self.TrainingMenu)
     self.TrainingMenu.InputPlayerTitle:SetFont("Frutiger:Medium")
-    self.TrainingMenu.InputPlayerTitle:SetTall(30)
     self.TrainingMenu.InputPlayerTitle:SetText(Gemini:GetPhrase("Train.InputPlayer"))
     self.TrainingMenu.InputPlayerTitle:SetContentAlignment(4)
     self.TrainingMenu.InputPlayerTitle:Dock(TOP)
-    self.TrainingMenu.InputPlayerTitle:DockMargin(8, 8, 8, 4)
+    self.TrainingMenu.InputPlayerTitle:DockMargin(8, 16, 8, 4)
 
     self.TrainingMenu.InputPlayerDescription = vgui.Create("DLabel", self.TrainingMenu)
-    self.TrainingMenu.InputPlayerDescription:SetText(Gemini:GetPhrase("Train.InputPlayer.Description"))
+    self.TrainingMenu.InputPlayerDescription:SetText(Gemini:GetPhrase("Train.InputPlayer.Desc"))
     self.TrainingMenu.InputPlayerDescription:Dock(TOP)
     self.TrainingMenu.InputPlayerDescription:DockMargin(8, 0, 8, 4)
     self.TrainingMenu.InputPlayerDescription:SetAutoStretchVertical(true)
@@ -154,7 +241,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingMenu.InputPlayer:SetPos(8, 50)
     self.TrainingMenu.InputPlayer:SetNumeric(true)
     self.TrainingMenu.InputPlayer:Dock(TOP)
-    self.TrainingMenu.InputPlayer:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputPlayer:DockMargin(8, 0, 8, 12)
     self.TrainingMenu.InputPlayer:SetPlaceholderText(Gemini:GetPhrase("Logger.PlayerID"))
 
     self.TrainingMenu.InputLogStartTitle = vgui.Create("DLabel", self.TrainingMenu)
@@ -175,7 +262,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingMenu.InputLogStart:SetPos(8, 50)
     self.TrainingMenu.InputLogStart:SetNumeric(true)
     self.TrainingMenu.InputLogStart:Dock(TOP)
-    self.TrainingMenu.InputLogStart:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputLogStart:DockMargin(8, 0, 8, 12)
     self.TrainingMenu.InputLogStart:SetPlaceholderText(Gemini:GetPhrase("Train.InputLogStart"))
 
     self.TrainingMenu.InputLogEndTitle = vgui.Create("DLabel", self.TrainingMenu)
@@ -196,7 +283,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingMenu.InputLogEnd:SetPos(8, 50)
     self.TrainingMenu.InputLogEnd:SetNumeric(true)
     self.TrainingMenu.InputLogEnd:Dock(TOP)
-    self.TrainingMenu.InputLogEnd:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputLogEnd:DockMargin(8, 0, 8, 12)
     self.TrainingMenu.InputLogEnd:SetPlaceholderText(Gemini:GetPhrase("Train.InputLogEnd"))
 
     self.TrainingMenu.ResultTitle = vgui.Create("DLabel", self.TrainingMenu)
@@ -204,23 +291,44 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingMenu.ResultTitle:SetText(Gemini:GetPhrase("Train.Result"))
     self.TrainingMenu.ResultTitle:SetContentAlignment(4)
     self.TrainingMenu.ResultTitle:Dock(TOP)
-    self.TrainingMenu.ResultTitle:DockMargin(8, 8, 8, 4)
+    self.TrainingMenu.ResultTitle:DockMargin(8, 8, 8, 6)
 
     self.TrainingMenu.Result = vgui.Create("DComboBox", self.TrainingMenu)
     self.TrainingMenu.Result:Dock(TOP)
     self.TrainingMenu.Result:DockMargin(8, 0, 8, 4)
     self.TrainingMenu.Result:SetValue(Gemini:GetPhrase("Train.Result.Guilty"))
-    self.TrainingMenu.Result:AddChoice(Gemini:GetPhrase("Train.Result.Guilty"))
-    self.TrainingMenu.Result:AddChoice(Gemini:GetPhrase("Train.Result.NotGuilty"))
+    self.TrainingMenu.Result:AddChoice(Gemini:GetPhrase("Train.Result.Guilty"), GUILTY)
+    self.TrainingMenu.Result:AddChoice(Gemini:GetPhrase("Train.Result.NotGuilty"), NOT_GUILTY)
     self.TrainingMenu.Result.Paint = SmallBackgroundPaint
     self.TrainingMenu.Result.OnMenuOpened = DComboBoxPaint
 
     self.TrainingMenu.ResultDescription = vgui.Create("DTextEntry", self.TrainingMenu)
-    self.TrainingMenu.ResultDescription:SetTall(100)
+    self.TrainingMenu.ResultDescription:SetTall(28)
     self.TrainingMenu.ResultDescription:Dock(TOP)
-    self.TrainingMenu.ResultDescription:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.ResultDescription:DockMargin(8, 4, 8, 12)
     self.TrainingMenu.ResultDescription:SetPlaceholderText(Gemini:GetPhrase("Train.Result.Example"))
     self.TrainingMenu.ResultDescription:SetTextColor(color_black)
+    self.TrainingMenu.ResultDescription:SetWrap(true)
+    self.TrainingMenu.ResultDescription:SetContentAlignment(1)
+
+    self.TrainingMenu.InputNameTitle = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.InputNameTitle:SetFont("Frutiger:Medium")
+    self.TrainingMenu.InputNameTitle:SetText(Gemini:GetPhrase("Train.InputName"))
+    self.TrainingMenu.InputNameTitle:SetContentAlignment(4)
+    self.TrainingMenu.InputNameTitle:Dock(TOP)
+    self.TrainingMenu.InputNameTitle:DockMargin(8, 8, 8, 4)
+
+    self.TrainingMenu.InputNameDesc = vgui.Create("DLabel", self.TrainingMenu)
+    self.TrainingMenu.InputNameDesc:SetText(Gemini:GetPhrase("Train.InputName.Desc"))
+    self.TrainingMenu.InputNameDesc:Dock(TOP)
+    self.TrainingMenu.InputNameDesc:DockMargin(8, 0, 8, 4)
+    self.TrainingMenu.InputNameDesc:SetAutoStretchVertical(true)
+    self.TrainingMenu.InputNameDesc:SetWrap(true)
+
+    self.TrainingMenu.InputName = vgui.Create("DTextEntry", self.TrainingMenu)
+    self.TrainingMenu.InputName:Dock(TOP)
+    self.TrainingMenu.InputName:DockMargin(8, 8, 8, 12)
+    self.TrainingMenu.InputName:SetPlaceholderText(Gemini:GetPhrase("Train.InputName"))
 
 
     self.TrainingMenu.GetLogs = vgui.Create("DButton", self.TrainingMenu)
@@ -285,7 +393,7 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     self.TrainingMenu.PasteData.DoClick = function()
         local GlobalData = GetGlobalString("Gemini:TrainData", "")
         if ( GlobalData == "" ) then
-            self.OutputMSG:SetText(Gemini:GetPhrase("Train.NoData"))
+            self.OutputMSG:SetText(Gemini:GetPhrase("Logger.NoLogs"))
             return
         end
 
@@ -330,6 +438,19 @@ function MODULE:MainFunc(RootPanel, Tabs, OurTab)
     Column:SetName( Gemini:GetPhrase("Logger.Column.Log") )
 end
 
+function MODULE:OnFocus()
+    if not Gemini:CanUse("gemini_train") then return end
+
+    self:UpdateTrainList()
+end
+
+function MODULE:FirstFocus()
+    if not Gemini:CanUse("gemini_train") then return end
+
+    net.Start("Gemini:GetAllTrain")
+    net.SendToServer()
+end
+
 Gemini:ModuleCreate(Gemini:GetPhrase("Train"), MODULE)
 
 --[[------------------------
@@ -344,4 +465,23 @@ net.Receive("Gemini:GetTrain", function(len)
 
     local Logs = util.JSONToTable(util.Decompress(CompressedData))
     MODULE:UpdateTable(Logs)
+end)
+
+net.Receive("Gemini:GetAllTrain", function(len)
+    Gemini:Debug("GetAllTrain Length:", len)
+
+    local CompressedSize = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
+    local CompressedData = net.ReadData(CompressedSize)
+
+    ALL_TRAINS = util.JSONToTable(util.Decompress(CompressedData))
+end)
+
+net.Receive("Gemini:AddNewTrain", function(len)
+    Gemini:Debug("AddNewTrain Length:", len)
+
+    local CompressedSize = net.ReadUInt(Gemini.Util.DefaultNetworkUInt)
+    local CompressedData = net.ReadData(CompressedSize)
+
+    local NewTrain = util.JSONToTable(util.Decompress(CompressedData))
+    MODULE:AddTrainButton(NewTrain)
 end)

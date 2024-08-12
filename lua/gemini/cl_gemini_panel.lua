@@ -193,7 +193,7 @@ end
 function GEMINIPANEL:Init()
     self:SetSize(math.max(ScrW() * 0.9, 800), math.max(ScrH() * 0.9, 500))
     self:MakePopup()
-    self:SetTitle( Gemini:GetPhrase("Panel.Title") )
+    self:SetTitle( Gemini:GetPhrase("GeminiMenu") )
     self:ShowCloseButton(true)
     self:SetDraggable(true)
     self:DockPadding(5, 5, 5, 5)

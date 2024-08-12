@@ -24,6 +24,8 @@ for Name, Phrase in pairs( LANG:Get("menu") ) do
     LANG:AddPhrase(Name, Phrase)
 end
 
+LANG:AddPhrase("day", "Dia")
+
 if CLIENT then return end
 
 for Name, PromptFunction in pairs( LANG:Get("prompts") ) do

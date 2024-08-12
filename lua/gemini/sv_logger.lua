@@ -86,7 +86,7 @@ local LoggerSQL = {
     ]],
     ["GETONLYLOGS"] = [[
         SELECT
-            strftime('DAY_NAME %%d %%H:%%M:%%S', geminilog_time) || ' - ' || geminilog_log AS geminilog_log
+            strftime('DAY_NAME %%d %%H:%%M:%%S', geminilog_time) || ' - ' || geminilog_log AS log
         FROM
             gemini_log
         WHERE
@@ -136,11 +136,29 @@ local LoggerSQL = {
         FROM
             gemini_log
         WHERE
-            geminilog_user1 = %s OR
+            (geminilog_user1 = %s OR
             geminilog_user2 = %s OR
             geminilog_user3 = %s OR
-            geminilog_user4 = %s AND
-            geminilog_id BETWEEN %s AND %s
+            geminilog_user4 = %s)
+            AND
+            (geminilog_id BETWEEN %s AND %s)
+        ORDER BY
+            geminilog_id DESC
+        LIMIT
+            %s
+    ]],
+    ["GETALLLOGSRANGEPLAYERFORMAT"] = [[
+        SELECT
+            strftime('DAY_NAME %%d %%H:%%M:%%S', geminilog_time) || ' - ' || geminilog_log AS log
+        FROM
+            gemini_log
+        WHERE
+            (geminilog_user1 = %s OR
+            geminilog_user2 = %s OR
+            geminilog_user3 = %s OR
+            geminilog_user4 = %s)
+            AND
+            (geminilog_id BETWEEN %s AND %s)
         ORDER BY
             geminilog_id DESC
         LIMIT
@@ -170,8 +188,6 @@ end
 ------------------------]]--
 
 function Gemini:LoggerCreateTable()
-    LoggerSQL["GETONLYLOGS"] = string.Replace(self:LoggerGetSQL("GETONLYLOGS"), "DAY_NAME", self.DayName)
-
     sql_Query(self:LoggerGetSQL("GEMINI_USER"))
     sql_Query(self:LoggerGetSQL("GEMINI_USER_SERVER"))
     sql_Query(self:LoggerGetSQL("GEMINI_LOG"))
@@ -179,6 +195,9 @@ end
 
 function Gemini:LoggerCheckTable()
     self.DayName = self:GetPhrase("day")
+
+    LoggerSQL["GETONLYLOGS"] = string.Replace(self:LoggerGetSQL("GETONLYLOGS"), "DAY_NAME", self.DayName)
+    LoggerSQL["GETALLLOGSRANGEPLAYERFORMAT"] = string.Replace(self:LoggerGetSQL("GETALLLOGSRANGEPLAYERFORMAT"), "DAY_NAME", self.DayName)
 
     if not ( sql_TableExists("gemini_user") or sql_TableExists("gemini_log") ) then
         Gemini:LoggerCreateTable()
@@ -223,7 +242,7 @@ function Gemini:PlayerFromID(id)
         self:Error("The first argument of Gemini:PlayerFromID must be a number.", id, "number")
     end
 
-    for _, ply in ipairs(player.GetHumans()) do
+    for _, ply in ipairs(player.GetAll()) do
         if ( ply.GEMINI_ID == id ) then
             return ply
         end
@@ -248,16 +267,12 @@ function Gemini:GetPlayerLogs(ply, Limit, FormatedLogs)
 
     self:Checker({Limit, "number", 2})
 
-    local QuerySyntax = ( FormatedLogs == true ) and
-        self:LoggerGetSQL("GETONLYLOGS")
-        or
-        self:LoggerGetSQL("GETPLAYERLOGS")
-
+    local QuerySyntax = self:LoggerGetSQL(FormatedLogs == true and "GETONLYLOGS" or "GETPLAYERLOGS")
     return sql_Query(QuerySyntax, PlayerID, PlayerID, PlayerID, PlayerID, Limit) or {}
 end
 Gemini.GetPlayerLog = Gemini.GetPlayerLogs
 
-function Gemini:GetPlayerLogsRange(ply, Min, Max)
+function Gemini:GetPlayerLogsRange(ply, Min, Max, FormatedLogs)
     local P = isnumber(ply) and ply or self:PlayerToID(ply)
 
     if not isnumber(P) then
@@ -267,7 +282,8 @@ function Gemini:GetPlayerLogsRange(ply, Min, Max)
     self:Checker({Min, "number", 2})
     self:Checker({Max, "number", 3})
 
-    return Formating(self:LoggerGetSQL("GETALLLOGSRANGEPLAYER"), P, P, P, P, Min, Max, self:GetConfig("MaxLogsRequest", "Logger")) or {}
+    local QuerySyntax = (FormatedLogs == nil) and "GETALLLOGSRANGEPLAYER" or "GETALLLOGSRANGEPLAYERFORMAT"
+    return Formating(self:LoggerGetSQL(QuerySyntax), P, P, P, P, Min, Max, self:GetConfig("MaxLogsRequest", "Logger")) or {}
 end
 
 function Gemini:GetLogs(Limit, FormatedLogs)
