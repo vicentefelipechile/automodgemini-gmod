@@ -273,7 +273,7 @@ end
 Gemini.GetPlayerLog = Gemini.GetPlayerLogs
 
 function Gemini:GetPlayerLogsRange(ply, Min, Max, FormatedLogs)
-    local P = isnumber(ply) and ply or self:PlayerToID(ply)
+    local P = tonumber(ply) or self:PlayerToID(ply)
 
     if not isnumber(P) then
         self:Error("There was an error trying to get the player ID.", P, "number")

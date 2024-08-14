@@ -104,7 +104,7 @@ function Gemini:GetAllTrain()
 end
 
 function Gemini:GetLastTrain()
-    return sql_Query(self:TrainGetSQL("GETLAST")) or {}
+    return sql_Query(self:TrainGetSQL("GETLAST"))[1] or {}
 end
 
 --[[------------------------
@@ -115,7 +115,7 @@ function Gemini:GenerateTrainOutput(PlayerID, LogStart, LogEnd)
     local AllPreviousTrain = {}
 
     for k, TrainData in ipairs( self:GetAllTrain() ) do
-        local LogsTrain = self:GetPlayerLogsRange(TrainData["train_playerid"], TrainData["train_start"], TrainData["train_end"], true)
+        local LogsTrain = self:GetPlayerLogsRange(tonumber(TrainData["train_playerid"]), tonumber(TrainData["train_start"]), tonumber(TrainData["train_end"]), true)
         local LogsFormated = self:LogsToText(LogsTrain)
 
         local Output = {
@@ -150,8 +150,6 @@ function Gemini:AddNewTrain(PlayerID, LogStart, LogEnd, Result, Description, Nam
     self:Checker({Name, "string", 6})
 
     sql_Query( string.format(self:TrainGetSQL("INSERT"), PlayerID, LogStart, LogEnd, Result and 1 or 2, Description, Name) )
-
-    return self:GetLastTrain()
 end
 
 
@@ -202,12 +200,15 @@ net.Receive("Gemini:AddNewTrain", function(_, ply)
     local Description = net.ReadString()
     local Name = net.ReadString()
 
-    local NewTrain = Gemini:AddNewTrain(PlayerID, LogStart, LogEnd, Result, Description, Name)
-    local NewTrainCompressed = util.Compress(util.TableToJSON(NewTrain))
-    local NewTrainLength = #NewTrainCompressed
+    Gemini:AddNewTrain(PlayerID, LogStart, LogEnd, Result, Description, Name)
 
-    net.Start("Gemini:AddNewTrain")
-        net.WriteUInt(NewTrainLength, Gemini.Util.DefaultNetworkUInt)
-        net.WriteData(NewTrainCompressed, NewTrainLength)
-    net.Send(ply)
+    timer.Simple(0.1, function()
+        local NewTrainCompressed = util.Compress(util.TableToJSON(Gemini:GetLastTrain()))
+        local NewTrainLength = #NewTrainCompressed
+
+        net.Start("Gemini:AddNewTrain")
+            net.WriteUInt(NewTrainLength, Gemini.Util.DefaultNetworkUInt)
+            net.WriteData(NewTrainCompressed, NewTrainLength)
+        net.Send(ply)
+    end)
 end)
